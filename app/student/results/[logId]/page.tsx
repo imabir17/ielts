@@ -32,7 +32,7 @@ export default function StudentDetailedResultsPage() {
     <>
       <div className="topbar mb-6">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/student')} className="w-8 h-8 rounded-full bg-[var(--paper-card)] border border-[var(--line)] flex items-center justify-center text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--ink-soft)] transition-colors">
+          <button onClick={() => router.push(`/student/tests/${log.testId}`)} className="w-8 h-8 rounded-full bg-[var(--paper-card)] border border-[var(--line)] flex items-center justify-center text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--ink-soft)] transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>

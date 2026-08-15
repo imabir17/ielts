@@ -20,7 +20,7 @@ export default function ExamPage() {
   const params = useParams();
   const router = useRouter();
   const testId = typeof params?.id === 'string' ? params.id : '';
-  const { currentUser, addExamLog, addSpeakingRequest, updateStudent, students } = useStore();
+  const { currentUser, examLogs, updateExamLog, addExamLog, addSpeakingRequest, updateStudent, students } = useStore();
 
   const [isMounted, setIsMounted] = useState(false);
   const [test, setTest] = useState<any>(null);
@@ -32,13 +32,26 @@ export default function ExamPage() {
   const [answers, setAnswers] = useState({
     reading: {} as Record<string, any>,
     listening: {} as Record<string, any>,
-    writing: {} as Record<string, any>
+    writing: {} as Record<string, any>,
+    speaking: {} as Record<string, any>
   });
+
+  const existingLog = examLogs.find(l => l.studentId === currentUser?.id && l.testId === testId);
 
   useEffect(() => {
     setIsMounted(true);
     setTest(getTestById(testId));
-  }, [testId]);
+    // Pre-fill answers from existing log if available
+    if (existingLog) {
+      setAnswers(prev => ({
+        ...prev,
+        reading: existingLog.answers?.reading || {},
+        listening: existingLog.answers?.listening || {},
+        writing: existingLog.answers?.writing || {},
+        speaking: existingLog.answers?.speaking || {},
+      }));
+    }
+  }, [testId, existingLog]);
 
   if (!isMounted || !test || !currentUser) {
     return <div className="p-10 text-center text-[var(--ink-faint)] font-mono text-[11px] uppercase tracking-wider">Loading test environment...</div>;
@@ -104,31 +117,41 @@ export default function ExamPage() {
   const finishExam = () => {
     const studentInfo = students.find(s => s.id === currentUser.id);
     
-    const computedScores: Record<string, number> = {};
+    const computedScores: Record<string, number> = existingLog ? { ...existingLog.scores } : {};
     if (selectedModules.includes('reading')) computedScores.reading = calculateModuleScore('reading');
     if (selectedModules.includes('listening')) computedScores.listening = calculateModuleScore('listening');
 
+    const mergedModulesTaken = Array.from(new Set([...(existingLog?.modulesTaken || []), ...selectedModules]));
+    
     // Overall band could be average of taken modules if we want, but keeping simple for now.
     
-    const newLog: ExamLog = {
-      id: `log-${Date.now()}`,
-      studentId: currentUser.id,
-      studentName: currentUser.name || 'Unknown',
-      orgId: studentInfo?.orgId || '',
-      orgName: 'Unknown',
-      testId: test.id,
-      testTitle: test.title,
-      completedAt: new Date().toISOString(),
-      status: selectedModules.includes('writing') ? 'Completed' : 'Graded',
-      modulesTaken: selectedModules,
-      answers: answers,
-      scores: computedScores
-    };
-
-    addExamLog(newLog);
-    
-    if (studentInfo) {
-      updateStudent(studentInfo.id, { completedTests: studentInfo.completedTests + 1 });
+    if (existingLog) {
+      updateExamLog(existingLog.id, {
+        modulesTaken: mergedModulesTaken,
+        answers: answers,
+        scores: computedScores,
+        status: mergedModulesTaken.includes('writing') ? 'Completed' : 'Graded'
+      });
+    } else {
+      const newLog: ExamLog = {
+        id: `log-${Date.now()}`,
+        studentId: currentUser.id,
+        studentName: currentUser.name || 'Unknown',
+        orgId: studentInfo?.orgId || '',
+        orgName: 'Unknown',
+        testId: test.id,
+        testTitle: test.title,
+        completedAt: new Date().toISOString(),
+        status: selectedModules.includes('writing') ? 'Completed' : 'Graded',
+        modulesTaken: selectedModules,
+        answers: answers,
+        scores: computedScores
+      };
+      addExamLog(newLog);
+      
+      if (studentInfo) {
+        updateStudent(studentInfo.id, { completedTests: studentInfo.completedTests + 1 });
+      }
     }
 
     setExamState('completed');
@@ -158,21 +181,26 @@ export default function ExamPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10 text-left">
               {[
                 { id: 'reading', label: 'Reading', icon: BookOpen, desc: '60 Minutes' },
-                { id: 'writing', label: 'Writing', icon: Edit3, desc: '60 Minutes' },
                 { id: 'listening', label: 'Listening', icon: Headphones, desc: 'Audio + 10 Mins' },
+                { id: 'writing', label: 'Writing', icon: Edit3, desc: '60 Minutes' },
                 { id: 'speaking', label: 'Speaking', icon: Mic, desc: 'Practice Mode' }
               ].map(mod => {
                 const isSel = selectedModules.includes(mod.id as ModuleType);
+                const isPreviouslyTaken = existingLog?.modulesTaken?.includes(mod.id as ModuleType);
+                
                 return (
                   <div key={mod.id} onClick={() => handleModuleSelection(mod.id as ModuleType)} className={`panel p-5 cursor-pointer transition-all border-2 ${isSel ? 'border-[var(--ink)] bg-[var(--paper)] ring-4 ring-[var(--ink)]/10' : 'border-[var(--line)] bg-[var(--paper-card)] hover:border-[var(--ink-faint)]'}`}>
                     <div className="flex justify-between items-start mb-3">
                       <mod.icon className={`w-6 h-6 ${isSel ? 'text-[var(--brick)]' : 'text-[var(--ink-faint)]'}`} />
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSel ? 'bg-[var(--ink)] border-[var(--ink)]' : 'border-[var(--line-soft)]'}`}>
+                      <div className={`w-5 h-5 rounded-[4px] border-2 flex items-center justify-center ${isSel ? 'bg-[var(--ink)] border-[var(--ink)]' : 'border-[var(--line-soft)]'}`}>
                         {isSel && <CheckCircle2 className="w-3 h-3 text-white" />}
                       </div>
                     </div>
                     <div className="font-medium text-[var(--ink)] text-[16px]">{mod.label}</div>
-                    <div className="text-[12px] text-[var(--ink-soft)]">{mod.desc}</div>
+                    <div className="text-[12px] text-[var(--ink-soft)] mt-1 flex justify-between items-center">
+                      <span>{mod.desc}</span>
+                      {isPreviouslyTaken && <span className="text-[10px] uppercase font-bold text-[var(--forest)] bg-[var(--forest)]/10 px-1.5 py-0.5 rounded">Retake</span>}
+                    </div>
                   </div>
                 );
               })}
@@ -246,7 +274,7 @@ export default function ExamPage() {
             {selectedModules.includes('reading') || selectedModules.includes('listening') ? ' Reading and Listening scores are available immediately.' : ''}
             {selectedModules.includes('writing') ? ' Awaiting score for writing. It may take around 1 hour.' : ''}
           </p>
-          <button onClick={() => router.push('/student')} className="btn btn-fill px-8 py-3 w-full justify-center">
+          <button onClick={() => router.push('/student/tests')} className="btn btn-fill px-8 py-3 w-full justify-center">
             Return to Dashboard
           </button>
         </div>
