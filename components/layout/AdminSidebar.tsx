@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStore } from '@/components/providers/StoreProvider';
-import { LayoutDashboard, Building2, Vault, Hammer, Shield, Settings } from 'lucide-react';
+import { LayoutDashboard, Building2, Vault, Hammer, Shield, Settings, CheckSquare } from 'lucide-react';
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -15,6 +15,7 @@ export function AdminSidebar() {
     { name: 'Organizations', href: '/admin/organizations', icon: Building2 },
     { name: 'Test bank vault', href: '/admin/materials', icon: Vault },
     { name: 'Ingest / build test', href: '/admin/materials/builder', icon: Hammer },
+    { name: 'Writing Assessment', href: '/admin/grading', icon: CheckSquare },
   ];
 
   const governanceNav = [

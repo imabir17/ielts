@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStore } from '@/components/providers/StoreProvider';
-import { LayoutDashboard, Users, Send, Award } from 'lucide-react';
+import { LayoutDashboard, Users, Send, Award, Mic } from 'lucide-react';
 
 export function OrgSidebar() {
   const pathname = usePathname();
@@ -14,6 +14,7 @@ export function OrgSidebar() {
     { name: 'Org Dashboard', href: '/org', icon: LayoutDashboard },
     { name: 'Student Directory', href: '/org/students', icon: Users },
     { name: 'Assign Tests', href: '/org/assign', icon: Send },
+    { name: 'Speaking Mocks', href: '/org/speaking', icon: Mic },
     { name: 'Exam Results', href: '/org#results', icon: Award },
   ];
 
