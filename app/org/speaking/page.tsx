@@ -36,6 +36,7 @@ export default function SpeakingRequestsPage() {
     setLink('');
   };
 
+  return (
     <>
       <div className="topbar mb-6">
         <div>

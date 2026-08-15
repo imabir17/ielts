@@ -54,6 +54,7 @@ export default function SuperadminGradingPage() {
     setFeedback('');
   };
 
+  return (
     <>
       <div className="topbar mb-6">
         <div>
