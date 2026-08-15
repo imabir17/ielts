@@ -38,7 +38,7 @@ export default function LandingPage() {
               I
             </div>
             <span className="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-emerald-200">
-              MockIELTS
+              IELTSSync
             </span>
           </motion.div>
           <motion.div 
@@ -230,7 +230,7 @@ export default function LandingPage() {
             <div className="w-6 h-6 rounded bg-emerald-900/50 flex items-center justify-center text-emerald-500 font-bold text-xs">
               I
             </div>
-            <span>© 2026 MockIELTS Enterprise. All rights reserved.</span>
+            <span>© 2026 IELTSSync Enterprise. All rights reserved.</span>
           </div>
           <div className="flex space-x-6">
             <Link href="#" className="hover:text-emerald-400 transition-colors">Privacy</Link>

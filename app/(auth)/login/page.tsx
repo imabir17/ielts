@@ -90,7 +90,7 @@ export default function LoginPage() {
           </div>
           <div>
             <span className="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-200 to-white">
-              MockIELTS
+              IELTSSync
             </span>
             <span className="text-[10px] uppercase tracking-widest text-emerald-300/80 block font-semibold">
               SaaS Engine
@@ -124,7 +124,7 @@ export default function LoginPage() {
           transition={{ delay: 0.5 }}
           className="text-xs font-medium text-emerald-200/40 z-10 flex items-center justify-between"
         >
-          <span>© 2026 MockIELTS Enterprise Platform.</span>
+          <span>© 2026 IELTSSync Enterprise Platform.</span>
           <Link href="/" className="hover:text-emerald-300 transition-colors flex items-center group">
             <ArrowLeft className="w-3 h-3 mr-1 group-hover:-translate-x-1 transition-transform" /> Back to Home
           </Link>

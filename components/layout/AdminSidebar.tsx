@@ -27,7 +27,7 @@ export function AdminSidebar() {
           </div>
           <div>
             <h1 className="font-bold text-white tracking-tight leading-none text-base">Super Admin</h1>
-            <span className="text-[10px] text-emerald-400 uppercase tracking-widest font-semibold">MockIELTS HQ</span>
+            <span className="text-[10px] text-emerald-400 uppercase tracking-widest font-semibold">IELTSSync HQ</span>
           </div>
         </div>
 
