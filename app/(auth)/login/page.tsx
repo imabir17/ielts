@@ -162,27 +162,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Test Credentials Helper */}
-          <div className="mt-12 pt-8 border-t border-[var(--line)]">
-            <div className="bg-[var(--paper-alt)] p-5 rounded-[4px] border border-[var(--line-soft)]">
-              <div className="font-mono text-[11px] text-[var(--ink-soft)] tracking-[0.06em] uppercase mb-4">Test Credentials</div>
-              
-              <div className="space-y-3 font-mono text-[12.5px]">
-                <div className="flex justify-between items-center pb-2 border-b border-[var(--line-soft)]">
-                  <span className="text-[var(--ink-faint)]">Superadmin</span>
-                  <span className="text-[var(--ink)] font-medium">admin@mockielts.com <span className="text-[var(--ink-faint)]">/</span> admin123</span>
-                </div>
-                <div className="flex justify-between items-center pb-2 border-b border-[var(--line-soft)]">
-                  <span className="text-[var(--ink-faint)]">Tenant</span>
-                  <span className="text-[var(--ink)] font-medium">admin@apex.com <span className="text-[var(--ink-faint)]">/</span> password123</span>
-                </div>
-                <div className="flex justify-between items-center text-[12px]">
-                  <span className="text-[var(--ink-faint)]">Student</span>
-                  <span className="text-[var(--ink-soft)] text-right">Issue ID from tenant dashboard</span>
-                </div>
-              </div>
-            </div>
-          </div>
+
 
         </div>
       </div>
