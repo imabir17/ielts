@@ -36,84 +36,80 @@ export default function SpeakingRequestsPage() {
     setLink('');
   };
 
-  return (
-    <div className="flex h-screen bg-[var(--paper)]">
-      <OrgSidebar />
-      <div className="flex-1 flex flex-col font-sans h-screen overflow-hidden">
-        <header className="h-16 bg-white border-b border-[var(--line)] px-8 flex items-center justify-between shrink-0">
-          <h1 className="font-display text-[20px] text-[var(--ink)] leading-tight">Speaking Mock Requests</h1>
-        </header>
+    <>
+      <div className="topbar mb-6">
+        <div>
+          <h1>Speaking Mock Requests</h1>
+        </div>
+      </div>
 
-        <main className="flex-1 overflow-y-auto p-8 max-w-6xl w-full mx-auto space-y-6">
-          <div className="panel p-0 overflow-hidden">
-            <div className="p-5 border-b border-[var(--line)] bg-[var(--paper-card)]">
-              <h3 className="font-medium text-[16px] text-[var(--ink)]">Pending & Scheduled Requests</h3>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="audit-table w-full">
-                <thead>
-                  <tr>
-                    <th>Student</th>
-                    <th>Test</th>
-                    <th>Date Requested</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orgRequests.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-center py-8 text-[var(--ink-faint)]">
-                        No speaking mock requests found.
+      <div className="panel p-0 overflow-hidden">
+        <div className="p-5 border-b border-[var(--line)] bg-[var(--paper-card)]">
+          <h3 className="font-medium text-[16px] text-[var(--ink)]">Pending & Scheduled Requests</h3>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="audit-table w-full">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Test</th>
+                <th>Date Requested</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orgRequests.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-8 text-[var(--ink-faint)]">
+                    No speaking mock requests found.
+                  </td>
+                </tr>
+              ) : (
+                orgRequests.map(req => {
+                  const student = students.find(s => s.id === req.studentId);
+                  const test = getTestById(req.testId);
+                  
+                  return (
+                    <tr key={req.id}>
+                      <td className="font-medium text-[var(--ink)]">{student?.name || 'Unknown'}</td>
+                      <td className="text-[13px]">{test?.title || req.testId}</td>
+                      <td className="text-[12px] text-[var(--ink-soft)]">{new Date(req.requestedAt).toLocaleDateString()}</td>
+                      <td>
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${
+                          req.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                          req.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
+                          'bg-[var(--forest)]/10 text-[var(--forest)]'
+                        }`}>
+                          {req.status}
+                        </span>
+                      </td>
+                      <td>
+                        {req.status === 'pending' ? (
+                          <button
+                            onClick={() => setSelectedReq(req.id)}
+                            className="text-[12px] font-bold text-[var(--forest)] hover:underline"
+                          >
+                            Schedule Now
+                          </button>
+                        ) : (
+                          <div className="text-[11px] text-[var(--ink-soft)] font-medium flex flex-col space-y-1">
+                            <span className="flex items-center"><Calendar className="w-3 h-3 mr-1"/> {new Date(req.scheduledDate!).toLocaleString()}</span>
+                            <span className="flex items-center">
+                              {req.type === 'Online' ? <Video className="w-3 h-3 mr-1"/> : <MapPin className="w-3 h-3 mr-1"/>}
+                              {req.type}
+                            </span>
+                          </div>
+                        )}
                       </td>
                     </tr>
-                  ) : (
-                    orgRequests.map(req => {
-                      const student = students.find(s => s.id === req.studentId);
-                      const test = getTestById(req.testId);
-                      
-                      return (
-                        <tr key={req.id}>
-                          <td className="font-medium text-[var(--ink)]">{student?.name || 'Unknown'}</td>
-                          <td className="text-[13px]">{test?.title || req.testId}</td>
-                          <td className="text-[12px] text-[var(--ink-soft)]">{new Date(req.requestedAt).toLocaleDateString()}</td>
-                          <td>
-                            <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${
-                              req.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                              req.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
-                              'bg-[var(--forest)]/10 text-[var(--forest)]'
-                            }`}>
-                              {req.status}
-                            </span>
-                          </td>
-                          <td>
-                            {req.status === 'pending' ? (
-                              <button
-                                onClick={() => setSelectedReq(req.id)}
-                                className="text-[12px] font-bold text-[var(--forest)] hover:underline"
-                              >
-                                Schedule Now
-                              </button>
-                            ) : (
-                              <div className="text-[11px] text-[var(--ink-soft)] font-medium flex flex-col space-y-1">
-                                <span className="flex items-center"><Calendar className="w-3 h-3 mr-1"/> {new Date(req.scheduledDate!).toLocaleString()}</span>
-                                <span className="flex items-center">
-                                  {req.type === 'Online' ? <Video className="w-3 h-3 mr-1"/> : <MapPin className="w-3 h-3 mr-1"/>}
-                                  {req.type}
-                                </span>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </main>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Schedule Modal */}
@@ -180,6 +176,6 @@ export default function SpeakingRequestsPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
