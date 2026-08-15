@@ -7,7 +7,7 @@ import { getTestById } from '@/lib/test-store';
 import { Calendar, Video, MapPin, CheckCircle2 } from 'lucide-react';
 
 export default function SpeakingRequestsPage() {
-  const { currentUser, speakingRequests, updateSpeakingRequest, students } = useStore();
+  const { currentUser, speakingRequests, updateSpeakingRequest, students, examLogs, updateExamLog } = useStore();
   const [selectedReq, setSelectedReq] = useState<string | null>(null);
   
   // Form State
@@ -18,6 +18,7 @@ export default function SpeakingRequestsPage() {
   // Complete Form State
   const [selectedCompleteReq, setSelectedCompleteReq] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
+  const [bandScore, setBandScore] = useState('');
 
   if (!currentUser) return null;
 
@@ -44,13 +45,44 @@ export default function SpeakingRequestsPage() {
     e.preventDefault();
     if (!selectedCompleteReq) return;
 
+    const reqToComplete = speakingRequests.find(r => r.id === selectedCompleteReq);
+    if (!reqToComplete) return;
+
+    const bScore = parseFloat(bandScore);
+
     updateSpeakingRequest(selectedCompleteReq, {
       status: 'completed',
-      feedback: feedback
+      feedback: feedback,
+      bandScore: bScore
     });
+
+    // Try to find an examLog to update overallBand
+    const relatedLog = examLogs.find(l => l.studentId === reqToComplete.studentId && l.testId === reqToComplete.testId);
+    if (relatedLog) {
+      const newScores = { ...relatedLog.scores, speaking: bScore };
+      
+      let newOverallBand = relatedLog.overallBand;
+      const scoresArray = [];
+      if (newScores.reading !== undefined) scoresArray.push(newScores.reading);
+      if (newScores.listening !== undefined) scoresArray.push(newScores.listening);
+      if (newScores.writing !== undefined) scoresArray.push(newScores.writing);
+      scoresArray.push(bScore);
+
+      if (scoresArray.length > 0) {
+        const sum = scoresArray.reduce((a, b) => a + b, 0);
+        const avg = sum / scoresArray.length;
+        newOverallBand = Math.round(avg * 2) / 2;
+      }
+
+      updateExamLog(relatedLog.id, {
+        scores: newScores,
+        overallBand: newOverallBand
+      });
+    }
 
     setSelectedCompleteReq(null);
     setFeedback('');
+    setBandScore('');
   };
 
   return (
@@ -220,11 +252,26 @@ export default function SpeakingRequestsPage() {
                 <label className="block text-[12px] font-bold text-[var(--ink)] mb-1 uppercase tracking-wider">Performance Feedback</label>
                 <textarea
                   required
-                  rows={5}
+                  rows={4}
                   placeholder="Detail the student's fluency, vocabulary, pronunciation..."
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}
                   className="w-full p-3 bg-[var(--paper)] border border-[var(--line-soft)] rounded-[3px] text-[14px] focus:outline-none focus:border-[var(--forest)]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-bold text-[var(--ink)] mb-1 uppercase tracking-wider">Band Score</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="9"
+                  required
+                  placeholder="e.g. 7.5"
+                  value={bandScore}
+                  onChange={(e) => setBandScore(e.target.value)}
+                  className="w-full p-2.5 bg-[var(--paper)] border border-[var(--line-soft)] rounded-[3px] text-[14px] focus:outline-none focus:border-[var(--forest)]"
                 />
               </div>
 

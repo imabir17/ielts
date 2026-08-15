@@ -141,9 +141,14 @@ export default function StudentDashboardPage() {
                           <CheckCircle2 className="w-4 h-4 mr-1.5"/> Completed
                         </div>
                         {req.feedback && (
-                          <div className="text-[var(--ink)] bg-white/60 p-2 rounded border border-[var(--line)] mt-2 whitespace-pre-wrap leading-relaxed">
+                          <div className="text-[var(--ink)] bg-white/60 p-2 rounded border border-[var(--line)] mt-2 whitespace-pre-wrap leading-relaxed relative">
                             <div className="text-[10px] font-bold uppercase text-[var(--ink-soft)] mb-1">Feedback</div>
                             {req.feedback}
+                            {req.bandScore && (
+                              <div className="absolute top-2 right-2 bg-[var(--forest)]/10 text-[var(--forest)] px-2 py-0.5 rounded-[3px] text-[11px] font-bold tracking-wider">
+                                BAND {req.bandScore}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

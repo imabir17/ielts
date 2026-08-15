@@ -50,6 +50,7 @@ export interface ExamLog {
     reading?: number;
     listening?: number;
     writing?: number;
+    speaking?: number;
   };
   overallBand?: number;
   writingFeedback?: string;
@@ -66,6 +67,7 @@ export interface SpeakingRequest {
   link?: string;
   requestedAt: string;
   feedback?: string;
+  bandScore?: number;
 }
 
 export interface AuditLog {
