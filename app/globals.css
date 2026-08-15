@@ -132,8 +132,8 @@ body {
 .band-tick:hover .desc{opacity:1; transform:translateX(0);}
 
 .pill{padding:2px 8px; border-radius:2px; font-size:11px;}
-.pill.pass{background:rgba(47,110,82,0.25); color:#7FCBAA;}
-.pill.mid{background:rgba(180,135,43,0.25); color:#E3BE6E;}
+.pill.pass{background:rgba(47,110,82,0.12); color:var(--forest); font-weight: 500;}
+.pill.mid{background:rgba(180,135,43,0.12); color:var(--gold); font-weight: 500;}
 
 /* ---------- DASHBOARD (ADMIN & TENANT) ---------- */
 .app { display: flex; min-height: 100vh; }
