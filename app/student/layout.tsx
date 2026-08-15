@@ -1,7 +1,17 @@
+'use client';
+
 import React from 'react';
 import { StudentNav } from '@/components/layout/StudentNav';
+import { usePathname } from 'next/navigation';
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isExam = pathname?.includes('/student/exam');
+
+  if (isExam) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <StudentNav />
