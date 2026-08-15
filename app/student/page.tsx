@@ -12,7 +12,7 @@ export default function StudentProfilePage() {
 
   const myLogs = examLogs.filter(l => l.studentId === currentUser.id);
   const completedTestIds = myLogs.map(l => l.testId);
-  const pendingTestsCount = tests.filter(t => !completedTestIds.includes(t.id)).length;
+  const pendingTestsCount = tests.filter(t => (currentUser.assignedTests || []).includes(t.id) && !completedTestIds.includes(t.id)).length;
 
   // Calculate Average Band
   const scoredLogs = myLogs.filter(l => l.overallBand !== undefined);

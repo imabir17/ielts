@@ -15,7 +15,7 @@ export default function StudentTestsPage() {
   // For simplicity, we just use the existing examLogs mapping. If they took ANY module, it's an existing log.
   const testsWithLogs = myLogs.map(l => l.testId);
   
-  const pendingTests = tests.filter(t => !testsWithLogs.includes(t.id));
+  const pendingTests = tests.filter(t => (currentUser.assignedTests || []).includes(t.id) && !testsWithLogs.includes(t.id));
   const inProgressOrCompletedTests = myLogs;
 
   return (
