@@ -232,6 +232,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setStudents([student, ...students]);
     await supabase.from('students').insert({
       id: student.id, name: student.name, student_id: student.studentId, email: student.email,
+      password: student.password,
       org_id: student.orgId, assigned_tests: student.assignedTests, completed_tests: student.completedTests, average_band: student.averageBand
     });
   };
