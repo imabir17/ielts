@@ -65,6 +65,7 @@ export interface SpeakingRequest {
   type?: 'Physical' | 'Online';
   link?: string;
   requestedAt: string;
+  feedback?: string;
 }
 
 export interface AuditLog {

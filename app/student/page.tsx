@@ -124,7 +124,7 @@ export default function StudentDashboardPage() {
                   <div className="mt-4">
                     {req.status === 'pending' ? (
                       <span className="text-[12px] font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded">Pending Schedule</span>
-                    ) : (
+                    ) : req.status === 'scheduled' ? (
                       <div className="bg-blue-50 p-3 rounded border border-blue-100 text-[13px] text-blue-800 space-y-1">
                         <div className="font-bold flex items-center">
                           <CheckCircle2 className="w-4 h-4 mr-1.5 text-blue-600"/> Scheduled
@@ -134,6 +134,18 @@ export default function StudentDashboardPage() {
                           <span className="font-medium mr-1">{req.type}:</span> 
                           {req.link ? <a href={req.link} target="_blank" rel="noreferrer" className="underline hover:text-blue-600 truncate">{req.link}</a> : 'In-center'}
                         </div>
+                      </div>
+                    ) : (
+                      <div className="bg-[var(--forest)]/5 p-3 rounded border border-[var(--forest)]/20 text-[13px] space-y-2">
+                        <div className="font-bold flex items-center text-[var(--forest)]">
+                          <CheckCircle2 className="w-4 h-4 mr-1.5"/> Completed
+                        </div>
+                        {req.feedback && (
+                          <div className="text-[var(--ink)] bg-white/60 p-2 rounded border border-[var(--line)] mt-2 whitespace-pre-wrap leading-relaxed">
+                            <div className="text-[10px] font-bold uppercase text-[var(--ink-soft)] mb-1">Feedback</div>
+                            {req.feedback}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

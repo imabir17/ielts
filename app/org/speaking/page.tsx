@@ -15,6 +15,10 @@ export default function SpeakingRequestsPage() {
   const [type, setType] = useState<'Online' | 'Physical'>('Online');
   const [link, setLink] = useState('');
 
+  // Complete Form State
+  const [selectedCompleteReq, setSelectedCompleteReq] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState('');
+
   if (!currentUser) return null;
 
   // Filter requests for this org
@@ -34,6 +38,19 @@ export default function SpeakingRequestsPage() {
     setSelectedReq(null);
     setDate('');
     setLink('');
+  };
+
+  const handleComplete = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCompleteReq) return;
+
+    updateSpeakingRequest(selectedCompleteReq, {
+      status: 'completed',
+      feedback: feedback
+    });
+
+    setSelectedCompleteReq(null);
+    setFeedback('');
   };
 
   return (
@@ -94,13 +111,26 @@ export default function SpeakingRequestsPage() {
                           >
                             Schedule Now
                           </button>
+                        ) : req.status === 'scheduled' ? (
+                          <div className="flex flex-col space-y-2">
+                            <div className="text-[11px] text-[var(--ink-soft)] font-medium flex flex-col space-y-1">
+                              <span className="flex items-center"><Calendar className="w-3 h-3 mr-1"/> {new Date(req.scheduledDate!).toLocaleString()}</span>
+                              <span className="flex items-center">
+                                {req.type === 'Online' ? <Video className="w-3 h-3 mr-1"/> : <MapPin className="w-3 h-3 mr-1"/>}
+                                {req.type}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => setSelectedCompleteReq(req.id)}
+                              className="text-[12px] font-bold text-blue-600 hover:underline text-left mt-2"
+                            >
+                              Mark Complete
+                            </button>
+                          </div>
                         ) : (
-                          <div className="text-[11px] text-[var(--ink-soft)] font-medium flex flex-col space-y-1">
-                            <span className="flex items-center"><Calendar className="w-3 h-3 mr-1"/> {new Date(req.scheduledDate!).toLocaleString()}</span>
-                            <span className="flex items-center">
-                              {req.type === 'Online' ? <Video className="w-3 h-3 mr-1"/> : <MapPin className="w-3 h-3 mr-1"/>}
-                              {req.type}
-                            </span>
+                          <div className="text-[11px] text-[var(--forest)] font-medium flex items-center">
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                            Completed
                           </div>
                         )}
                       </td>
@@ -171,6 +201,46 @@ export default function SpeakingRequestsPage() {
                   className="btn btn-fill bg-[var(--forest)] border-[var(--forest)] px-6 py-2"
                 >
                   Confirm Schedule
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Complete Modal */}
+      {selectedCompleteReq && (
+        <div className="fixed inset-0 bg-[var(--ink)]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3px] p-8 max-w-md w-full shadow-2xl font-sans">
+            <h2 className="text-[20px] font-display text-[var(--ink)] mb-1">Complete Speaking Mock</h2>
+            <p className="text-[13px] text-[var(--ink-soft)] mb-6">Provide feedback for the student's speaking performance.</p>
+            
+            <form onSubmit={handleComplete} className="space-y-4">
+              <div>
+                <label className="block text-[12px] font-bold text-[var(--ink)] mb-1 uppercase tracking-wider">Performance Feedback</label>
+                <textarea
+                  required
+                  rows={5}
+                  placeholder="Detail the student's fluency, vocabulary, pronunciation..."
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  className="w-full p-3 bg-[var(--paper)] border border-[var(--line-soft)] rounded-[3px] text-[14px] focus:outline-none focus:border-[var(--forest)]"
+                />
+              </div>
+
+              <div className="pt-4 flex items-center justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCompleteReq(null)}
+                  className="px-4 py-2 text-[13px] font-bold text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-fill bg-blue-600 border-blue-600 px-6 py-2"
+                >
+                  Save & Complete
                 </button>
               </div>
             </form>
