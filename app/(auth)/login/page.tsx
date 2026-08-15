@@ -21,8 +21,10 @@ export default function LoginPage() {
     setIsLoading(true);
 
     setTimeout(() => {
+      const cleanEmail = email.trim().toLowerCase();
+
       // 1. Superadmin / Manager Auth
-      const manager = managers.find(m => m.email === email && m.password === password);
+      const manager = managers.find(m => m.email?.toLowerCase() === cleanEmail && m.password === password);
       if (manager) {
         setCurrentUser({ id: manager.id, role: manager.role, name: manager.name });
         router.push('/admin');
@@ -30,7 +32,7 @@ export default function LoginPage() {
       }
 
       // 2. Tenant Auth
-      const tenant = tenants.find(t => t.contactEmail === email && t.password === password);
+      const tenant = tenants.find(t => t.contactEmail?.toLowerCase() === cleanEmail && t.password === password);
       if (tenant) {
         setCurrentUser({ id: tenant.id, role: 'tenant', name: tenant.name });
         router.push('/org');
@@ -38,10 +40,9 @@ export default function LoginPage() {
       }
 
       // 3. Student Auth
-      const loginId = email.trim().toLowerCase();
       const student = students.find(s => 
-        ( (s.email && s.email.toLowerCase() === loginId) || 
-          (s.studentId && s.studentId.toLowerCase() === loginId) ) && 
+        ( (s.email && s.email.toLowerCase() === cleanEmail) || 
+          (s.studentId && s.studentId.toLowerCase() === cleanEmail) ) && 
         s.password === password
       );
       if (student) {
