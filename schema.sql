@@ -15,6 +15,7 @@ CREATE TABLE organizations (
   created_date text,
   org_admin_name text,
   org_admin_email text,
+  password text,
   package_ids jsonb
 );
 
@@ -43,7 +44,8 @@ CREATE TABLE students (
   org_id text REFERENCES organizations(id),
   assigned_tests jsonb,
   completed_tests integer,
-  average_band numeric
+  average_band numeric,
+  password text
 );
 
 CREATE TABLE tests (
@@ -98,8 +100,8 @@ VALUES
   ('pkg-2', 'Growth Plan', 99, 150, 300, 'For growing academies. Up to 150 students.'),
   ('pkg-3', 'Enterprise Plan', 199, -1, -1, 'Unlimited students and unlimited exams.');
 
-INSERT INTO organizations (id, name, code, location, contact_email, subscription_tier, max_seats, max_exams_per_month, exams_used_this_month, student_count, active_tests, status, created_date, org_admin_name, org_admin_email, package_ids)
-VALUES ('org-1', 'Apex IELTS Academy', 'APEX-DHK', 'Dhanmondi, Dhaka', 'contact@apex-dkl.com', 'Enterprise', 250, 500, 342, 142, 8, 'active', '2025-11-10', 'Rashid Khan', 'rashid@apex.com', '["pkg-3"]');
+INSERT INTO organizations (id, name, code, location, contact_email, subscription_tier, max_seats, max_exams_per_month, exams_used_this_month, student_count, active_tests, status, created_date, org_admin_name, org_admin_email, password, package_ids)
+VALUES ('org-1', 'Apex IELTS Academy', 'APEX-DHK', 'Dhanmondi, Dhaka', 'contact@apex-dkl.com', 'Enterprise', 250, 500, 342, 142, 8, 'active', '2025-11-10', 'Rashid Khan', 'rashid@apex.com', 'password123', '["pkg-3"]');
 
 INSERT INTO managers (id, name, email, password, role)
 VALUES ('superadmin', 'Super Admin HQ', 'admin@mockielts.com', 'admin123', 'superadmin');
@@ -121,5 +123,5 @@ VALUES (
   '[{"id":"spk-1","partNumber":1,"topic":"Introduction & Hometown","prompts":["Could you tell me your full name?"]}]'
 );
 
-INSERT INTO students (id, name, student_id, email, org_id, assigned_tests, completed_tests, average_band)
-VALUES ('std-1', 'Sarah Jenkins', 'STU-8821', 'sarah.j@example.com', 'org-1', '["test-ielts-01"]', 3, 7.5);
+INSERT INTO students (id, name, student_id, email, org_id, assigned_tests, completed_tests, average_band, password)
+VALUES ('std-1', 'Sarah Jenkins', 'STU-8821', 'sarah.j@example.com', 'org-1', '["test-ielts-01"]', 3, 7.5, 'student123');
