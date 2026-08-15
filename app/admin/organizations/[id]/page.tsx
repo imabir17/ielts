@@ -2,13 +2,16 @@
 
 import React, { use } from 'react';
 import Link from 'next/link';
-import { MOCK_ORGANIZATIONS, MOCK_EXAM_LOGS } from '@/lib/mock-data';
+import { useStore } from '@/components/providers/StoreProvider';
 import { Building2, Users, ArrowLeft, ShieldCheck, Mail, MapPin, Key, BookCheck } from 'lucide-react';
 
 export default function OrganizationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const org = MOCK_ORGANIZATIONS.find((o) => o.id === id) || MOCK_ORGANIZATIONS[0];
-  const orgLogs = MOCK_EXAM_LOGS.filter((l) => l.orgId === org.id);
+  const { tenants, examLogs } = useStore();
+  const org = tenants.find((o) => o.id === id) || tenants[0];
+  const orgLogs = examLogs.filter((l) => l.orgId === org?.id);
+
+  if (!org) return <div className="p-8 text-center text-slate-500">Loading organization details...</div>;
 
   return (
     <div className="space-y-8 font-sans">

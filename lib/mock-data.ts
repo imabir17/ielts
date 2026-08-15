@@ -39,8 +39,32 @@ export interface ExamLog {
   testTitle: string;
   testId: string;
   completedAt: string;
-  overallBand: number;
-  status: 'Completed' | 'In Progress' | 'Disconnected';
+  status: 'Completed' | 'In Progress' | 'Disconnected' | 'Graded';
+  modulesTaken: string[];
+  answers: {
+    reading?: Record<string, any>;
+    listening?: Record<string, any>;
+    writing?: Record<string, any>;
+  };
+  scores: {
+    reading?: number;
+    listening?: number;
+    writing?: number;
+  };
+  overallBand?: number;
+  writingFeedback?: string;
+}
+
+export interface SpeakingRequest {
+  id: string;
+  studentId: string;
+  orgId: string;
+  testId: string;
+  status: 'pending' | 'scheduled' | 'completed';
+  scheduledDate?: string;
+  type?: 'Physical' | 'Online';
+  link?: string;
+  requestedAt: string;
 }
 
 export interface AuditLog {
@@ -241,55 +265,6 @@ export interface Test {
   speaking: SpeakingPart[];
 }
 
-// MOCK DATASETS
-
-export const MOCK_ORGANIZATIONS: Organization[] = [
-  {
-    id: 'org-1',
-    name: 'Apex IELTS Academy',
-    code: 'APEX-DHK',
-    location: 'Dhanmondi, Dhaka',
-    contactEmail: 'contact@apex dkl.com',
-    subscriptionTier: 'Enterprise',
-    maxSeats: 250,
-    maxExamsPerMonth: 500,
-    examsUsedThisMonth: 342,
-    studentCount: 142,
-    activeTests: 8,
-    status: 'active',
-    createdDate: '2025-11-10',
-    orgAdminName: 'Rashid Khan',
-    orgAdminEmail: 'rashid@apex.com',
-  },
-];
-
-export const MOCK_MANAGERS: PlatformManager[] = [
-  {
-    id: 'superadmin',
-    name: 'Super Admin HQ',
-    email: 'admin@mockielts.com',
-    password: 'admin123',
-    role: 'superadmin'
-  }
-];
-
-export const MOCK_EXAM_LOGS: ExamLog[] = [];
-export const MOCK_AUDIT_LOGS: AuditLog[] = [];
-export const MOCK_ANOMALIES: QuestionAnomaly[] = [];
-
-export const MOCK_STUDENTS: Student[] = [
-  {
-    id: 'std-1',
-    name: 'Sarah Jenkins',
-    studentId: 'STU-8821',
-    email: 'sarah.j@example.com',
-    orgId: 'org-1',
-    assignedTests: ['test-ielts-01'],
-    completedTests: 3,
-    averageBand: 7.5,
-  },
-];
-
 export const MOCK_IELTS_TEST: Test = {
   id: 'test-ielts-01',
   title: 'IELTS Academic Official Computer Practice Test 01',
@@ -431,33 +406,3 @@ export const MOCK_IELTS_TEST: Test = {
 };
 
 export const MOCK_TESTS_CATALOG: Test[] = [MOCK_IELTS_TEST];
-
-export const MOCK_PACKAGES: Package[] = [
-  {
-    id: 'pkg-1',
-    name: 'Starter Plan',
-    price: 49,
-    testsIncluded: 100,
-    idLimit: 50,
-    examLimit: 100,
-    description: 'Perfect for small coaching centers. Up to 50 students.'
-  },
-  {
-    id: 'pkg-2',
-    name: 'Growth Plan',
-    price: 99,
-    testsIncluded: 300,
-    idLimit: 150,
-    examLimit: 300,
-    description: 'For growing academies. Up to 150 students.'
-  },
-  {
-    id: 'pkg-3',
-    name: 'Enterprise Plan',
-    price: 199,
-    testsIncluded: 1000,
-    idLimit: 'unlimited',
-    examLimit: 'unlimited',
-    description: 'Unlimited students and unlimited exams.'
-  }
-];

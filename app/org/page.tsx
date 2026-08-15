@@ -2,15 +2,22 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { MOCK_STUDENTS } from '@/lib/mock-data';
+import { useStore } from '@/components/providers/StoreProvider';
 import { Users, Send, GraduationCap, Award, Plus, ArrowRight } from 'lucide-react';
 
 export default function OrgDashboardPage() {
+  const { students, tenants, packages, currentUser } = useStore();
+
+  const myOrg = tenants.find(o => o.id === currentUser?.id);
+  const totalStudents = students.filter(s => s.orgId === currentUser?.id).length;
+  
+  const myPackage = myOrg?.packageIds ? packages.find(p => myOrg.packageIds?.includes(p.id)) : null;
+
   return (
     <>
       <div className="topbar">
         <div>
-          <div className="eyebrow"><span className="dot"></span>Apex Academy</div>
+          <div className="eyebrow"><span className="dot"></span>{myOrg?.name || 'Apex Academy'}</div>
           <h1>Coaching Center Dashboard</h1>
           <p className="page-sub">Manage your student cohort, generate mock exam IDs, and assign test series.</p>
         </div>
@@ -28,7 +35,7 @@ export default function OrgDashboardPage() {
             <span className="stat-label">Enrolled Students</span>
             <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="8" r="3.2" /><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" /></svg>
           </div>
-          <div className="stat-num">{MOCK_STUDENTS.length}</div>
+          <div className="stat-num">{students.length}</div>
           <div className="stat-foot">Active mock test takers</div>
         </div>
 
@@ -81,12 +88,12 @@ export default function OrgDashboardPage() {
               <Users className="w-4 h-4 text-[var(--brick)]" />
               Student Roster
             </div>
-            <Link href="/org/students" className="panel-meta hover:text-[var(--ink)]">View All ({MOCK_STUDENTS.length})</Link>
+            <Link href="/org/students" className="panel-meta hover:text-[var(--ink)]">View All ({students.length})</Link>
           </div>
           <div className="panel-body p-0">
             <table className="audit-table">
               <tbody>
-                {MOCK_STUDENTS.map((std) => (
+                {students.map((std) => (
                   <tr key={std.id}>
                     <td className="who pl-5">
                       <div className="font-medium text-[var(--ink)]">{std.name}</div>

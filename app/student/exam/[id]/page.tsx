@@ -2,123 +2,276 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { getTestById } from '@/lib/test-store';
 import { ExamTimer } from '@/components/exam/ExamTimer';
 import { ReadingModule } from '@/components/exam/ReadingModule';
 import { ListeningModule } from '@/components/exam/ListeningModule';
 import { WritingModule } from '@/components/exam/WritingModule';
 import { SpeakingModule } from '@/components/exam/SpeakingModule';
-import { BookOpen, Headphones, Edit3, Mic, LogOut } from 'lucide-react';
+import { BookOpen, Headphones, Edit3, Mic, LogOut, CheckCircle2, ChevronRight, AlertCircle, Clock } from 'lucide-react';
+import { useStore } from '@/components/providers/StoreProvider';
+import { ExamLog, SpeakingRequest } from '@/lib/mock-data';
+
+type ModuleType = 'reading' | 'listening' | 'writing' | 'speaking';
+type ExamState = 'setup' | 'warning' | 'taking' | 'completed';
 
 export default function ExamPage() {
   const params = useParams();
+  const router = useRouter();
   const testId = typeof params?.id === 'string' ? params.id : '';
+  const { currentUser, addExamLog, addSpeakingRequest, updateStudent, students } = useStore();
 
   const [isMounted, setIsMounted] = useState(false);
-  const [activeModule, setActiveModule] = useState<'reading' | 'listening' | 'writing' | 'speaking'>('reading');
+  const [test, setTest] = useState<any>(null);
+  
+  const [examState, setExamState] = useState<ExamState>('setup');
+  const [selectedModules, setSelectedModules] = useState<ModuleType[]>([]);
+  const [currentModuleIdx, setCurrentModuleIdx] = useState<number>(0);
+  
+  const [answers, setAnswers] = useState({
+    reading: {} as Record<string, any>,
+    listening: {} as Record<string, any>,
+    writing: {} as Record<string, any>
+  });
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    setTest(getTestById(testId));
+  }, [testId]);
 
-  if (!isMounted) {
-    return <div className="p-10 text-center text-slate-700">Loading test environment...</div>;
+  if (!isMounted || !test || !currentUser) {
+    return <div className="p-10 text-center text-[var(--ink-faint)] font-mono text-[11px] uppercase tracking-wider">Loading test environment...</div>;
   }
 
-  const test = getTestById(testId);
+  const handleModuleSelection = (mod: ModuleType) => {
+    if (selectedModules.includes(mod)) {
+      setSelectedModules(selectedModules.filter(m => m !== mod));
+    } else {
+      setSelectedModules([...selectedModules, mod]);
+    }
+  };
 
-  if (!test) {
-    return <div className="p-10 text-center text-slate-700">Loading test...</div>;
+  const handleStartExam = () => {
+    if (selectedModules.length === 0) return;
+    // Sort to enforce order: Reading -> Writing -> Listening -> Speaking
+    const order: ModuleType[] = ['reading', 'writing', 'listening', 'speaking'];
+    const sorted = [...selectedModules].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    setSelectedModules(sorted);
+    setCurrentModuleIdx(0);
+    setExamState('warning');
+  };
+
+  const activeModule = selectedModules[currentModuleIdx];
+
+  const handleModuleComplete = () => {
+    if (currentModuleIdx + 1 < selectedModules.length) {
+      setCurrentModuleIdx(currentModuleIdx + 1);
+      setExamState('warning');
+    } else {
+      finishExam();
+    }
+  };
+
+  const finishExam = () => {
+    const studentInfo = students.find(s => s.id === currentUser.id);
+    const newLog: ExamLog = {
+      id: `log-${Date.now()}`,
+      studentId: currentUser.id,
+      studentName: currentUser.name || 'Unknown',
+      orgId: studentInfo?.orgId || '',
+      orgName: 'Unknown',
+      testId: test.id,
+      testTitle: test.title,
+      completedAt: new Date().toISOString(),
+      status: selectedModules.includes('writing') ? 'Completed' : 'Graded',
+      modulesTaken: selectedModules,
+      answers: answers,
+      scores: {}
+    };
+
+    addExamLog(newLog);
+    
+    if (studentInfo) {
+      updateStudent(studentInfo.id, { completedTests: studentInfo.completedTests + 1 });
+    }
+
+    setExamState('completed');
+  };
+
+  const getModuleTimer = (mod: ModuleType) => {
+    if (mod === 'reading') return 60 * 60; // 60 mins
+    if (mod === 'writing') return 60 * 60; // 60 mins
+    if (mod === 'listening') {
+      const audioDuration = test.listening[0]?.duration || 180;
+      return audioDuration + (10 * 60); // Audio + 10 mins transfer time
+    }
+    return 0; // Speaking has no strict timer in this practice mode
+  };
+
+  if (examState === 'setup') {
+    return (
+      <div className="min-h-screen bg-[var(--paper)] flex flex-col font-sans">
+        <header className="h-16 bg-[var(--sidebar)] px-8 flex items-center shadow-md shrink-0">
+          <h1 className="font-display text-[20px] text-white">IELTS Mock Test Setup</h1>
+        </header>
+        <div className="flex-1 max-w-4xl w-full mx-auto p-8 flex flex-col justify-center">
+          <div className="panel p-10 text-center">
+            <h2 className="font-display text-[32px] text-[var(--ink)] mb-2">{test.title}</h2>
+            <p className="text-[15px] text-[var(--ink-soft)] mb-8">Select the modules you wish to take in this session. The system will automatically sequence them.</p>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10 text-left">
+              {[
+                { id: 'reading', label: 'Reading', icon: BookOpen, desc: '60 Minutes' },
+                { id: 'writing', label: 'Writing', icon: Edit3, desc: '60 Minutes' },
+                { id: 'listening', label: 'Listening', icon: Headphones, desc: 'Audio + 10 Mins' },
+                { id: 'speaking', label: 'Speaking', icon: Mic, desc: 'Practice Mode' }
+              ].map(mod => {
+                const isSel = selectedModules.includes(mod.id as ModuleType);
+                return (
+                  <div key={mod.id} onClick={() => handleModuleSelection(mod.id as ModuleType)} className={`panel p-5 cursor-pointer transition-all border-2 ${isSel ? 'border-[var(--ink)] bg-[var(--paper)] ring-4 ring-[var(--ink)]/10' : 'border-[var(--line)] bg-[var(--paper-card)] hover:border-[var(--ink-faint)]'}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <mod.icon className={`w-6 h-6 ${isSel ? 'text-[var(--brick)]' : 'text-[var(--ink-faint)]'}`} />
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSel ? 'bg-[var(--ink)] border-[var(--ink)]' : 'border-[var(--line-soft)]'}`}>
+                        {isSel && <CheckCircle2 className="w-3 h-3 text-white" />}
+                      </div>
+                    </div>
+                    <div className="font-medium text-[var(--ink)] text-[16px]">{mod.label}</div>
+                    <div className="text-[12px] text-[var(--ink-soft)]">{mod.desc}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button onClick={handleStartExam} disabled={selectedModules.length === 0} className="btn btn-fill px-12 py-4 text-[16px] disabled:opacity-50">
+              Proceed to Exam <ChevronRight className="w-5 h-5 ml-2" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  return (
-    <div className="h-screen flex flex-col overflow-hidden bg-slate-100 font-sans">
-      {/* PERSISTENT TOP EXAM BAR */}
-      <header className="h-16 bg-[#003831] text-white px-6 flex items-center justify-between shadow-md border-b border-emerald-950 shrink-0 select-none">
-        {/* Left: Test Title & Candidate ID */}
-        <div className="flex items-center space-x-4">
-          <div>
-            <h1 className="font-extrabold text-sm md:text-base text-white leading-tight">
-              {test.title}
-            </h1>
-            <span className="text-[10px] text-emerald-300 font-mono">
-              Candidate: Sarah Jenkins (STU-8821)
-            </span>
+  if (examState === 'warning') {
+    return (
+      <div className="min-h-screen bg-[var(--paper)] flex flex-col font-sans">
+        <header className="h-14 bg-white border-b border-[var(--line)] flex items-center justify-center">
+          <span className="font-medium text-[var(--ink)] capitalize">IELTS {activeModule}</span>
+        </header>
+        
+        <div className="bg-white border-b border-[var(--line)] py-6 flex flex-col items-center justify-center">
+          <Clock className="w-8 h-8 text-[var(--ink-soft)] mb-2" />
+          <div className="font-mono text-[18px] font-bold text-[var(--ink)]">
+            {activeModule === 'speaking' ? 'Practice' : `${Math.floor(getModuleTimer(activeModule)/60)} : 00`}
           </div>
         </div>
 
-        {/* Center: Module Tabs */}
-        <div className="hidden md:flex items-center space-x-1.5 bg-emerald-950/80 p-1 rounded-2xl border border-emerald-800">
-          <button
-            onClick={() => setActiveModule('reading')}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              activeModule === 'reading'
-                ? 'bg-[#005C53] text-white shadow-sm border border-emerald-500/40'
-                : 'text-emerald-200/80 hover:text-white'
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5 text-emerald-300" />
-            <span>Reading</span>
-          </button>
+        <div className="flex-1 w-full max-w-4xl mx-auto p-8 mt-4">
+          <div className="text-center mb-8">
+            <h2 className="font-medium text-[22px] text-[var(--ink)]">You have chosen to practice {activeModule} questions.</h2>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-12 text-[14px] text-[var(--ink-soft)] leading-relaxed relative">
+            <div className="space-y-4">
+              <div className="font-bold text-[var(--ink)]">What is in Practice {activeModule.charAt(0).toUpperCase() + activeModule.slice(1)} Questions</div>
+              <ol className="list-decimal pl-5 space-y-3 marker:text-[var(--ink-faint)]">
+                <li>There is a {activeModule} section from a practice test.</li>
+                <li>There are questions about the text or audio.</li>
+                <li>Read/Listen and answer the questions.</li>
+                {activeModule === 'listening' && <li className="text-[var(--brick)] font-medium">The audio will start immediately. You will have 10 minutes at the end to transfer answers.</li>}
+              </ol>
+            </div>
+            
+            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-[var(--line-soft)]"></div>
 
-          <button
-            onClick={() => setActiveModule('listening')}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              activeModule === 'listening'
-                ? 'bg-[#005C53] text-white shadow-sm border border-emerald-500/40'
-                : 'text-emerald-200/80 hover:text-white'
-            }`}
-          >
-            <Headphones className="w-3.5 h-3.5 text-emerald-300" />
-            <span>Listening</span>
-          </button>
+            <div className="space-y-6">
+              <div>When you finish, you can review your work. There is feedback for your right and wrong answers.</div>
+              <div className="font-bold text-[var(--ink)]">Your work will be reported to the Results Page.</div>
+              <div className="text-[12px] text-[var(--ink-faint)]">This system is not the same as the IELTS on computer test, it has been optimised for a wide range of devices.</div>
+              <button onClick={() => setExamState('taking')} className="btn btn-fill w-full max-w-[200px] justify-center py-3 bg-[var(--sidebar)] border-[var(--sidebar)] text-white hover:bg-[var(--ink)]">
+                Start
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-          <button
-            onClick={() => setActiveModule('writing')}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              activeModule === 'writing'
-                ? 'bg-[#005C53] text-white shadow-sm border border-emerald-500/40'
-                : 'text-emerald-200/80 hover:text-white'
-            }`}
-          >
-            <Edit3 className="w-3.5 h-3.5 text-emerald-300" />
-            <span>Writing</span>
-          </button>
-
-          <button
-            onClick={() => setActiveModule('speaking')}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              activeModule === 'speaking'
-                ? 'bg-[#005C53] text-white shadow-sm border border-emerald-500/40'
-                : 'text-emerald-200/80 hover:text-white'
-            }`}
-          >
-            <Mic className="w-3.5 h-3.5 text-emerald-300" />
-            <span>Speaking</span>
+  if (examState === 'completed') {
+    return (
+      <div className="min-h-screen bg-[var(--paper)] flex flex-col items-center justify-center font-sans p-6">
+        <div className="panel p-10 max-w-lg w-full text-center space-y-6">
+          <div className="w-20 h-20 bg-[var(--forest)]/10 text-[var(--forest)] rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
+          <h2 className="font-display text-[32px] text-[var(--ink)] m-0">Exam Submitted</h2>
+          <p className="text-[15px] text-[var(--ink-soft)] leading-relaxed">
+            Your answers have been saved successfully. Reading and Listening scores are available immediately. Writing tasks have been sent to your instructors for grading.
+          </p>
+          <button onClick={() => router.push('/student')} className="btn btn-fill px-8 py-3 w-full justify-center">
+            Return to Dashboard
           </button>
         </div>
+      </div>
+    );
+  }
 
-        {/* Right: Timer & Submit Button */}
+  return (
+    <div className="h-screen flex flex-col overflow-hidden bg-[var(--paper-alt)] font-sans">
+      <header className="h-16 bg-[var(--sidebar)] text-white px-6 flex items-center justify-between shrink-0 select-none">
         <div className="flex items-center space-x-4">
-          <ExamTimer initialMinutes={test.totalDurationMinutes} />
+          <div>
+            <h1 className="font-medium text-[15px] text-white leading-tight">{test.title}</h1>
+            <span className="text-[11px] text-[var(--sidebar-text-dim)] font-mono">Candidate: {currentUser.name} ({students.find(s=>s.id===currentUser.id)?.studentId})</span>
+          </div>
+        </div>
 
-          <Link
-            href="/student"
-            className="flex items-center space-x-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-sm active:scale-95"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Submit Exam</span>
-          </Link>
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2 bg-[var(--ink)] px-4 py-1.5 rounded-[3px] border border-[var(--sidebar-line)]">
+            <span className="text-[10px] uppercase font-mono tracking-wider text-[var(--sidebar-text-dim)]">Current Module</span>
+            <span className="font-bold text-white capitalize">{activeModule}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-4">
+          {activeModule !== 'speaking' && (
+            <ExamTimer initialSeconds={getModuleTimer(activeModule)} onTimeUp={handleModuleComplete} />
+          )}
+
+          <button onClick={handleModuleComplete} className="btn btn-fill bg-[var(--brick)] border-[var(--brick)] text-[12px] px-4 py-1.5">
+            Submit {activeModule}
+          </button>
         </div>
       </header>
 
-      {/* MODULE VIEWPORT */}
-      <div className="flex-1 overflow-hidden">
-        {activeModule === 'reading' && <ReadingModule passage={test.reading[0]} allPassages={test.reading} />}
-        {activeModule === 'listening' && <ListeningModule allSections={test.listening} audioUrl={test.listeningAudioUrl} />}
-        {activeModule === 'writing' && <WritingModule allTasks={test.writing} />}
-        {activeModule === 'speaking' && <SpeakingModule parts={test.speaking} />}
+      <div className="flex-1 overflow-hidden relative">
+        {activeModule === 'reading' && (
+          <ReadingModule 
+            passage={test.reading[0]} 
+            allPassages={test.reading} 
+            onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, reading: { ...prev.reading, ...ans } }))} 
+          />
+        )}
+        {activeModule === 'listening' && (
+          <ListeningModule 
+            allSections={test.listening} 
+            audioUrl={test.listeningAudioUrl} 
+            onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, listening: { ...prev.listening, ...ans } }))}
+          />
+        )}
+        {activeModule === 'writing' && (
+          <WritingModule 
+            allTasks={test.writing} 
+            onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, writing: { ...prev.writing, ...ans } }))}
+          />
+        )}
+        {activeModule === 'speaking' && (
+          <SpeakingModule 
+            parts={test.speaking} 
+            testId={test.id}
+          />
+        )}
       </div>
     </div>
   );

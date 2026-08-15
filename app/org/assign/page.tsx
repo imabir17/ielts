@@ -7,18 +7,17 @@ import { getStoredTests } from '@/lib/test-store';
 import { Send, CheckCircle2, BookOpen, UserCheck, AlertCircle } from 'lucide-react';
 
 export default function AssignTestsPage() {
-  const { students, tenants, packages, currentUser, updateTenant, updateStudent } = useStore();
+  const { students, tenants, packages, currentUser, updateTenant, updateStudent, tests } = useStore();
   
-  const [tests, setTests] = useState<Test[]>([]);
   const [selectedTestId, setSelectedTestId] = useState<string>('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [assignedSuccess, setAssignedSuccess] = useState(false);
 
   useEffect(() => {
-    const list = getStoredTests();
-    setTests(list);
-    if (list.length > 0) setSelectedTestId(list[0].id);
-  }, []);
+    if (tests && tests.length > 0 && !selectedTestId) {
+      setSelectedTestId(tests[0].id);
+    }
+  }, [tests, selectedTestId]);
 
   const tenantStudents = students.filter(s => s.orgId === currentUser?.id);
   const currentTenant = tenants.find(t => t.id === currentUser?.id);

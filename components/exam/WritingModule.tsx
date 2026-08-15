@@ -6,14 +6,19 @@ import { Edit3, CheckCircle2, AlertTriangle, FileText } from 'lucide-react';
 
 interface WritingModuleProps {
   allTasks: WritingTask[];
+  onAnswerChange?: (answers: Record<string, any>) => void;
 }
 
-export function WritingModule({ allTasks }: WritingModuleProps) {
+export function WritingModule({ allTasks, onAnswerChange }: WritingModuleProps) {
   const [activeTaskIdx, setActiveTaskIdx] = useState(0);
   const task = allTasks[activeTaskIdx];
   
   const [essayTexts, setEssayTexts] = useState<Record<string, string>>({});
   const essayText = essayTexts[task?.id] || '';
+
+  React.useEffect(() => {
+    if (onAnswerChange) onAnswerChange(essayTexts);
+  }, [essayTexts, onAnswerChange]);
 
   if (!task) return <div className="p-10 text-center text-slate-500">No writing tasks available.</div>;
 

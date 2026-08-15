@@ -3,22 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Test } from '@/lib/mock-data';
-import { getStoredTests, deleteTestFromStorage, saveTestToStorage } from '@/lib/test-store';
+import { useStore } from '@/components/providers/StoreProvider';
+import { deleteTestFromStorage, saveTestToStorage } from '@/lib/test-store';
 import { BookOpen, Plus, Eye, CheckCircle2, Lock, FileCode, Layers, Trash2, Edit3 } from 'lucide-react';
 
 export default function TestBankPage() {
-  const [tests, setTests] = useState<Test[]>([]);
+  const { tests, setTests } = useStore();
   const [filterCategory, setFilterCategory] = useState<'All' | 'Academic' | 'General Training'>('All');
-
-  const loadTests = () => {
-    setTests(getStoredTests());
-  };
-
-  useEffect(() => {
-    loadTests();
-    window.addEventListener('storage_tests_updated', loadTests);
-    return () => window.removeEventListener('storage_tests_updated', loadTests);
-  }, []);
 
   const toggleStatus = (id: string) => {
     const updated = tests.map((t) =>

@@ -8,9 +8,10 @@ import MDEditor from '@uiw/react-md-editor';
 interface ListeningModuleProps {
   allSections: ListeningSection[];
   audioUrl?: string;
+  onAnswerChange?: (answers: Record<string, any>) => void;
 }
 
-export function ListeningModule({ allSections, audioUrl }: ListeningModuleProps) {
+export function ListeningModule({ allSections, audioUrl, onAnswerChange }: ListeningModuleProps) {
   const [activeSectionIdx, setActiveSectionIdx] = useState(0);
   const section = allSections[activeSectionIdx];
   const [isPlaying, setIsPlaying] = useState(false);
@@ -18,6 +19,10 @@ export function ListeningModule({ allSections, audioUrl }: ListeningModuleProps)
   const [isMuted, setIsMuted] = useState(false);
   const [userAnswers, setUserAnswers] = useState<Record<string, any>>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (onAnswerChange) onAnswerChange(userAnswers);
+  }, [userAnswers, onAnswerChange]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;

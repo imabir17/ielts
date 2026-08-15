@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Passage, QuestionSection, Question, QuestionType } from '@/lib/mock-data';
 import { calculateTestScore, ScoreResult } from '@/lib/scoring-engine';
 import {
-  BookOpen, Flag, HelpCircle, EyeOff, CheckCircle2, Copy, Highlighter, StickyNote, X, RefreshCw, MapPin, ListPlus, Send
+  BookOpen, Flag, HelpCircle, EyeOff, CheckCircle2, Copy, Highlighter, StickyNote, X, RefreshCw, MapPin, ListPlus
 } from 'lucide-react';
 
 interface ReadingModuleProps {
@@ -36,8 +36,6 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
   // Modals & Overlays
   const [isScreenHidden, setIsScreenHidden] = useState<boolean>(false);
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
-  const [showScoreModal, setShowScoreModal] = useState<boolean>(false);
-  const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
 
   const passageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -105,12 +103,7 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
     setFlaggedQuestions({ ...flaggedQuestions, [qId]: !flaggedQuestions[qId] });
   };
 
-  const handleSubmitExam = () => {
-    const passagesToScore = allPassages && allPassages.length > 0 ? allPassages : [passage];
-    const result = calculateTestScore(passagesToScore, userAnswers);
-    setScoreResult(result);
-    setShowScoreModal(true);
-  };
+  // Submit handled by parent now
 
   // Extract all questions in current passage for rendering
   const sectionsList: QuestionSection[] = currentPassage.sections || [
@@ -174,38 +167,7 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
         </div>
       )}
 
-      {/* 🏆 SCORE RESULTS MODAL */}
-      {showScoreModal && scoreResult && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-6 shadow-2xl text-center">
-            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-[#005C53]">
-              <CheckCircle2 className="w-10 h-10 text-emerald-600" />
-            </div>
 
-            <div>
-              <h2 className="text-2xl font-black text-slate-900">Exam Results Summary</h2>
-              <p className="text-xs text-slate-500 mt-1">Official Automated IELTS Reading Scoring Engine</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-              <div className="bg-white p-3 rounded-xl border border-slate-200">
-                <span className="block text-[10px] text-slate-500 font-bold uppercase">Raw Score</span>
-                <span className="text-2xl font-black text-slate-900">{scoreResult.totalScore} / {scoreResult.maxScore}</span>
-              </div>
-              <div className="bg-white p-3 rounded-xl border border-emerald-300">
-                <span className="block text-[10px] text-emerald-700 font-bold uppercase">Band Score</span>
-                <span className="text-2xl font-black text-[#005C53]">Band {scoreResult.bandScore}</span>
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-center space-x-3">
-              <button onClick={() => setShowScoreModal(false)} className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl text-xs">
-                Close Results
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* TOP HEADER CONTROLS */}
       <div className="bg-white px-6 py-2.5 border-b border-slate-200 flex items-center justify-between shadow-sm shrink-0 select-none">
@@ -251,13 +213,7 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
             <span>Help</span>
           </button>
 
-          <button
-            onClick={handleSubmitExam}
-            className="flex items-center space-x-1.5 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-xl transition-all shadow-sm"
-          >
-            <Send className="w-4 h-4" />
-            <span>Submit Test</span>
-          </button>
+
         </div>
       </div>
 
