@@ -25,21 +25,23 @@ function TestBuilderInner() {
       tierAccess: 'All Orgs',
       status: 'draft',
       totalDurationMinutes: 170,
+      questionCount: 0,
+      createdDate: new Date().toISOString().split('T')[0],
       reading: [
-        { id: `r1-${Date.now()}`, title: '', content: '', questions: [] },
-        { id: `r2-${Date.now()}`, title: '', content: '', questions: [] },
-        { id: `r3-${Date.now()}`, title: '', content: '', questions: [] }
+        { id: `r1-${Date.now()}`, passageNumber: 1, title: '', content: '', questions: [] },
+        { id: `r2-${Date.now()}`, passageNumber: 2, title: '', content: '', questions: [] },
+        { id: `r3-${Date.now()}`, passageNumber: 3, title: '', content: '', questions: [] }
       ],
       listening: [],
       listeningAudioUrl: '',
       writing: [
-        { id: `w1-${Date.now()}`, taskNumber: 1, prompt: '' },
-        { id: `w2-${Date.now()}`, taskNumber: 2, prompt: '' }
+        { id: `w1-${Date.now()}`, taskNumber: 1, title: '', prompt: '', minWords: 150, recommendedTime: 20 },
+        { id: `w2-${Date.now()}`, taskNumber: 2, title: '', prompt: '', minWords: 250, recommendedTime: 40 }
       ],
       speaking: [
-        { id: `s1-${Date.now()}`, part: 1, type: 'Interview', prompt: '' },
-        { id: `s2-${Date.now()}`, part: 2, type: 'Cue Card', prompt: '' },
-        { id: `s3-${Date.now()}`, part: 3, type: 'Discussion', prompt: '' }
+        { id: `s1-${Date.now()}`, partNumber: 1, topic: 'Interview', prompts: [''] },
+        { id: `s2-${Date.now()}`, partNumber: 2, topic: 'Cue Card', prompts: [''] },
+        { id: `s3-${Date.now()}`, partNumber: 3, topic: 'Discussion', prompts: [''] }
       ]
     };
   });
