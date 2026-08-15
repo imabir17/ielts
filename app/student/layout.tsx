@@ -3,9 +3,11 @@ import { StudentNav } from '@/components/layout/StudentNav';
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="flex flex-col min-h-screen">
       <StudentNav />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 p-8 overflow-y-auto">
+        <div className="max-w-7xl mx-auto w-full">{children}</div>
+      </main>
     </div>
   );
 }

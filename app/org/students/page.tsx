@@ -14,11 +14,9 @@ export default function StudentsManagementPage() {
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Get current tenant and packages
   const currentTenant = tenants.find(t => t.id === currentUser?.id);
   const tenantPackages = currentTenant?.packageIds?.map(id => packages.find(p => p.id === id)).filter(Boolean) || [];
 
-  // Calculate limits
   const hasUnlimitedIds = tenantPackages.some(p => p!.idLimit === 'unlimited');
   const totalIdLimit = hasUnlimitedIds 
     ? 'unlimited' 
@@ -47,10 +45,7 @@ export default function StudentsManagementPage() {
       averageBand: 0,
     });
 
-    setNameInput('');
-    setEmailInput('');
-    setMobileInput('');
-    setPasswordInput('');
+    setNameInput(''); setEmailInput(''); setMobileInput(''); setPasswordInput('');
   };
 
   const handleCopy = (text: string) => {
@@ -62,188 +57,130 @@ export default function StudentsManagementPage() {
   if (!currentUser) return <div>Loading...</div>;
 
   return (
-    <div className="space-y-8 font-sans">
-      {/* Header */}
-      <div className="border-b border-slate-200 pb-6">
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center space-x-3">
-          <span>Student ID Generator</span>
-          <span className="text-xs bg-[#005C53] text-white font-bold px-2.5 py-1 rounded-full">
-            {currentTenant?.name || 'Coaching Center'}
-          </span>
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Issue unique mock exam login IDs for your students.
-        </p>
+    <>
+      <div className="topbar">
+        <div>
+          <div className="eyebrow"><span className="dot"></span>{currentTenant?.name || 'Coaching Center'}</div>
+          <h1>Student ID Generator</h1>
+          <p className="page-sub">Issue unique mock exam login IDs for your students.</p>
+        </div>
       </div>
 
-      {/* Quota Status */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isQuotaFull ? 'bg-red-100 text-red-600' : 'bg-emerald-50 text-[#005C53]'}`}>
+      <hr className="rule" />
+
+      <div className="bg-[var(--paper-card)] p-5 border border-[var(--line)] rounded-[3px] mb-8 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className={`w-11 h-11 rounded-[3px] border ${isQuotaFull ? 'bg-[#B23A2A]/10 border-[#B23A2A]/20 text-[#B23A2A]' : 'bg-[var(--forest)]/10 border-[var(--forest)]/20 text-[var(--forest)]'} flex items-center justify-center`}>
             <UserPlus className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-sm font-bold text-slate-900">Student ID Quota</div>
-            <div className="text-xs text-slate-500">Based on your active packages</div>
+            <div className="font-display text-[19px] text-[var(--ink)]">Student ID Quota</div>
+            <div className="text-[13px] text-[var(--ink-soft)]">Based on your active packages</div>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-black text-slate-900">
-            {currentUsage} <span className="text-slate-400 text-lg">/ {totalIdLimit === 'unlimited' ? '∞' : totalIdLimit}</span>
+          <div className="font-mono text-[24px] text-[var(--ink)]">
+            {currentUsage} <span className="text-[var(--ink-faint)] text-[18px]">/ {totalIdLimit === 'unlimited' ? '∞' : totalIdLimit}</span>
           </div>
-          <div className={`text-xs font-bold ${isQuotaFull ? 'text-red-600' : 'text-[#005C53]'}`}>
+          <div className={`font-mono text-[10px] uppercase tracking-[0.05em] mt-1 ${isQuotaFull ? 'text-[#B23A2A]' : 'text-[var(--forest)]'}`}>
             {isQuotaFull ? 'Quota Exhausted' : 'IDs Available'}
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Form Column */}
         <div className="lg:col-span-5">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <h2 className="font-bold text-slate-900 text-lg flex items-center space-x-2">
-              <UserPlus className="w-5 h-5 text-[#005C53]" />
-              <span>Issue New Student Profile</span>
-            </h2>
-
-            {isQuotaFull ? (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-3 text-red-700">
-                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                <div className="text-sm">
-                  <strong className="block mb-1">Limit Reached</strong>
-                  You have reached the maximum number of student IDs allowed by your current packages. Please contact Superadmin to upgrade.
-                </div>
+          <div className="panel">
+            <div className="panel-head">
+              <div className="panel-title">
+                <UserPlus className="w-4 h-4 text-[var(--brick)]" />
+                Issue New Student Profile
               </div>
-            ) : (
-              <form onSubmit={handleGenerateStudent} className="space-y-4 pt-2">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Full Student Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. David Miller"
-                    value={nameInput}
-                    onChange={(e) => setNameInput(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#005C53]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Student Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="e.g. david@example.com"
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#005C53]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Mobile Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="e.g. +8801700000000"
-                    value={mobileInput}
-                    onChange={(e) => setMobileInput(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#005C53]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Initial Password <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. secret123"
-                    value={passwordInput}
-                    onChange={(e) => setPasswordInput(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#005C53]"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-[#005C53] hover:bg-[#003831] text-white font-semibold text-sm rounded-xl transition-all shadow-sm active:scale-97 flex items-center justify-center space-x-2"
-                >
-                  <Sparkles className="w-4 h-4 text-emerald-300" />
-                  <span>Generate Credentials</span>
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-
-        {/* List Column */}
-        <div className="lg:col-span-7">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="font-bold text-slate-900 text-base">Generated Student Roster</h2>
-              <span className="text-xs text-slate-500 font-mono">{tenantStudents.length} Total</span>
             </div>
-
-            <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-              {tenantStudents.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-sm">
-                  No students generated yet.
+            <div className="panel-body py-5">
+              {isQuotaFull ? (
+                <div className="p-4 bg-[rgba(180,135,43,0.14)] border border-[rgba(180,135,43,0.3)] rounded-[3px] flex items-start gap-3 text-[var(--gold)]">
+                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                  <div className="text-[13.5px]">
+                    <strong className="block mb-1 text-[var(--ink)]">Limit Reached</strong>
+                    <span className="text-[var(--ink-soft)]">You have reached the maximum number of student IDs allowed by your current packages. Please contact Superadmin to upgrade.</span>
+                  </div>
                 </div>
               ) : (
-                tenantStudents.map((student, idx) => (
-                  <div
-                    key={student.id}
-                    className={`p-4 flex items-center justify-between transition-all duration-300 ${
-                      idx === 0 ? 'bg-emerald-50/60' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="text-sm text-slate-900 font-bold flex items-center space-x-2">
-                        <span>{student.name}</span>
-                        {idx === 0 && (
-                          <span className="text-[10px] bg-red-600 text-white font-bold px-2 py-0.5 rounded-full uppercase">
-                            NEW
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-slate-500">{student.email} • {student.mobileNumber}</div>
-                    </div>
-
-                    <div className="flex flex-col items-end space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs font-bold text-slate-400">ID:</span>
-                        <span className="bg-slate-900 text-emerald-300 font-mono text-xs px-2 py-1 rounded border border-slate-700 font-bold">
-                          {student.studentId}
-                        </span>
-                        <button onClick={() => handleCopy(student.studentId)} className="p-1 hover:text-[#005C53] text-slate-400 transition-colors">
-                          {copiedId === student.studentId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs font-bold text-slate-400">Pass:</span>
-                        <span className="bg-slate-100 text-slate-700 font-mono text-xs px-2 py-1 rounded border border-slate-300 font-bold">
-                          {student.password}
-                        </span>
-                        <button onClick={() => handleCopy(student.password || '')} className="p-1 hover:text-[#005C53] text-slate-400 transition-colors">
-                          {copiedId === student.password ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
+                <form onSubmit={handleGenerateStudent} className="space-y-4">
+                  <div>
+                    <label className="block font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--ink-soft)] mb-1">Full Student Name *</label>
+                    <input type="text" required value={nameInput} onChange={(e) => setNameInput(e.target.value)} className="w-full px-3.5 py-2.5 rounded-[3px] border border-[var(--line)] bg-white text-[14px] focus:outline-none focus:border-[var(--ink)]" />
                   </div>
-                ))
+                  <div>
+                    <label className="block font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--ink-soft)] mb-1">Student Email *</label>
+                    <input type="email" required value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="w-full px-3.5 py-2.5 rounded-[3px] border border-[var(--line)] bg-white text-[14px] focus:outline-none focus:border-[var(--ink)]" />
+                  </div>
+                  <div>
+                    <label className="block font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--ink-soft)] mb-1">Mobile Number *</label>
+                    <input type="tel" required value={mobileInput} onChange={(e) => setMobileInput(e.target.value)} className="w-full px-3.5 py-2.5 rounded-[3px] border border-[var(--line)] bg-white text-[14px] focus:outline-none focus:border-[var(--ink)]" />
+                  </div>
+                  <div>
+                    <label className="block font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--ink-soft)] mb-1">Initial Password *</label>
+                    <input type="text" required value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} className="w-full px-3.5 py-2.5 rounded-[3px] border border-[var(--line)] bg-white text-[14px] focus:outline-none focus:border-[var(--ink)]" />
+                  </div>
+                  <button type="submit" className="btn btn-fill w-full justify-center mt-2">
+                    <Sparkles className="w-4 h-4" /> Generate Credentials
+                  </button>
+                </form>
               )}
             </div>
           </div>
         </div>
+
+        <div className="lg:col-span-7">
+          <div className="panel">
+            <div className="panel-head">
+              <div className="panel-title">Generated Student Roster</div>
+              <span className="panel-meta">{tenantStudents.length} Total</span>
+            </div>
+            <div className="panel-body p-0 max-h-[600px] overflow-y-auto">
+              <table className="audit-table">
+                <tbody>
+                  {tenantStudents.length === 0 ? (
+                    <tr><td colSpan={2} className="text-center py-8 italic text-[var(--ink-faint)]">No students generated yet.</td></tr>
+                  ) : (
+                    tenantStudents.map((student, idx) => (
+                      <tr key={student.id} style={idx === 0 ? { backgroundColor: 'var(--paper-alt)' } : {}}>
+                        <td className="who pl-5">
+                          <div className="font-medium text-[var(--ink)] flex items-center gap-2">
+                            {student.name}
+                            {idx === 0 && <span className="font-mono text-[9px] bg-[var(--brick)] text-white px-1.5 py-0.5 rounded-[2px] uppercase">New</span>}
+                          </div>
+                          <div className="font-mono text-[11px] text-[var(--ink-faint)] mt-0.5">{student.email} • {student.mobileNumber}</div>
+                        </td>
+                        <td className="text-right pr-5">
+                          <div className="flex flex-col items-end gap-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[10.5px] text-[var(--ink-faint)]">ID:</span>
+                              <span className="font-mono text-[11px] font-medium bg-[var(--ink)] text-[var(--paper)] px-1.5 py-0.5 rounded-[2px]">{student.studentId}</span>
+                              <button onClick={() => handleCopy(student.studentId)} className="bg-transparent border-none text-[var(--ink-faint)] hover:text-[var(--ink)] cursor-pointer">
+                                {copiedId === student.studentId ? <Check className="w-3.5 h-3.5 text-[var(--forest)]" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[10.5px] text-[var(--ink-faint)]">Pass:</span>
+                              <span className="font-mono text-[11px] font-medium bg-[var(--paper-card)] border border-[var(--line)] text-[var(--ink-soft)] px-1.5 py-0.5 rounded-[2px]">{student.password}</span>
+                              <button onClick={() => handleCopy(student.password || '')} className="bg-transparent border-none text-[var(--ink-faint)] hover:text-[var(--ink)] cursor-pointer">
+                                {copiedId === student.password ? <Check className="w-3.5 h-3.5 text-[var(--forest)]" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

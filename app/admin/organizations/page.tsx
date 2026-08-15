@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/components/providers/StoreProvider';
 import { Organization } from '@/lib/mock-data';
-import { Building2, Plus, Search, CheckCircle2, XCircle, ArrowRight, MapPin, Edit2, Lock, Image as ImageIcon } from 'lucide-react';
+import { Building2, Plus, Search, CheckCircle2, XCircle, ArrowRight, Edit2, Lock, Image as ImageIcon } from 'lucide-react';
 
 export default function OrganizationsDirectoryPage() {
   const { tenants, updateTenant, addTenant, packages } = useStore();
@@ -12,7 +12,6 @@ export default function OrganizationsDirectoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Form State
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
   const [email, setEmail] = useState('');
@@ -21,15 +20,11 @@ export default function OrganizationsDirectoryPage() {
   const [logoUrl, setLogoUrl] = useState('');
   const [password, setPassword] = useState('');
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
-  
-  // Backwards compatibility for existing logic
   const [tier, setTier] = useState<'Standard' | 'Premium' | 'Enterprise'>('Enterprise');
 
   const toggleStatus = (id: string) => {
     const org = tenants.find(t => t.id === id);
-    if (org) {
-      updateTenant(id, { status: org.status === 'active' ? 'suspended' : 'active' });
-    }
+    if (org) updateTenant(id, { status: org.status === 'active' ? 'suspended' : 'active' });
   };
 
   const resetForm = () => {
@@ -58,7 +53,6 @@ export default function OrganizationsDirectoryPage() {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-
     if (editingId) {
       updateTenant(editingId, {
         name, location, contactEmail: email, orgAdminEmail: email, orgAdminName: adminName,
@@ -66,171 +60,108 @@ export default function OrganizationsDirectoryPage() {
       });
     } else {
       addTenant({
-        id: `org-${Date.now()}`,
-        name,
-        code: `ORG-${Math.floor(100 + Math.random() * 900)}`,
-        location,
-        contactEmail: email || 'contact@coaching.edu',
-        subscriptionTier: tier,
+        id: `org-${Date.now()}`, name, code: `ORG-${Math.floor(100 + Math.random() * 900)}`,
+        location, contactEmail: email || 'contact@coaching.edu', subscriptionTier: tier,
         maxSeats: tier === 'Enterprise' ? 300 : tier === 'Premium' ? 150 : 75,
         maxExamsPerMonth: tier === 'Enterprise' ? 600 : tier === 'Premium' ? 300 : 100,
-        examsUsedThisMonth: 0,
-        studentCount: 0,
-        activeTests: 4,
-        status: 'active',
-        createdDate: new Date().toISOString().split('T')[0],
-        orgAdminName: adminName || 'Manager',
-        orgAdminEmail: email || 'manager@coaching.edu',
-        phone,
-        logoUrl,
-        password,
-        packageIds: selectedPackages
+        examsUsedThisMonth: 0, studentCount: 0, activeTests: 4, status: 'active',
+        createdDate: new Date().toISOString().split('T')[0], orgAdminName: adminName || 'Manager',
+        orgAdminEmail: email || 'manager@coaching.edu', phone, logoUrl, password, packageIds: selectedPackages
       });
     }
-
     setIsModalOpen(false);
   };
 
   const togglePackage = (pkgId: string) => {
-    setSelectedPackages(prev => 
-      prev.includes(pkgId) ? prev.filter(id => id !== pkgId) : [...prev, pkgId]
-    );
+    setSelectedPackages(prev => prev.includes(pkgId) ? prev.filter(id => id !== pkgId) : [...prev, pkgId]);
   };
 
-  const filteredOrgs = tenants.filter(
-    (o) =>
-      o.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOrgs = tenants.filter(o => o.name.toLowerCase().includes(searchTerm.toLowerCase()) || o.location.toLowerCase().includes(searchTerm.toLowerCase()) || o.code.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
-    <div className="space-y-8 font-sans">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+    <>
+      <div className="topbar">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center space-x-3">
-            <span>Coaching Centers Directory</span>
-            <span className="text-xs bg-[#005C53] text-white font-bold px-2.5 py-1 rounded-full uppercase">
-              B2B SaaS Hub
-            </span>
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Onboard coaching center tenants, manage seat limits, and assign packages.
-          </p>
+          <div className="eyebrow"><span className="dot"></span>B2B SaaS Hub</div>
+          <h1>Organizations</h1>
+          <p className="page-sub">Onboard coaching center tenants, manage seat limits, and assign packages.</p>
         </div>
-        <button
-          onClick={handleOpenNew}
-          className="inline-flex items-center space-x-2 bg-[#005C53] hover:bg-[#003831] text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Onboard New Tenant</span>
-        </button>
+        <div className="topbar-actions">
+          <button onClick={handleOpenNew} className="btn btn-fill"><Plus className="w-4 h-4" /> Onboard New Tenant</button>
+        </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative max-w-md">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+      <hr className="rule" />
+
+      <div className="relative max-w-md mb-6">
+        <Search className="w-4 h-4 text-[var(--ink-faint)] absolute left-3.5 top-3.5" />
         <input
           type="text"
-          placeholder="Search by center name, location, or org code..."
+          placeholder="Search by center name, location..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#005C53] bg-white"
+          className="w-full pl-10 pr-4 py-2.5 rounded-[3px] border border-[var(--line)] bg-[var(--paper-card)] text-[14px] focus:outline-none focus:border-[var(--ink)] focus:ring-1 focus:ring-[var(--ink)] placeholder:text-[var(--ink-faint)]"
         />
       </div>
 
-      {/* Directory Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-slate-500 uppercase text-[11px] font-bold tracking-wider border-b border-slate-100">
+      <div className="panel">
+        <div className="panel-body p-0">
+          <table className="audit-table">
+            <thead>
               <tr>
-                <th className="px-6 py-4">Coaching Institution</th>
-                <th className="px-6 py-4">Contact</th>
-                <th className="px-6 py-4">Packages</th>
-                <th className="px-6 py-4">Status Toggle</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th>Coaching Institution</th>
+                <th>Contact</th>
+                <th>Packages</th>
+                <th>Status</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
+            <tbody>
               {filteredOrgs.map((org) => (
-                <tr key={org.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="px-6 py-4 flex items-center space-x-3">
-                    {org.logoUrl ? (
-                      <img src={org.logoUrl} alt="Logo" className="w-10 h-10 rounded-full border border-slate-200 object-cover" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                        <Building2 className="w-5 h-5" />
-                      </div>
-                    )}
-                    <div>
-                      <div className="font-bold text-slate-900 flex items-center space-x-2">
-                        <span>{org.name}</span>
-                        <span className="text-[10px] font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-bold">
-                          {org.code}
-                        </span>
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5 flex items-center space-x-1">
-                        <MapPin className="w-3 h-3" />
-                        <span>{org.location}</span>
+                <tr key={org.id}>
+                  <td className="who">
+                    <div className="flex items-center gap-3">
+                      {org.logoUrl ? (
+                        <img src={org.logoUrl} alt="Logo" className="w-8 h-8 rounded-[3px] border border-[var(--line)] object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-[3px] bg-[var(--paper-alt)] border border-[var(--line-soft)] flex items-center justify-center text-[var(--ink-soft)]">
+                          <Building2 className="w-4 h-4" />
+                        </div>
+                      )}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          {org.name}
+                          <span className="font-mono text-[10px] bg-[var(--paper-alt)] text-[var(--ink-soft)] px-1.5 py-0.5 rounded-[2px]">{org.code}</span>
+                        </div>
+                        <div className="text-[12px] text-[var(--ink-faint)] mt-0.5 font-normal">{org.location}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-slate-700 text-xs space-y-1">
-                    <div className="font-bold">{org.orgAdminName}</div>
-                    <div className="text-slate-500">{org.contactEmail}</div>
-                    <div className="text-slate-500">{org.phone || 'No phone'}</div>
+                  <td>
+                    <div className="text-[13px]">{org.orgAdminName}</div>
+                    <div className="text-[12px] text-[var(--ink-faint)]">{org.contactEmail}</div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td>
                     <div className="flex flex-wrap gap-1">
-                      {org.packageIds && org.packageIds.length > 0 ? (
-                        org.packageIds.map(pid => {
-                          const p = packages.find(pkg => pkg.id === pid);
-                          return p ? (
-                            <span key={p.id} className="bg-[#005C53]/10 text-[#005C53] text-[10px] px-2 py-1 rounded font-bold">
-                              {p.name}
-                            </span>
-                          ) : null;
-                        })
-                      ) : (
-                        <span className="text-slate-400 text-xs italic">No packages</span>
-                      )}
+                      {org.packageIds?.length ? org.packageIds.map(pid => {
+                        const p = packages.find(pkg => pkg.id === pid);
+                        return p ? <span key={p.id} className="pill pass">{p.name}</span> : null;
+                      }) : <span className="text-[12px] text-[var(--ink-faint)] italic">No packages</span>}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => toggleStatus(org.id)}
-                      className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                        org.status === 'active'
-                          ? 'bg-emerald-100 text-[#005C53] hover:bg-red-100 hover:text-red-700'
-                          : 'bg-red-100 text-red-700 hover:bg-emerald-100 hover:text-[#005C53]'
-                      }`}
-                    >
-                      {org.status === 'active' ? (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Active</span>
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="w-3.5 h-3.5" />
-                          <span>Suspended</span>
-                        </>
-                      )}
+                  <td>
+                    <button onClick={() => toggleStatus(org.id)} className={`pill ${org.status === 'active' ? 'pass' : 'mid'} flex items-center gap-1.5 border-none cursor-pointer hover:opacity-80`}>
+                      {org.status === 'active' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      {org.status === 'active' ? 'Active' : 'Suspended'}
                     </button>
                   </td>
-                  <td className="px-6 py-4 text-right space-x-3">
-                    <button onClick={() => handleOpenEdit(org)} className="inline-flex items-center text-xs font-bold text-slate-500 hover:text-[#005C53]">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <Link
-                      href={`/admin/organizations/${org.id}`}
-                      className="inline-flex items-center space-x-1 text-xs font-bold text-[#005C53] hover:underline"
-                    >
-                      <span>View</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                  <td className="text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      <button onClick={() => handleOpenEdit(org)} className="bg-transparent border-none text-[var(--ink-soft)] hover:text-[var(--ink)] cursor-pointer"><Edit2 className="w-4 h-4" /></button>
+                      <Link href={`/admin/organizations/${org.id}`} className="flex items-center gap-1 text-[13px] font-medium text-[var(--brick)] hover:text-[var(--brick-dark)]">
+                        View <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -239,88 +170,82 @@ export default function OrganizationsDirectoryPage() {
         </div>
       </div>
 
-      {/* Onboard / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-6 shadow-2xl animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <h2 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
-                <Building2 className="w-5 h-5 text-[#005C53]" />
-                <span>{editingId ? 'Edit Tenant Profile' : 'Onboard Coaching Center'}</span>
+        <div className="fixed inset-0 bg-[var(--ink)]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--paper)] border border-[var(--line)] rounded-[4px] p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[var(--line-soft)] pb-4 mb-6">
+              <h2 className="font-display text-[22px] text-[var(--ink)] flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-[var(--brick)]" />
+                {editingId ? 'Edit Tenant Profile' : 'Onboard Coaching Center'}
               </h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+              <button onClick={() => setIsModalOpen(false)} className="bg-transparent border-none text-[var(--ink-faint)] hover:text-[var(--ink)] text-[20px] cursor-pointer">✕</button>
             </div>
 
             <form onSubmit={handleSave} className="space-y-6">
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Company Name <span className="text-red-500">*</span></label>
-                  <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-[#005C53]" />
+                  <label className="block font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--ink-soft)] mb-1">Company Name *</label>
+                  <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full px-3.5 py-2.5 rounded-[3px] border border-[var(--line)] bg-[var(--paper-card)] text-[14px] focus:outline-none focus:border-[var(--ink)]" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Location / Address</label>
-                  <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-[#005C53]" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Associated Person (Admin) Name</label>
-                  <input type="text" value={adminName} onChange={e => setAdminName(e.target.value)} className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-[#005C53]" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address (Login ID)</label>
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-[#005C53]" />
+                  <label className="block font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--ink-soft)] mb-1">Location / Address</label>
+                  <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full px-3.5 py-2.5 rounded-[3px] border border-[var(--line)] bg-[var(--paper-card)] text-[14px] focus:outline-none focus:border-[var(--ink)]" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
-                  <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-[#005C53]" />
+                  <label className="block font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--ink-soft)] mb-1">Admin Name</label>
+                  <input type="text" value={adminName} onChange={e => setAdminName(e.target.value)} className="w-full px-3.5 py-2.5 rounded-[3px] border border-[var(--line)] bg-[var(--paper-card)] text-[14px] focus:outline-none focus:border-[var(--ink)]" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Logo URL</label>
+                  <label className="block font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--ink-soft)] mb-1">Email (Login ID)</label>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-3.5 py-2.5 rounded-[3px] border border-[var(--line)] bg-[var(--paper-card)] text-[14px] focus:outline-none focus:border-[var(--ink)]" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--ink-soft)] mb-1">Phone Number</label>
+                  <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full px-3.5 py-2.5 rounded-[3px] border border-[var(--line)] bg-[var(--paper-card)] text-[14px] focus:outline-none focus:border-[var(--ink)]" />
+                </div>
+                <div>
+                  <label className="block font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--ink-soft)] mb-1">Logo URL</label>
                   <div className="relative">
-                    <ImageIcon className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                    <input type="url" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..." className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-[#005C53]" />
+                    <ImageIcon className="w-4 h-4 text-[var(--ink-faint)] absolute left-3 top-3" />
+                    <input type="url" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..." className="w-full pl-9 pr-4 py-2.5 rounded-[3px] border border-[var(--line)] bg-[var(--paper-card)] text-[14px] focus:outline-none focus:border-[var(--ink)]" />
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
-                <div className="flex items-center space-x-2 text-[#005C53] font-bold">
-                  <Lock className="w-4 h-4" />
-                  <span>Authentication</span>
+              <div className="p-5 bg-[var(--paper-card)] border border-[var(--line)] rounded-[3px]">
+                <div className="flex items-center gap-2 text-[var(--ink)] font-medium mb-4">
+                  <Lock className="w-4 h-4 text-[var(--brick)]" /> Authentication
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">{editingId ? 'Reset Password (Leave blank to keep current)' : 'Initial Password'}</label>
-                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} required={!editingId} className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-[#005C53]" />
+                  <label className="block font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--ink-soft)] mb-1">{editingId ? 'Reset Password (Leave blank to keep)' : 'Initial Password'}</label>
+                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} required={!editingId} className="w-full px-3.5 py-2.5 rounded-[3px] border border-[var(--line)] bg-white text-[14px] focus:outline-none focus:border-[var(--ink)]" />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-700">Assign Packages</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-40 overflow-y-auto p-2 border border-slate-200 rounded-xl bg-slate-50">
+              <div>
+                <label className="block font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--ink-soft)] mb-3">Assign Packages</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 border border-[var(--line-soft)] rounded-[3px] bg-[var(--paper-alt)]">
                   {packages.map(pkg => (
-                    <label key={pkg.id} className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedPackages.includes(pkg.id) ? 'bg-[#005C53]/10 border-[#005C53]' : 'bg-white border-slate-200 hover:bg-slate-100'}`}>
-                      <input type="checkbox" checked={selectedPackages.includes(pkg.id)} onChange={() => togglePackage(pkg.id)} className="w-4 h-4 text-[#005C53] rounded" />
+                    <label key={pkg.id} className={`flex items-center gap-3 p-3 rounded-[3px] border cursor-pointer transition-colors ${selectedPackages.includes(pkg.id) ? 'bg-[rgba(47,110,82,0.1)] border-[var(--forest)]' : 'bg-[var(--paper-card)] border-[var(--line)]'}`}>
+                      <input type="checkbox" checked={selectedPackages.includes(pkg.id)} onChange={() => togglePackage(pkg.id)} className="w-4 h-4" />
                       <div>
-                        <div className="text-sm font-bold text-slate-900">{pkg.name}</div>
-                        <div className="text-[10px] text-slate-500">৳{pkg.price} • {pkg.testsIncluded} tests</div>
+                        <div className="text-[14px] font-medium text-[var(--ink)]">{pkg.name}</div>
+                        <div className="text-[12px] text-[var(--ink-faint)]">৳{pkg.price} • {pkg.testsIncluded} tests</div>
                       </div>
                     </label>
                   ))}
-                  {packages.length === 0 && (
-                    <div className="text-xs text-slate-400 p-2 italic col-span-2">No packages created yet. Go to Settings to create packages.</div>
-                  )}
                 </div>
               </div>
 
-              <div className="pt-4 flex justify-end space-x-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-200">Cancel</button>
-                <button type="submit" className="px-5 py-2 bg-[#005C53] text-white text-xs font-bold rounded-xl hover:bg-[#003831] shadow-sm">
+              <div className="pt-4 flex justify-end gap-3 border-t border-[var(--line-soft)] mt-6">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-ghost">Cancel</button>
+                <button type="submit" className="btn btn-fill">
                   {editingId ? 'Save Changes' : 'Create & Issue Credentials'}
                 </button>
               </div>
@@ -328,6 +253,6 @@ export default function OrganizationsDirectoryPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

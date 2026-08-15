@@ -2,9 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/components/providers/StoreProvider';
-import { Mail, Lock, Sparkles, LogIn, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -15,8 +14,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const springConfig = { type: 'spring' as const, bounce: 0, duration: 0.8 };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,183 +52,139 @@ export default function LoginPage() {
 
       setError('Invalid email/ID or password. Please try again.');
       setIsLoading(false);
-    }, 600); // Fake network delay
+    }, 600);
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-[#020806] font-sans selection:bg-emerald-500/30">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[var(--paper)] text-[var(--ink)] font-sans selection:bg-[var(--brick)] selection:text-white">
       
-      {/* --- Left Column - Hero Banner --- */}
-      <div className="lg:col-span-7 bg-gradient-to-br from-[#003831] via-[#005C53] to-[#020806] p-8 lg:p-12 text-white flex flex-col justify-between relative overflow-hidden hidden md:flex border-r border-emerald-900/30">
-        
-        {/* Dynamic Blobs */}
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div 
-            animate={{ scale: [1, 1.05, 1], rotate: [0, 5, 0] }}
-            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -right-32 -top-32 w-[600px] h-[600px] rounded-full bg-emerald-400/10 blur-[100px]" 
-          />
-          <motion.div 
-            animate={{ scale: [1, 1.1, 1], rotate: [0, -5, 0] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -left-32 -bottom-32 w-[500px] h-[500px] rounded-full bg-red-500/10 blur-[80px]" 
-          />
+      {/* --- Left Column - Brand --- */}
+      <div className="hidden lg:flex flex-col justify-between p-12 bg-[var(--ink)] text-[var(--paper)] border-r border-[var(--ink-soft)] relative overflow-hidden">
+        {/* Subtle decorative elements matching the editorial style */}
+        <div className="absolute top-0 right-0 p-8 font-mono text-[10px] text-[var(--ink-soft)] tracking-widest uppercase">
+          Portal Access v2.1
         </div>
 
-        {/* Top Logo */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={springConfig}
-          className="flex items-center space-x-3 z-10"
-        >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-[#005C53] border border-emerald-300/20 flex items-center justify-center text-white font-bold text-xl shadow-[0_0_20px_rgba(0,196,167,0.3)]">
-            I
-          </div>
-          <div>
-            <span className="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-200 to-white">
-              IELTSSync
-            </span>
-            <span className="text-[10px] uppercase tracking-widest text-emerald-300/80 block font-semibold">
-              SaaS Engine
-            </span>
-          </div>
-        </motion.div>
-
-        {/* Hero Copy */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ ...springConfig, delay: 0.2 }}
-          className="my-12 z-10 max-w-xl"
-        >
-          <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-[#020806]/40 border border-emerald-500/20 text-xs text-emerald-300 mb-6 backdrop-blur-md">
-            <Sparkles className="w-3.5 h-3.5 text-red-400 animate-pulse" />
-            <span>Multi-Tenant Coaching Platform</span>
-          </div>
-          <h1 className="text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-emerald-100 leading-[1.1] mb-6 tracking-tight">
-            Next-Gen IELTS Simulation Platform.
-          </h1>
-          <p className="text-emerald-100/70 text-lg leading-relaxed font-medium">
-            Empower coaching institutions to host realistic computer-delivered IELTS exam simulations with precise module interfaces and instant analytics.
-          </p>
-        </motion.div>
-
-        {/* Footer */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-xs font-medium text-emerald-200/40 z-10 flex items-center justify-between"
-        >
-          <span>© 2026 IELTSSync Enterprise Platform.</span>
-          <Link href="/" className="hover:text-emerald-300 transition-colors flex items-center group">
-            <ArrowLeft className="w-3 h-3 mr-1 group-hover:-translate-x-1 transition-transform" /> Back to Home
+        <div className="z-10">
+          <Link href="/" className="font-display text-[26px] flex items-baseline gap-1.5 hover:opacity-80 transition-opacity w-fit">
+            IELTSSync <span className="font-mono text-[12px] text-[var(--brick)] border border-[var(--brick)] rounded-[3px] px-1.5 py-[1px] tracking-[0.04em]">BD</span>
           </Link>
-        </motion.div>
+          <div className="mt-16 max-w-sm">
+            <div className="font-mono text-[12px] tracking-[0.08em] uppercase text-[var(--gold)] mb-4 flex items-center gap-2">
+              <div className="w-[6px] h-[6px] rounded-full bg-[var(--gold)]"></div>
+              Official Mock Testing
+            </div>
+            <h1 className="font-display text-[46px] leading-[1.1] mb-6">
+              Enter the test environment.
+            </h1>
+            <p className="text-[16px] text-[#B9C4D2] leading-[1.65]">
+              Log in with your provided student ID to begin your timed mock exam, or access your coaching center dashboard.
+            </p>
+          </div>
+        </div>
+
+        <div className="z-10 text-[13px] text-[#7C8FA6] font-mono flex items-center justify-between mt-12">
+          <span>© 2026 IELTSSync Bangladesh</span>
+          <Link href="/" className="flex items-center gap-1.5 hover:text-white transition-colors">
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to site
+          </Link>
+        </div>
       </div>
 
-      {/* --- Right Column - Login Form --- */}
-      <div className="lg:col-span-5 flex items-center justify-center p-8 lg:p-16 relative">
-        <div className="absolute inset-0 bg-[#020806] z-0" />
+      {/* --- Right Column - Form --- */}
+      <div className="flex flex-col justify-center px-8 py-16 sm:px-16 lg:px-24">
         
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ ...springConfig, delay: 0.1 }}
-          className="w-full max-w-md space-y-8 z-10 relative"
-        >
-          <div>
-            <h2 className="text-3xl font-bold text-white tracking-tight">Welcome Back</h2>
-            <p className="text-emerald-100/60 mt-2 text-sm">
-              Sign in to access your dashboard and active exams.
+        {/* Mobile Header (Hidden on Desktop) */}
+        <div className="lg:hidden mb-12">
+          <Link href="/" className="font-display text-[26px] flex items-baseline gap-1.5 w-fit">
+            IELTSSync <span className="font-mono text-[12px] text-[var(--brick)] border border-[var(--brick)] rounded-[3px] px-1.5 py-[1px] tracking-[0.04em]">BD</span>
+          </Link>
+        </div>
+
+        <div className="w-full max-w-[400px] mx-auto">
+          <div className="mb-10">
+            <h2 className="font-display text-[32px] mb-2">Sign in</h2>
+            <p className="text-[15px] text-[var(--ink-soft)]">
+              Welcome back. Enter your details below.
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6 mt-8">
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-emerald-200/70 uppercase tracking-wider">Email / Student ID</label>
-              <div className="relative group">
-                <Mail className="w-5 h-5 text-emerald-500/50 absolute left-3.5 top-3.5 transition-colors group-focus-within:text-emerald-400" />
-                <input 
-                  type="text" 
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-[#00140F]/50 border border-emerald-900/50 text-white text-sm focus:ring-2 focus:ring-[#005C53] focus:border-[#005C53] focus:bg-[#00140F] transition-all placeholder:text-emerald-700/50 shadow-inner"
-                  placeholder="admin@mockielts.com or STU-1234"
-                />
-              </div>
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <label className="block font-mono text-[11.5px] uppercase tracking-[0.05em] text-[var(--ink-soft)]">
+                Email / Student ID
+              </label>
+              <input 
+                type="text" 
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-[var(--paper-card)] border border-[var(--line)] rounded-[3px] text-[15px] focus:outline-none focus:border-[var(--ink)] focus:ring-1 focus:ring-[var(--ink)] transition-colors placeholder:text-[var(--ink-faint)]"
+                placeholder="e.g. STU-1234"
+              />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="block text-xs font-bold text-emerald-200/70 uppercase tracking-wider">Password</label>
-                <a href="#" className="text-xs font-semibold text-emerald-500 hover:text-emerald-400 transition-colors">Forgot?</a>
+                <label className="block font-mono text-[11.5px] uppercase tracking-[0.05em] text-[var(--ink-soft)]">
+                  Password
+                </label>
+                <a href="#" className="font-mono text-[11.5px] text-[var(--brick)] hover:text-[var(--brick-dark)] transition-colors">
+                  Forgot?
+                </a>
               </div>
-              <div className="relative group">
-                <Lock className="w-5 h-5 text-emerald-500/50 absolute left-3.5 top-3.5 transition-colors group-focus-within:text-emerald-400" />
-                <input 
-                  type="password" 
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-[#00140F]/50 border border-emerald-900/50 text-white text-sm focus:ring-2 focus:ring-[#005C53] focus:border-[#005C53] focus:bg-[#00140F] transition-all placeholder:text-emerald-700/50 shadow-inner"
-                  placeholder="••••••••"
-                />
-              </div>
+              <input 
+                type="password" 
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-[var(--paper-card)] border border-[var(--line)] rounded-[3px] text-[15px] focus:outline-none focus:border-[var(--ink)] focus:ring-1 focus:ring-[var(--ink)] transition-colors placeholder:text-[var(--ink-faint)]"
+                placeholder="••••••••"
+              />
             </div>
 
-            <AnimatePresence>
-              {error && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="p-3 bg-red-950/40 border border-red-900/50 rounded-xl flex items-center space-x-2 text-sm text-red-400 backdrop-blur-sm"
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                  <span>{error}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-[3px] text-[13.5px] text-red-700 font-medium">
+                {error}
+              </div>
+            )}
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <button
               disabled={isLoading}
               type="submit"
-              className="w-full bg-[#005C53] hover:bg-[#004A42] text-white py-3.5 rounded-2xl font-bold text-sm transition-all shadow-[0_0_20px_rgba(0,92,83,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 border border-emerald-400/20 group"
+              className="w-full bg-[var(--brick)] hover:bg-[var(--brick-dark)] text-white py-3.5 rounded-[3px] text-[15px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center h-[52px]"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <>
-                  <span>Sign In to Platform</span>
-                  <LogIn className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </>
+                "Log in"
               )}
-            </motion.button>
+            </button>
           </form>
 
-          <div className="mt-8 pt-8 border-t border-emerald-900/30">
-            <div className="bg-[#00140F]/80 border border-emerald-900/50 p-5 rounded-2xl text-xs space-y-3 backdrop-blur-sm">
-              <h4 className="font-bold text-emerald-400 uppercase tracking-wider mb-2">Test Credentials</h4>
-              <div className="flex items-center justify-between text-emerald-100/70 p-2 rounded-lg hover:bg-emerald-900/20 transition-colors">
-                <span>Superadmin</span>
-                <span className="font-mono font-medium text-emerald-300">admin@mockielts.com / admin123</span>
-              </div>
-              <div className="flex items-center justify-between text-emerald-100/70 p-2 rounded-lg hover:bg-emerald-900/20 transition-colors">
-                <span>Tenant (Org)</span>
-                <span className="font-mono font-medium text-emerald-300">admin@apex.com / password123</span>
-              </div>
-              <div className="flex items-center justify-between text-emerald-100/70 p-2 rounded-lg hover:bg-emerald-900/20 transition-colors">
-                <span>Student</span>
-                <span className="font-mono font-medium text-emerald-300">Issue an ID from tenant dashboard</span>
+          {/* Test Credentials Helper */}
+          <div className="mt-12 pt-8 border-t border-[var(--line)]">
+            <div className="bg-[var(--paper-alt)] p-5 rounded-[4px] border border-[var(--line-soft)]">
+              <div className="font-mono text-[11px] text-[var(--ink-soft)] tracking-[0.06em] uppercase mb-4">Test Credentials</div>
+              
+              <div className="space-y-3 font-mono text-[12.5px]">
+                <div className="flex justify-between items-center pb-2 border-b border-[var(--line-soft)]">
+                  <span className="text-[var(--ink-faint)]">Superadmin</span>
+                  <span className="text-[var(--ink)] font-medium">admin@mockielts.com <span className="text-[var(--ink-faint)]">/</span> admin123</span>
+                </div>
+                <div className="flex justify-between items-center pb-2 border-b border-[var(--line-soft)]">
+                  <span className="text-[var(--ink-faint)]">Tenant</span>
+                  <span className="text-[var(--ink)] font-medium">admin@apex.com <span className="text-[var(--ink-faint)]">/</span> password123</span>
+                </div>
+                <div className="flex justify-between items-center text-[12px]">
+                  <span className="text-[var(--ink-faint)]">Student</span>
+                  <span className="text-[var(--ink-soft)] text-right">Issue ID from tenant dashboard</span>
+                </div>
               </div>
             </div>
           </div>
-        </motion.div>
+
+        </div>
       </div>
     </div>
   );

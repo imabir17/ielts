@@ -2,189 +2,131 @@
 
 import React from 'react';
 import { MOCK_ORGANIZATIONS, MOCK_EXAM_LOGS, MOCK_AUDIT_LOGS, MOCK_ANOMALIES } from '@/lib/mock-data';
-import { Building2, Users, BookCheck, ShieldCheck, TrendingUp, AlertTriangle, History, ArrowRight, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminDashboardPage() {
   const totalStudents = MOCK_ORGANIZATIONS.reduce((acc, curr) => acc + curr.studentCount, 0);
 
   return (
-    <div className="space-y-8 font-sans">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+    <>
+      <div className="topbar">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center space-x-3">
-            <span>Platform Overview HQ</span>
-            <span className="text-xs bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full uppercase">
-              Super Admin Mode
-            </span>
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Global management of B2B coaching centers, exam logs, and test material IP.
-          </p>
+          <div className="eyebrow"><span className="dot"></span>Super admin mode</div>
+          <h1>Platform overview</h1>
+          <p className="page-sub">Global management of B2B coaching centers, exam logs, and test material IP.</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Link
-            href="/admin/organizations"
-            className="inline-flex items-center space-x-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-4 py-2.5 rounded-xl font-medium text-sm transition-all"
-          >
-            <Building2 className="w-4 h-4 text-[#005C53]" />
-            <span>Manage Tenants</span>
-          </Link>
-          <Link
-            href="/admin/materials/new"
-            className="inline-flex items-center space-x-2 bg-[#005C53] hover:bg-[#003831] text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Ingest Test</span>
-          </Link>
+        <div className="topbar-actions">
+          <Link href="/admin/organizations" className="btn btn-ghost">Manage tenants</Link>
+          <Link href="/admin/materials/new" className="btn btn-fill">+ Ingest test</Link>
         </div>
       </div>
 
-      {/* Analytics KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Active Coaching Orgs</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-[#005C53] flex items-center justify-center">
-              <Building2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-3xl font-extrabold text-slate-900">{MOCK_ORGANIZATIONS.length}</div>
-          <div className="text-xs text-emerald-600 font-medium mt-2 flex items-center space-x-1">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>Dhaka Branches: Gulshan, Dhanmondi, Uttara</span>
-          </div>
-        </div>
+      <hr className="rule" />
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Enrolled Student Seats</span>
-            <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
-              <Users className="w-4 h-4" />
-            </div>
+      <div className="stat-row">
+        <div className="stat-card">
+          <div className="stat-head">
+            <span className="stat-label">Active coaching orgs</span>
+            <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="4" y="3" width="16" height="18" rx="1" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">{totalStudents}</div>
-          <div className="text-xs text-slate-400 mt-2">Across all coaching tenants</div>
+          <div className="stat-num">{MOCK_ORGANIZATIONS.length}</div>
+          <div className="stat-foot up">↗ Dhaka branches: Gulshan, Dhanmondi, Uttara</div>
         </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Published Test Bank</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-[#005C53] flex items-center justify-center">
-              <BookCheck className="w-4 h-4" />
-            </div>
+        <div className="stat-card">
+          <div className="stat-head">
+            <span className="stat-label">Enrolled student seats</span>
+            <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="8" r="3.2" /><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" /></svg>
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">14</div>
-          <div className="text-xs text-emerald-600 font-medium mt-2">Academic & General Training</div>
+          <div className="stat-num">{totalStudents}</div>
+          <div className="stat-foot">Across all coaching tenants</div>
         </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">System Health & Uptime</span>
-            <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
+        <div className="stat-card">
+          <div className="stat-head">
+            <span className="stat-label">Published test bank</span>
+            <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M9 11l2 2 4-4M4 5h16v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" /></svg>
           </div>
-          <div className="text-3xl font-extrabold text-emerald-600">99.9%</div>
-          <div className="text-xs text-slate-400 mt-2">Vercel Edge / Supabase Ready</div>
+          <div className="stat-num">14</div>
+          <div className="stat-foot up">Academic & General Training</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-head">
+            <span className="stat-label">System health & uptime</span>
+            <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" /></svg>
+          </div>
+          <div className="stat-num gold">99.9%</div>
+          <div className="stat-foot">Vercel Edge / Supabase Ready</div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Live Exam Activity Feed */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <h2 className="font-bold text-slate-900 text-base flex items-center space-x-2">
-              <TrendingUp className="w-5 h-5 text-[#005C53]" />
-              <span>Live Exam Feed Across Centers</span>
-            </h2>
-            <span className="text-xs text-slate-400 font-mono">Real-time log</span>
+      <div className="panel-row">
+        <div className="panel">
+          <div className="panel-head">
+            <div className="panel-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M4 15l4-5 4 3 4-6 4 4" /></svg>
+              Live exam feed across centers
+            </div>
+            <span className="panel-meta">real-time log</span>
           </div>
-
-          <div className="divide-y divide-slate-100">
+          <div className="panel-body">
             {MOCK_EXAM_LOGS.map((log) => (
-              <div key={log.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-bold text-slate-900 flex items-center space-x-2">
-                    <span>{log.studentName}</span>
-                    <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                      {log.studentId}
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-500 mt-0.5">
-                    {log.orgName} • {log.testTitle}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="inline-block bg-emerald-100 text-[#005C53] text-xs px-2.5 py-1 rounded-full font-extrabold">
-                    Band {log.overallBand}
-                  </span>
-                  <div className="text-[10px] text-slate-400 mt-0.5">{log.completedAt}</div>
-                </div>
+              <div key={log.id} className="log-row">
+                <span className="log-time">{log.completedAt}</span>
+                <span className="log-text">
+                  <b>{log.studentName}</b> completed {log.testTitle} — {log.orgName}
+                </span>
+                <span className="log-tag ok">band {log.overallBand}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Anomaly & Quality Alerts */}
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <h2 className="font-bold text-slate-900 text-base flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-              <span>Question Difficulty & Anomaly Flags</span>
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-            {MOCK_ANOMALIES.map((anom) => (
-              <div
-                key={anom.questionId}
-                className="p-4 bg-red-50/50 rounded-xl border border-red-100 space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-700 bg-red-100 px-2 py-0.5 rounded">
-                    {anom.issueFlag}
-                  </span>
-                  <span className="text-xs font-mono font-bold text-red-600">
-                    {anom.passRatePercentage}% pass rate
-                  </span>
-                </div>
-                <div className="text-xs font-bold text-slate-900">{anom.prompt}</div>
-                <div className="text-[11px] text-slate-500">
-                  Module: {anom.module} • {anom.testTitle}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Audit Logs Snippet */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-          <h2 className="font-bold text-slate-900 text-base flex items-center space-x-2">
-            <History className="w-5 h-5 text-[#005C53]" />
-            <span>Platform Security & Audit Trail</span>
-          </h2>
-          <span className="text-xs text-slate-500 font-mono">3 Recent Events</span>
-        </div>
-
-        <div className="divide-y divide-slate-100">
-          {MOCK_AUDIT_LOGS.map((log) => (
-            <div key={log.id} className="py-3 flex items-center justify-between text-xs">
-              <div className="space-y-0.5">
-                <span className="font-bold text-slate-900">{log.action}</span>
-                <div className="text-slate-500">Target: {log.target}</div>
-              </div>
-              <div className="text-right">
-                <span className="font-mono text-slate-600 font-semibold">{log.actor} ({log.role})</span>
-                <div className="text-slate-400 text-[10px]">{log.timestamp}</div>
-              </div>
+        <div className="panel">
+          <div className="panel-head">
+            <div className="panel-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 2L2 20h20z" /><path d="M12 9v5M12 17h.01" /></svg>
+              Difficulty & anomaly flags
             </div>
-          ))}
+            <span className="panel-meta">{MOCK_ANOMALIES.length} open</span>
+          </div>
+          <div className="panel-body">
+            {MOCK_ANOMALIES.map((anom) => (
+              <div key={anom.questionId} className="flag-row">
+                <span className={`flag-dot ${anom.passRatePercentage < 50 ? 'high' : 'mid'}`}></span>
+                <span className="flag-text">
+                  <b>{anom.testTitle} {anom.module}</b> — {anom.prompt} ({anom.passRatePercentage}% pass rate).
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+
+      <div className="panel">
+        <div className="panel-head">
+          <div className="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></svg>
+            Platform security & audit trail
+          </div>
+          <span className="panel-meta">{MOCK_AUDIT_LOGS.length} recent events</span>
+        </div>
+        <div className="panel-body">
+          <table className="audit-table">
+            <thead>
+              <tr><th>Actor</th><th>Action</th><th>Scope</th><th>Time</th></tr>
+            </thead>
+            <tbody>
+              {MOCK_AUDIT_LOGS.map((log) => (
+                <tr key={log.id}>
+                  <td className="who">{log.actor}</td>
+                  <td>{log.action}</td>
+                  <td>{log.target}</td>
+                  <td className="time">{log.timestamp}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
   );
 }

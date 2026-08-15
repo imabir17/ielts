@@ -3,10 +3,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { GraduationCap, LogOut, User } from 'lucide-react';
+import { useStore } from '@/components/providers/StoreProvider';
+import { LogOut, User } from 'lucide-react';
 
 export function StudentNav() {
   const pathname = usePathname();
+  const { currentUser } = useStore();
 
   // CRITICAL REQUIREMENT: Layout must NOT render navigation during exams
   if (pathname.includes('/student/exam')) {
@@ -14,30 +16,29 @@ export function StudentNav() {
   }
 
   return (
-    <header className="bg-[#003831] text-white border-b border-emerald-900 shadow-sm sticky top-0 z-40">
+    <header className="bg-[var(--sidebar)] text-[var(--sidebar-text)] border-b border-[var(--sidebar-line)] sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center text-white font-extrabold text-lg shadow-sm">
-            <GraduationCap className="w-5 h-5" />
-          </div>
+        
+        <div className="flex items-center gap-3">
+          <div className="side-mark" style={{ width: 28, height: 28, fontSize: 14 }}>S</div>
           <div>
-            <span className="font-bold text-white tracking-tight text-base">Student Exam Portal</span>
-            <span className="text-[10px] text-emerald-300 block uppercase font-semibold">Apex Academy</span>
+            <div className="side-brand-name" style={{ fontSize: 13 }}>Student Portal</div>
+            <div className="side-brand-role" style={{ fontSize: 9 }}>Apex Academy</div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 bg-emerald-950/80 px-3 py-1.5 rounded-full border border-emerald-800 text-xs font-semibold">
-            <User className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Sarah Jenkins (STU-8821)</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-[rgba(255,255,255,0.03)] px-3 py-1.5 rounded-[3px] border border-[var(--sidebar-line)] font-mono text-[11px] text-[var(--sidebar-text)]">
+            <User className="w-3.5 h-3.5" />
+            <span>{currentUser?.name || 'Student'} ({currentUser?.studentId || 'STU-0000'})</span>
           </div>
 
           <Link
             href="/login"
-            className="flex items-center space-x-1.5 text-xs text-red-300 hover:text-white bg-red-950/40 hover:bg-red-900 px-3 py-1.5 rounded-lg transition-colors font-medium"
+            className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--sidebar-text-dim)] hover:text-[#F2F3EE] transition-colors"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Switch Role</span>
+            <span>Log out</span>
           </Link>
         </div>
       </div>

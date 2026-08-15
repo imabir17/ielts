@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Test } from '@/lib/mock-data';
 import { getStoredTests } from '@/lib/test-store';
-import { BookOpen, Clock, Play, Award, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { BookOpen, Clock, Play, ShieldAlert } from 'lucide-react';
 
 export default function StudentDashboardPage() {
   const [tests, setTests] = useState<Test[]>([]);
@@ -13,97 +13,87 @@ export default function StudentDashboardPage() {
     setTests(getStoredTests());
   }, []);
 
-  const activeTest = tests[0];
-
   return (
-    <div className="max-w-6xl mx-auto p-6 md:p-10 space-y-8 font-sans">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-[#003831] via-[#005C53] to-[#042A25] rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-80 h-80 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-700/50">
-            Apex IELTS Academy Student
-          </span>
-          <h1 className="text-3xl font-extrabold text-white">Welcome back, Student!</h1>
-          <p className="text-sm text-emerald-100/80 max-w-xl">
-            You have {tests.length} official IELTS computer-based mock tests assigned by your institution.
-          </p>
+    <>
+      <div className="topbar">
+        <div>
+          <div className="eyebrow"><span className="dot"></span>Apex IELTS Academy</div>
+          <h1>Welcome back, Student!</h1>
+          <p className="page-sub">You have {tests.length} official IELTS computer-based mock tests assigned by your institution.</p>
         </div>
       </div>
 
-      {/* Assigned Tests Section */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
-          <BookOpen className="w-5 h-5 text-[#005C53]" />
-          <span>Assigned Mock Examinations ({tests.length})</span>
-        </h2>
+      <hr className="rule" />
+
+      <div className="panel mb-6 border-none bg-transparent">
+        <div className="flex items-center gap-2 font-display text-[22px] text-[var(--ink)] mb-4">
+          <BookOpen className="w-5 h-5 text-[var(--brick)]" /> Assigned Mock Examinations ({tests.length})
+        </div>
 
         {tests.map((t) => (
-          <div key={t.id} className="bg-white rounded-3xl border-2 border-emerald-100 shadow-sm overflow-hidden hover:border-[#005C53] transition-all mb-4">
-            <div className="p-6 md:p-8 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+          <div key={t.id} className="panel mb-6 overflow-hidden">
+            <div className="panel-body p-6 md:p-8 space-y-6">
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--line-soft)] pb-6">
                 <div>
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="bg-emerald-100 text-[#005C53] text-xs font-bold px-2.5 py-1 rounded-md">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.05em] bg-[var(--forest)]/10 text-[var(--forest)] px-2 py-0.5 rounded-[2px] font-medium">
                       {t.category}
                     </span>
-                    <span className="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-md">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.05em] bg-[var(--brick)]/10 text-[var(--brick)] px-2 py-0.5 rounded-[2px] font-medium">
                       Official Computer-Delivered Format
                     </span>
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900">{t.title}</h3>
+                  <h3 className="font-display text-[26px] text-[var(--ink)] m-0">{t.title}</h3>
                 </div>
-                <div className="flex items-center space-x-2 text-slate-600 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-200 text-sm font-semibold">
-                  <Clock className="w-4 h-4 text-[#005C53]" />
+                <div className="flex items-center gap-2 text-[var(--ink-soft)] bg-[var(--paper-alt)] px-4 py-2 rounded-[3px] border border-[var(--line)] text-[13px] font-medium">
+                  <Clock className="w-4 h-4 text-[var(--ink)]" />
                   <span>{t.totalDurationMinutes} mins total</span>
                 </div>
               </div>
 
-              {/* Modules Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
-                  <div className="text-xs font-bold text-[#005C53] uppercase">Module 1</div>
-                  <div className="text-base font-bold text-slate-900 mt-1">Reading</div>
-                  <div className="text-xs text-slate-500 mt-0.5">Split-Screen UI</div>
+                <div className="p-4 bg-[var(--paper-card)] rounded-[3px] border border-[var(--line)]">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.05em] text-[var(--forest)] font-medium">Module 1</div>
+                  <div className="text-[15px] font-medium text-[var(--ink)] mt-1">Reading</div>
+                  <div className="text-[12px] text-[var(--ink-faint)] mt-0.5">Split-Screen UI</div>
                 </div>
-              <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
-                <div className="text-xs font-bold text-[#005C53] uppercase">Module 2</div>
-                <div className="text-base font-bold text-slate-900 mt-1">Listening</div>
-                <div className="text-xs text-slate-500 mt-0.5">Locked Audio Scrubber</div>
-              </div>
-              <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
-                <div className="text-xs font-bold text-[#005C53] uppercase">Module 3</div>
-                <div className="text-base font-bold text-slate-900 mt-1">Writing</div>
-                <div className="text-xs text-slate-500 mt-0.5">Real-time Word Counter</div>
-              </div>
-              <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
-                <div className="text-xs font-bold text-[#005C53] uppercase">Module 4</div>
-                <div className="text-base font-bold text-slate-900 mt-1">Speaking</div>
-                <div className="text-xs text-slate-500 mt-0.5">Waveform Recorder</div>
-              </div>
-            </div>
-
-            {/* Warning & Start Button */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-              <div className="flex items-center space-x-2 text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200/80">
-                <ShieldAlert className="w-4 h-4 shrink-0 text-amber-600" />
-                <span>
-                  Once started, the exam interface will enter strict distraction-free mode with zero navigation controls.
-                </span>
+                <div className="p-4 bg-[var(--paper-card)] rounded-[3px] border border-[var(--line)]">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.05em] text-[var(--forest)] font-medium">Module 2</div>
+                  <div className="text-[15px] font-medium text-[var(--ink)] mt-1">Listening</div>
+                  <div className="text-[12px] text-[var(--ink-faint)] mt-0.5">Locked Audio Scrubber</div>
+                </div>
+                <div className="p-4 bg-[var(--paper-card)] rounded-[3px] border border-[var(--line)]">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.05em] text-[var(--forest)] font-medium">Module 3</div>
+                  <div className="text-[15px] font-medium text-[var(--ink)] mt-1">Writing</div>
+                  <div className="text-[12px] text-[var(--ink-faint)] mt-0.5">Real-time Word Counter</div>
+                </div>
+                <div className="p-4 bg-[var(--paper-card)] rounded-[3px] border border-[var(--line)]">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.05em] text-[var(--forest)] font-medium">Module 4</div>
+                  <div className="text-[15px] font-medium text-[var(--ink)] mt-1">Speaking</div>
+                  <div className="text-[12px] text-[var(--ink-faint)] mt-0.5">Waveform Recorder</div>
+                </div>
               </div>
 
-              <Link
-                href={`/student/exam/${t.id}`}
-                className="w-full sm:w-auto px-8 py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-sm rounded-2xl transition-all shadow-lg active:scale-95 flex items-center justify-center space-x-2 whitespace-nowrap"
-              >
-                <Play className="w-4 h-4 fill-white" />
-                <span>Launch Mock Exam</span>
-              </Link>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                <div className="flex items-center gap-2 text-[12.5px] text-[var(--gold)] bg-[rgba(180,135,43,0.1)] p-3 rounded-[3px] border border-[rgba(180,135,43,0.2)] flex-1">
+                  <ShieldAlert className="w-5 h-5 shrink-0" />
+                  <span>Once started, the exam interface will enter strict distraction-free mode with zero navigation controls.</span>
+                </div>
+
+                <Link
+                  href={`/student/exam/${t.id}`}
+                  className="btn btn-fill w-full sm:w-auto flex justify-center py-3.5"
+                  style={{ backgroundColor: 'var(--brick)', borderColor: 'var(--brick)' }}
+                >
+                  <Play className="w-4 h-4 fill-white" /> Launch Mock Exam
+                </Link>
+              </div>
+
             </div>
           </div>
-        </div>
         ))}
       </div>
-    </div>
+    </>
   );
 }

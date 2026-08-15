@@ -14,24 +14,18 @@ export default function AssignTestsPage() {
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [assignedSuccess, setAssignedSuccess] = useState(false);
 
-  // Load tests
   useEffect(() => {
     const list = getStoredTests();
     setTests(list);
     if (list.length > 0) setSelectedTestId(list[0].id);
   }, []);
 
-  // Filter students for current tenant
   const tenantStudents = students.filter(s => s.orgId === currentUser?.id);
-
-  // Calculate limits
   const currentTenant = tenants.find(t => t.id === currentUser?.id);
   const tenantPackages = currentTenant?.packageIds?.map(id => packages.find(p => p.id === id)).filter(Boolean) || [];
 
   const hasUnlimitedExams = tenantPackages.some(p => p!.examLimit === 'unlimited');
-  const totalExamLimit = hasUnlimitedExams 
-    ? 'unlimited' 
-    : tenantPackages.reduce((sum, p) => sum + (p!.examLimit as number), 0);
+  const totalExamLimit = hasUnlimitedExams ? 'unlimited' : tenantPackages.reduce((sum, p) => sum + (p!.examLimit as number), 0);
 
   const examsUsed = currentTenant?.examsUsedThisMonth || 0;
   const assignmentsAttempting = selectedStudentIds.length;
@@ -49,20 +43,14 @@ export default function AssignTestsPage() {
   const handleAssign = () => {
     if (isQuotaFull || selectedStudentIds.length === 0 || !selectedTestId) return;
 
-    // Deduct quota
     if (currentTenant) {
-      updateTenant(currentTenant.id, { 
-        examsUsedThisMonth: examsUsed + selectedStudentIds.length 
-      });
+      updateTenant(currentTenant.id, { examsUsedThisMonth: examsUsed + selectedStudentIds.length });
     }
 
-    // Assign to students
     selectedStudentIds.forEach(id => {
       const student = students.find(s => s.id === id);
       if (student && !student.assignedTests.includes(selectedTestId)) {
-        updateStudent(id, {
-          assignedTests: [...student.assignedTests, selectedTestId]
-        });
+        updateStudent(id, { assignedTests: [...student.assignedTests, selectedTestId] });
       }
     });
 
@@ -74,51 +62,45 @@ export default function AssignTestsPage() {
   if (!currentUser) return <div>Loading...</div>;
 
   return (
-    <div className="space-y-8 font-sans">
-      {/* Header */}
-      <div className="border-b border-slate-200 pb-6">
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center space-x-3">
-          <span>Assign Mock Test</span>
-          <span className="text-xs bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full">
-            Exam Dispatcher
-          </span>
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Select target students from your coaching center and publish test assignments to their student portals.
-        </p>
+    <>
+      <div className="topbar">
+        <div>
+          <div className="eyebrow"><span className="dot"></span>Exam Dispatcher</div>
+          <h1>Assign Mock Test</h1>
+          <p className="page-sub">Select target students from your coaching center and publish test assignments.</p>
+        </div>
       </div>
 
-      {/* Quota Status */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${totalExamLimit !== 'unlimited' && examsUsed >= (totalExamLimit as number) ? 'bg-red-100 text-red-600' : 'bg-emerald-50 text-[#005C53]'}`}>
+      <hr className="rule" />
+
+      <div className="bg-[var(--paper-card)] p-5 border border-[var(--line)] rounded-[3px] mb-8 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className={`w-11 h-11 rounded-[3px] border flex items-center justify-center ${totalExamLimit !== 'unlimited' && examsUsed >= (totalExamLimit as number) ? 'bg-[#B23A2A]/10 border-[#B23A2A]/20 text-[#B23A2A]' : 'bg-[var(--forest)]/10 border-[var(--forest)]/20 text-[var(--forest)]'}`}>
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-sm font-bold text-slate-900">Monthly Exam Quota</div>
-            <div className="text-xs text-slate-500">Based on your active packages</div>
+            <div className="font-display text-[19px] text-[var(--ink)]">Monthly Exam Quota</div>
+            <div className="text-[13px] text-[var(--ink-soft)]">Based on your active packages</div>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-black text-slate-900">
-            {examsUsed} <span className="text-slate-400 text-lg">/ {totalExamLimit === 'unlimited' ? '∞' : totalExamLimit}</span>
+          <div className="font-mono text-[24px] text-[var(--ink)]">
+            {examsUsed} <span className="text-[var(--ink-faint)] text-[18px]">/ {totalExamLimit === 'unlimited' ? '∞' : totalExamLimit}</span>
           </div>
-          <div className={`text-xs font-bold ${totalExamLimit !== 'unlimited' && examsUsed >= (totalExamLimit as number) ? 'text-red-600' : 'text-[#005C53]'}`}>
+          <div className={`font-mono text-[10px] uppercase tracking-[0.05em] mt-1 ${totalExamLimit !== 'unlimited' && examsUsed >= (totalExamLimit as number) ? 'text-[#B23A2A]' : 'text-[var(--forest)]'}`}>
             Exams Assigned
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Test Picker */}
         <div className="lg:col-span-5 space-y-4">
-          <h2 className="font-bold text-slate-900 text-base flex items-center space-x-2">
-            <BookOpen className="w-5 h-5 text-[#005C53]" />
-            <span>Select Test Material</span>
-          </h2>
+          <div className="font-medium text-[var(--ink)] flex items-center gap-2 mb-4">
+            <BookOpen className="w-4 h-4 text-[var(--brick)]" /> Select Test Material
+          </div>
 
           {tests.length === 0 && (
-            <div className="p-8 text-center text-slate-400 text-sm bg-slate-50 rounded-2xl border border-slate-200">
+            <div className="panel p-8 text-center text-[var(--ink-faint)] text-[13px] italic">
               No tests available. Ask Superadmin to ingest tests.
             </div>
           )}
@@ -129,85 +111,69 @@ export default function AssignTestsPage() {
               <div
                 key={t.id}
                 onClick={() => setSelectedTestId(t.id)}
-                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer space-y-2 ${
-                  isSelected ? 'bg-white border-[#005C53] shadow-md' : 'bg-slate-50 border-slate-200 hover:bg-white'
-                }`}
+                className={`panel p-5 cursor-pointer transition-colors ${isSelected ? 'border-[var(--ink)] bg-[var(--paper)]' : 'border-[var(--line)] hover:border-[var(--ink-soft)] bg-[var(--paper-card)]'}`}
               >
-                <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded ${
-                    isSelected ? 'text-emerald-800 bg-emerald-100' : 'text-slate-600 bg-slate-200'
-                  }`}>
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`font-mono text-[9px] uppercase tracking-[0.1em] px-2 py-0.5 rounded-[2px] ${isSelected ? 'bg-[var(--ink)] text-white' : 'bg-[var(--paper-alt)] text-[var(--ink-soft)]'}`}>
                     {isSelected ? 'Active Selection' : 'Click to Select'}
                   </span>
-                  <span className="text-xs font-bold text-[#005C53]">{t.category}</span>
+                  <span className="font-mono text-[10px] text-[var(--forest)] uppercase tracking-[0.05em]">{t.category}</span>
                 </div>
-                <h3 className="font-bold text-slate-900 text-base">{t.title}</h3>
-                <p className="text-xs text-slate-500">
-                  Full 4-module test series. Duration: {t.totalDurationMinutes} mins.
-                </p>
+                <h3 className="font-display text-[20px] text-[var(--ink)] m-0 mb-1">{t.title}</h3>
+                <p className="text-[12px] text-[var(--ink-soft)]">Full 4-module test series. Duration: {t.totalDurationMinutes} mins.</p>
               </div>
             );
           })}
         </div>
 
-        {/* Right Column: Student Selector */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-slate-900 text-base flex items-center space-x-2">
-              <UserCheck className="w-5 h-5 text-[#005C53]" />
-              <span>Target Students ({selectedStudentIds.length} Selected)</span>
-            </h2>
-            <button
-              onClick={() => setSelectedStudentIds(tenantStudents.map((s) => s.id))}
-              className="text-xs font-semibold text-[#005C53] hover:underline"
-            >
+          <div className="flex items-center justify-between mb-4">
+            <div className="font-medium text-[var(--ink)] flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-[var(--brick)]" /> Target Students ({selectedStudentIds.length} Selected)
+            </div>
+            <button onClick={() => setSelectedStudentIds(tenantStudents.map((s) => s.id))} className="bg-transparent border-none font-mono text-[11px] uppercase tracking-[0.05em] text-[var(--forest)] hover:text-[var(--ink)] cursor-pointer">
               Select All
             </button>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
-            {tenantStudents.length === 0 ? (
-               <div className="p-8 text-center text-slate-400 text-sm">
-                 No students found. Go to the Students page to create some.
-               </div>
-            ) : (
-              tenantStudents.map((student) => {
-                const isSelected = selectedStudentIds.includes(student.id);
-                return (
-                  <div
-                    key={student.id}
-                    onClick={() => toggleStudent(student.id)}
-                    className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${
-                      isSelected ? 'bg-emerald-50/50' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => {}}
-                        className="w-4 h-4 text-[#005C53] rounded focus:ring-[#005C53]"
-                      />
-                      <div>
-                        <div className="text-sm font-bold text-slate-900">{student.name}</div>
-                        <div className="text-xs text-slate-500 font-mono">{student.studentId}</div>
-                      </div>
-                    </div>
-                    <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md">
-                      {student.assignedTests.length} Assigned
-                    </span>
-                  </div>
-                );
-              })
-            )}
+          <div className="panel">
+            <div className="panel-body p-0 max-h-[500px] overflow-y-auto">
+              <table className="audit-table">
+                <tbody>
+                  {tenantStudents.length === 0 ? (
+                    <tr><td className="text-center py-8 italic text-[var(--ink-faint)]">No students found. Go to the Students page to create some.</td></tr>
+                  ) : (
+                    tenantStudents.map((student) => {
+                      const isSelected = selectedStudentIds.includes(student.id);
+                      return (
+                        <tr key={student.id} onClick={() => toggleStudent(student.id)} className="cursor-pointer hover:bg-[var(--paper-alt)] transition-colors" style={isSelected ? { backgroundColor: 'var(--paper-alt)' } : {}}>
+                          <td className="who pl-5">
+                            <div className="flex items-center gap-3">
+                              <input type="checkbox" checked={isSelected} onChange={() => {}} className="w-4 h-4" />
+                              <div>
+                                <div className="font-medium text-[var(--ink)]">{student.name}</div>
+                                <div className="font-mono text-[11px] text-[var(--ink-faint)] mt-0.5">{student.studentId}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="text-right pr-5">
+                            <span className="font-mono text-[10px] bg-[var(--paper-card)] border border-[var(--line)] text-[var(--ink-soft)] px-2 py-0.5 rounded-[2px]">{student.assignedTests.length} Assigned</span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {isQuotaFull && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-3 text-red-700">
+            <div className="p-4 bg-[rgba(178,58,42,0.1)] border border-[rgba(178,58,42,0.2)] rounded-[3px] flex items-start gap-3 text-[var(--brick-dark)] mt-4">
               <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <strong className="block mb-1">Quota Exceeded</strong>
-                You do not have enough exam quota to assign tests to {selectedStudentIds.length} student(s). Please reduce your selection or upgrade your packages.
+              <div className="text-[13.5px]">
+                <strong className="block mb-1 text-[var(--brick-dark)]">Quota Exceeded</strong>
+                You do not have enough exam quota to assign tests to {selectedStudentIds.length} student(s).
               </div>
             </div>
           )}
@@ -215,22 +181,16 @@ export default function AssignTestsPage() {
           <button
             onClick={handleAssign}
             disabled={selectedStudentIds.length === 0 || isQuotaFull || !selectedTestId}
-            className="w-full py-3.5 bg-[#005C53] hover:bg-[#003831] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-98 flex items-center justify-center space-x-2"
+            className="btn btn-fill w-full justify-center mt-6 disabled:opacity-50 disabled:cursor-not-allowed py-4"
           >
             {assignedSuccess ? (
-              <>
-                <CheckCircle2 className="w-5 h-5 text-emerald-300" />
-                <span>Test Successfully Assigned!</span>
-              </>
+              <><CheckCircle2 className="w-4 h-4" /> Test Successfully Assigned!</>
             ) : (
-              <>
-                <Send className="w-5 h-5 text-red-300" />
-                <span>Publish Test Assignment ({selectedStudentIds.length})</span>
-              </>
+              <><Send className="w-4 h-4" /> Publish Test Assignment ({selectedStudentIds.length})</>
             )}
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
