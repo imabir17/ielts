@@ -106,7 +106,7 @@ export default function StudentProfilePage() {
                     </tr>
                   ) : (
                     studentLogs.map(log => (
-                      <tr key={log.id}>
+                      <tr key={log.id} onClick={() => router.push(`/org/results/${log.id}`)} className="cursor-pointer hover:bg-slate-50 transition-colors">
                         <td className="font-medium">{log.testTitle}</td>
                         <td>
                           <div className="flex gap-1">

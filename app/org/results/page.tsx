@@ -56,7 +56,7 @@ export default function OrgResultsPage() {
                   const student = orgStudents.find(s => s.id === log.studentId);
                   
                   return (
-                    <tr key={log.id} onClick={() => router.push(`/org/students/${student?.id}`)} className="cursor-pointer hover:bg-slate-50 transition-colors">
+                    <tr key={log.id} onClick={() => router.push(`/org/results/${log.id}`)} className="cursor-pointer hover:bg-slate-50 transition-colors">
                       <td>
                         <div className="font-medium text-[var(--ink)]">{student?.name || 'Unknown'}</div>
                         <div className="text-[11px] text-[var(--ink-faint)] mt-0.5">{student?.studentId}</div>

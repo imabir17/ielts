@@ -7,12 +7,24 @@ import { getStoredTests } from '@/lib/test-store';
 import { BookOpen, Clock, Play, ShieldAlert, CheckCircle2, History, MessageSquare, Calendar } from 'lucide-react';
 
 export default function StudentDashboardPage() {
-  const { currentUser, examLogs, speakingRequests, tests } = useStore();
+  const { currentUser, examLogs, speakingRequests, tests, addSpeakingRequest } = useStore();
 
   if (!currentUser) return null;
 
   const myLogs = examLogs.filter(l => l.studentId === currentUser.id);
   const mySpeakingRequests = speakingRequests.filter(r => r.studentId === currentUser.id);
+
+  const handleRequestSpeaking = (testId: string) => {
+    addSpeakingRequest({
+      id: `req-${Date.now()}`,
+      studentId: currentUser.id,
+      orgId: currentUser.orgId,
+      testId,
+      status: 'pending',
+      requestedAt: new Date().toISOString(),
+      type: 'Online',
+    });
+  };
 
   const completedTestIds = myLogs.map(l => l.testId);
 
@@ -74,6 +86,19 @@ export default function StudentDashboardPage() {
                       <span className="font-display text-[20px] text-[var(--forest)]">{log.overallBand}</span>
                     </div>
                   )}
+                  <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[var(--line-soft)]">
+                    <Link href={`/student/results/${log.id}`} className="btn bg-white border border-[var(--line)] text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--ink-soft)] px-3 py-1.5 text-[12px]">
+                      View Detailed Results
+                    </Link>
+                    <Link href={`/student/exam/${log.testId}`} className="btn bg-[var(--paper-alt)] border border-[var(--line)] text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--ink-soft)] px-3 py-1.5 text-[12px]">
+                      Retake Exam
+                    </Link>
+                    {!mySpeakingRequests.some(r => r.testId === log.testId) && (
+                      <button onClick={() => handleRequestSpeaking(log.testId)} className="btn bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 px-3 py-1.5 text-[12px]">
+                        Request Speaking Mock
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
