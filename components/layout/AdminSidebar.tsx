@@ -27,7 +27,16 @@ export function AdminSidebar() {
     <nav className="side-nav">
       {items.map((item) => {
         const Icon = item.icon;
-        const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href) && !item.href.includes('#'));
+        
+        let isActive = false;
+        if (item.href === '/admin') {
+          isActive = pathname === '/admin';
+        } else if (item.href === '/admin/materials') {
+          isActive = pathname === '/admin/materials' || (pathname.startsWith('/admin/materials/') && !pathname.includes('/builder') && !pathname.includes('/new'));
+        } else {
+          isActive = pathname.startsWith(item.href);
+        }
+
         return (
           <Link
             key={item.name}

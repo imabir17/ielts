@@ -19,10 +19,28 @@ function TestBuilderInner() {
 
   const [testState, setTestState] = useState<Test>(() => {
     return {
-      ...MOCK_IELTS_TEST,
-      id: 'test-builder-05',
-      title: 'IELTS Academic Master Mock 05',
+      id: `test-builder-${Date.now()}`,
+      title: '',
+      category: 'Academic',
+      tierAccess: 'All Orgs',
       status: 'draft',
+      totalDurationMinutes: 170,
+      reading: [
+        { id: `r1-${Date.now()}`, title: '', content: '', questions: [] },
+        { id: `r2-${Date.now()}`, title: '', content: '', questions: [] },
+        { id: `r3-${Date.now()}`, title: '', content: '', questions: [] }
+      ],
+      listening: [],
+      listeningAudioUrl: '',
+      writing: [
+        { id: `w1-${Date.now()}`, taskNumber: 1, prompt: '' },
+        { id: `w2-${Date.now()}`, taskNumber: 2, prompt: '' }
+      ],
+      speaking: [
+        { id: `s1-${Date.now()}`, part: 1, type: 'Interview', prompt: '' },
+        { id: `s2-${Date.now()}`, part: 2, type: 'Cue Card', prompt: '' },
+        { id: `s3-${Date.now()}`, part: 3, type: 'Discussion', prompt: '' }
+      ]
     };
   });
 
