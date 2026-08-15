@@ -176,7 +176,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       max_seats: tenant.maxSeats, max_exams_per_month: tenant.maxExamsPerMonth,
       exams_used_this_month: tenant.examsUsedThisMonth, student_count: tenant.studentCount,
       active_tests: tenant.activeTests, status: tenant.status, created_date: tenant.createdDate,
-      org_admin_name: tenant.orgAdminName, org_admin_email: tenant.orgAdminEmail, package_ids: tenant.packageIds
+      org_admin_name: tenant.orgAdminName, org_admin_email: tenant.orgAdminEmail, package_ids: tenant.packageIds,
+      password: tenant.password
     });
   };
   

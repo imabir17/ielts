@@ -45,7 +45,7 @@ export default function OrganizationsDirectoryPage() {
     setAdminName(org.orgAdminName);
     setPhone(org.phone || '');
     setLogoUrl(org.logoUrl || '');
-    setPassword(org.password || '');
+    setPassword(''); // Keep empty, only update if typed
     setSelectedPackages(org.packageIds || []);
     setIsModalOpen(true);
   };
@@ -54,10 +54,14 @@ export default function OrganizationsDirectoryPage() {
     e.preventDefault();
     if (!name.trim()) return;
     if (editingId) {
-      updateTenant(editingId, {
+      const updatePayload: any = {
         name, location, contactEmail: email, orgAdminEmail: email, orgAdminName: adminName,
-        phone, logoUrl, password, packageIds: selectedPackages
-      });
+        phone, logoUrl, packageIds: selectedPackages
+      };
+      if (password.trim() !== '') {
+        updatePayload.password = password;
+      }
+      updateTenant(editingId, updatePayload);
     } else {
       addTenant({
         id: `org-${Date.now()}`, name, code: `ORG-${Math.floor(100 + Math.random() * 900)}`,
