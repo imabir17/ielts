@@ -134,9 +134,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           orgId: r.org_id,
           testId: r.test_id,
           scheduledDate: r.scheduled_date,
-          requestedAt: r.requested_at,
-          feedback: r.feedback,
-          bandScore: r.band_score
+          requestedAt: r.requested_at
         })));
       }
 
@@ -304,9 +302,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (updates.testId) dbUpdates.test_id = updates.testId;
     if (updates.scheduledDate) dbUpdates.scheduled_date = updates.scheduledDate;
     if (updates.requestedAt) dbUpdates.requested_at = updates.requestedAt;
-    if (updates.feedback !== undefined) dbUpdates.feedback = updates.feedback;
-    if (updates.bandScore !== undefined) dbUpdates.band_score = updates.bandScore;
-    ['studentId', 'orgId', 'testId', 'scheduledDate', 'requestedAt', 'bandScore'].forEach(k => delete dbUpdates[k]);
+    ['studentId', 'orgId', 'testId', 'scheduledDate', 'requestedAt', 'feedback', 'bandScore'].forEach(k => delete dbUpdates[k]);
     await supabase.from('speaking_requests').update(dbUpdates).eq('id', id);
   };
 

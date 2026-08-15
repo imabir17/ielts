@@ -45,6 +45,7 @@ export interface ExamLog {
     reading?: Record<string, any>;
     listening?: Record<string, any>;
     writing?: Record<string, any>;
+    speaking?: Record<string, any>;
   };
   scores: {
     reading?: number;
