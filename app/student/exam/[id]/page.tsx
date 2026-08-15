@@ -73,8 +73,43 @@ export default function ExamPage() {
     }
   };
 
+  const calculateModuleScore = (module: 'reading' | 'listening') => {
+    let score = 0;
+    if (!test) return score;
+    const moduleData = test[module] || [];
+    const moduleAnswers = answers[module] || {};
+    
+    moduleData.forEach((section: any) => {
+      const qs = section.questions || [];
+      qs.forEach((q: any) => {
+        const userAns = moduleAnswers[q.id];
+        if (!userAns) return;
+        
+        const correct = q.correctAnswer;
+        if (Array.isArray(correct)) {
+          // If array, just checking if userAns contains all or any. Let's do simple exact match for now.
+          if (Array.isArray(userAns) && correct.length === userAns.length && correct.every((val, index) => val === userAns[index])) {
+            score++;
+          }
+        } else if (typeof correct === 'string') {
+          if (typeof userAns === 'string' && userAns.toLowerCase().trim() === correct.toLowerCase().trim()) {
+            score++;
+          }
+        }
+      });
+    });
+    return score;
+  };
+
   const finishExam = () => {
     const studentInfo = students.find(s => s.id === currentUser.id);
+    
+    const computedScores: Record<string, number> = {};
+    if (selectedModules.includes('reading')) computedScores.reading = calculateModuleScore('reading');
+    if (selectedModules.includes('listening')) computedScores.listening = calculateModuleScore('listening');
+
+    // Overall band could be average of taken modules if we want, but keeping simple for now.
+    
     const newLog: ExamLog = {
       id: `log-${Date.now()}`,
       studentId: currentUser.id,
@@ -87,7 +122,7 @@ export default function ExamPage() {
       status: selectedModules.includes('writing') ? 'Completed' : 'Graded',
       modulesTaken: selectedModules,
       answers: answers,
-      scores: {}
+      scores: computedScores
     };
 
     addExamLog(newLog);
@@ -207,7 +242,9 @@ export default function ExamPage() {
           </div>
           <h2 className="font-display text-[32px] text-[var(--ink)] m-0">Exam Submitted</h2>
           <p className="text-[15px] text-[var(--ink-soft)] leading-relaxed">
-            Your answers have been saved successfully. Reading and Listening scores are available immediately. Writing tasks have been sent to your instructors for grading.
+            Your answers have been saved successfully. 
+            {selectedModules.includes('reading') || selectedModules.includes('listening') ? ' Reading and Listening scores are available immediately.' : ''}
+            {selectedModules.includes('writing') ? ' Awaiting score for writing. It may take around 1 hour.' : ''}
           </p>
           <button onClick={() => router.push('/student')} className="btn btn-fill px-8 py-3 w-full justify-center">
             Return to Dashboard
