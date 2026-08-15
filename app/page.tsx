@@ -49,7 +49,6 @@ export default function LandingPage() {
           >
             <Link href="#features" className="hover:text-white transition-colors">Features</Link>
             <Link href="#how-it-works" className="hover:text-white transition-colors">How it Works</Link>
-            <Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -58,7 +57,7 @@ export default function LandingPage() {
           >
             <Link 
               href="/login" 
-              className="group relative inline-flex items-center justify-center px-6 py-2.5 font-bold text-white transition-all duration-200 bg-[#005C53] border border-emerald-400/20 rounded-full hover:bg-[#004A42] hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(0,92,83,0.5)]"
+              className="group relative inline-flex items-center justify-center px-6 py-2.5 font-bold text-white transition-all duration-200 bg-gradient-to-r from-blue-600 to-[#005C53] border border-blue-400/20 rounded-full hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(37,99,235,0.4)]"
             >
               <span>Sign In</span>
               <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -69,11 +68,12 @@ export default function LandingPage() {
 
       {/* --- Hero Section --- */}
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-6">
-        {/* Dynamic Background */}
+        {/* Dynamic Colorful Background */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <motion.div style={{ y: y1, opacity }} className="absolute -top-[30%] -right-[10%] w-[800px] h-[800px] rounded-full bg-emerald-600/10 blur-[120px]" />
-          <motion.div style={{ y: y2, opacity }} className="absolute top-[20%] -left-[10%] w-[600px] h-[600px] rounded-full bg-[#005C53]/20 blur-[100px]" />
-          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay" />
+          <motion.div style={{ y: y1, opacity }} className="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] rounded-full bg-blue-600/20 blur-[120px]" />
+          <motion.div style={{ y: y2, opacity }} className="absolute top-[30%] -left-[10%] w-[600px] h-[600px] rounded-full bg-purple-600/20 blur-[120px]" />
+          <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 10, repeat: Infinity }} className="absolute bottom-0 right-[20%] w-[500px] h-[500px] rounded-full bg-emerald-500/20 blur-[100px]" />
+          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-30 mix-blend-overlay" />
         </div>
 
         <div className="max-w-5xl mx-auto text-center relative z-10">
@@ -81,17 +81,17 @@ export default function LandingPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: 'spring' as const, bounce: 0, duration: 1 }}
-            className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-emerald-950/40 border border-emerald-500/20 text-emerald-300 text-sm font-medium mb-8 backdrop-blur-md"
+            className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-emerald-300 text-sm font-bold mb-8 backdrop-blur-md shadow-xl"
           >
-            <Sparkles className="w-4 h-4 animate-pulse text-red-400" />
-            <span>Built for Modern IELTS Coaching Centers</span>
+            <Sparkles className="w-4 h-4 animate-pulse text-amber-400" />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-300 via-blue-300 to-purple-300">Built for Modern IELTS Coaching Centers</span>
           </motion.div>
           
           <motion.h1 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...springConfig, delay: 0.1 }}
-            className="text-5xl md:text-7xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-emerald-200/50 leading-[1.1] tracking-tight mb-8"
+            className="text-5xl md:text-7xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-blue-200 to-purple-400 leading-[1.1] tracking-tight mb-8 drop-shadow-2xl"
           >
             Deploy Official<br/>IELTS Simulations.
           </motion.h1>
@@ -113,7 +113,7 @@ export default function LandingPage() {
           >
             <Link 
               href="/login" 
-              className="w-full sm:w-auto px-8 py-4 bg-white text-[#002A25] font-black rounded-2xl hover:bg-emerald-50 transition-all hover:scale-105 active:scale-95 text-lg shadow-[0_0_30px_rgba(255,255,255,0.2)] flex items-center justify-center group"
+              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 via-purple-600 to-[#005C53] text-white font-black rounded-2xl hover:scale-105 active:scale-95 transition-all text-lg shadow-[0_0_30px_rgba(147,51,234,0.4)] flex items-center justify-center group border border-white/10"
             >
               <span>Get Started</span>
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
