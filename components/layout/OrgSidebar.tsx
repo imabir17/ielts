@@ -15,7 +15,7 @@ export function OrgSidebar() {
     { name: 'Student Directory', href: '/org/students', icon: Users },
     { name: 'Assign Tests', href: '/org/assign', icon: Send },
     { name: 'Speaking Mocks', href: '/org/speaking', icon: Mic },
-    { name: 'Exam Results', href: '/org#results', icon: Award },
+    { name: 'Exam Results', href: '/org/results', icon: Award },
   ];
 
   return (
