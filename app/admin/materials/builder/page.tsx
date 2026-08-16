@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { MOCK_IELTS_TEST, Test, Passage, ListeningSection, WritingTask, SpeakingPart } from '@/lib/mock-data';
-import { saveTestToStorage, getTestById } from '@/lib/test-store';
+import { useStore } from '@/components/providers/StoreProvider';
 import { ReadingBuilder } from '@/components/admin/builder/ReadingBuilder';
 import { WritingBuilder } from '@/components/admin/builder/WritingBuilder';
 import { ListeningBuilder } from '@/components/admin/builder/ListeningBuilder';
@@ -48,15 +48,17 @@ function TestBuilderInner() {
 
   const [isMounted, setIsMounted] = useState(false);
 
+  const { addTest, updateTest, tests } = useStore();
+
   useEffect(() => {
     setIsMounted(true);
-    if (editId) {
-      const found = getTestById(editId);
+    if (editId && tests.length > 0) {
+      const found = tests.find(t => t.id === editId);
       if (found) {
         setTestState(found);
       }
     }
-  }, [editId]);
+  }, [editId, tests]);
 
 
   const [activeModuleTab, setActiveModuleTab] = useState<'reading' | 'listening' | 'writing' | 'speaking'>('reading');
@@ -77,24 +79,39 @@ function TestBuilderInner() {
     );
   }
 
-  const handleSaveDraft = () => {
-    saveTestToStorage(testState);
-    setSaveSuccessMsg('Test saved to LocalStorage and synced across Org & Student pages!');
+  const handleSaveDraft = async () => {
+    const exists = tests.some(t => t.id === testState.id);
+    if (exists) {
+      await updateTest(testState.id, testState);
+    } else {
+      await addTest(testState);
+    }
+    setSaveSuccessMsg('Draft saved securely to Supabase!');
     setTimeout(() => setSaveSuccessMsg(null), 3000);
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     const published = { ...testState, status: 'published' as const };
     setTestState(published);
-    saveTestToStorage(published);
-    setSaveSuccessMsg('Test published to LocalStorage and synced across Org & Student pages!');
+    const exists = tests.some(t => t.id === published.id);
+    if (exists) {
+      await updateTest(published.id, published);
+    } else {
+      await addTest(published);
+    }
+    setSaveSuccessMsg('Test published to Supabase and synced via web link!');
     setTimeout(() => setSaveSuccessMsg(null), 3000);
   };
 
-  const handleImportJson = (importedTest: Test) => {
+  const handleImportJson = async (importedTest: Test) => {
     setTestState(importedTest);
-    saveTestToStorage(importedTest);
-    setSaveSuccessMsg('Test JSON imported and saved to LocalStorage! Available to all students & orgs.');
+    const exists = tests.some(t => t.id === importedTest.id);
+    if (exists) {
+      await updateTest(importedTest.id, importedTest);
+    } else {
+      await addTest(importedTest);
+    }
+    setSaveSuccessMsg('Test JSON imported and saved directly to Supabase!');
     setTimeout(() => setSaveSuccessMsg(null), 4000);
   };
 

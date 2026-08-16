@@ -35,6 +35,9 @@ interface StoreContextType {
   updateExamLog: (id: string, updates: Partial<ExamLog>) => void;
   addSpeakingRequest: (req: SpeakingRequest) => void;
   updateSpeakingRequest: (id: string, updates: Partial<SpeakingRequest>) => void;
+  addTest: (test: any) => Promise<void>;
+  updateTest: (id: string, updates: Partial<any>) => Promise<void>;
+  deleteTest: (id: string) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -306,6 +309,35 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await supabase.from('speaking_requests').update(dbUpdates).eq('id', id);
   };
 
+  const addTest = async (test: any) => {
+    setTests([test, ...tests]);
+    const dbInsert: any = { ...test };
+    if (test.totalDurationMinutes !== undefined) dbInsert.total_duration_minutes = test.totalDurationMinutes;
+    if (test.tierAccess !== undefined) dbInsert.tier_access = test.tierAccess;
+    if (test.questionCount !== undefined) dbInsert.question_count = test.questionCount;
+    if (test.createdDate !== undefined) dbInsert.created_date = test.createdDate;
+    if (test.listeningAudioUrl !== undefined) dbInsert.listening_audio_url = test.listeningAudioUrl;
+    ['totalDurationMinutes', 'tierAccess', 'questionCount', 'createdDate', 'listeningAudioUrl'].forEach(k => delete dbInsert[k]);
+    await supabase.from('tests').insert(dbInsert);
+  };
+
+  const updateTest = async (id: string, updates: Partial<any>) => {
+    setTests(tests.map(t => t.id === id ? { ...t, ...updates } : t));
+    const dbUpdates: any = { ...updates };
+    if (updates.totalDurationMinutes !== undefined) dbUpdates.total_duration_minutes = updates.totalDurationMinutes;
+    if (updates.tierAccess !== undefined) dbUpdates.tier_access = updates.tierAccess;
+    if (updates.questionCount !== undefined) dbUpdates.question_count = updates.questionCount;
+    if (updates.createdDate !== undefined) dbUpdates.created_date = updates.createdDate;
+    if (updates.listeningAudioUrl !== undefined) dbUpdates.listening_audio_url = updates.listeningAudioUrl;
+    ['totalDurationMinutes', 'tierAccess', 'questionCount', 'createdDate', 'listeningAudioUrl'].forEach(k => delete dbUpdates[k]);
+    await supabase.from('tests').update(dbUpdates).eq('id', id);
+  };
+
+  const deleteTest = async (id: string) => {
+    setTests(tests.filter(t => t.id !== id));
+    await supabase.from('tests').delete().eq('id', id);
+  };
+
   if (!isInitialized) return null;
 
   return (
@@ -317,7 +349,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       addStudent, updateStudent,
       addManager, deleteManager,
       addExamLog, updateExamLog,
-      addSpeakingRequest, updateSpeakingRequest
+      addSpeakingRequest, updateSpeakingRequest,
+      addTest, updateTest, deleteTest
     }}>
       {children}
     </StoreContext.Provider>
