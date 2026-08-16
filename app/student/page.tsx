@@ -6,13 +6,14 @@ import { useStore } from '@/components/providers/StoreProvider';
 import { Award, BookOpen, Clock, Mail, GraduationCap } from 'lucide-react';
 
 export default function StudentProfilePage() {
-  const { currentUser, examLogs, tests } = useStore();
+  const { currentUser, examLogs, tests, students } = useStore();
 
   if (!currentUser) return null;
 
+  const activeStudent = students.find(s => s.id === currentUser.id) || currentUser;
   const myLogs = examLogs.filter(l => l.studentId === currentUser.id);
   const completedTestIds = myLogs.map(l => l.testId);
-  const pendingTestsCount = tests.filter(t => (currentUser.assignedTests || []).includes(t.id) && !completedTestIds.includes(t.id)).length;
+  const pendingTestsCount = tests.filter(t => (activeStudent.assignedTests || []).includes(t.id) && !completedTestIds.includes(t.id)).length;
 
   // Calculate Average Band
   const scoredLogs = myLogs.filter(l => l.overallBand !== undefined);
