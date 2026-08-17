@@ -481,13 +481,34 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
                   </button>
                 </div>
                 {section.provideWordBank && (
-                  <textarea
-                    rows={3}
-                    value={(section.wordBankOptions || []).join('\n')}
-                    onChange={(e) => updateSection({ wordBankOptions: e.target.value.split('\n').filter(Boolean) })}
-                    className="w-full p-3 rounded-xl border border-slate-300 text-xs font-mono"
-                    placeholder="Enter options (one per line)..."
-                  />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-slate-500">Label Style</label>
+                      <div className="flex space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => updateSection({ wordBankLabelStyle: 'letters' })}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold ${section.wordBankLabelStyle !== 'none' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}`}
+                        >
+                          Letters (A, B, C...)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateSection({ wordBankLabelStyle: 'none' })}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold ${section.wordBankLabelStyle === 'none' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}`}
+                        >
+                          Words Only
+                        </button>
+                      </div>
+                    </div>
+                    <textarea
+                      rows={3}
+                      value={(section.wordBankOptions || []).join('\n')}
+                      onChange={(e) => updateSection({ wordBankOptions: e.target.value.split('\n').filter(Boolean) })}
+                      className="w-full p-3 rounded-xl border border-slate-300 text-xs font-mono"
+                      placeholder="Enter options (one per line)..."
+                    />
+                  </div>
                 )}
               </div>
             )}

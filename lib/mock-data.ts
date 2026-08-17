@@ -197,6 +197,7 @@ export interface QuestionSection {
   summaryText?: string;
   wordBankTitle?: string;
   questionsTitle?: string;
+  wordBankLabelStyle?: 'letters' | 'none';
   // Shared Pools
   wordBankOptions?: string[];
   headingsPool?: { id: string; label: string; text: string }[];

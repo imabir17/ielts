@@ -393,21 +393,23 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                                   <span className="font-bold text-xs text-slate-700 font-mono">({matchingQ.questionNumber})</span>
                                 )}
                                 {sec.wordBankOptions && sec.wordBankOptions.length > 0 ? (
-                                  <select
-                                    value={currentVal}
-                                    onChange={(e) => handleUpdate(e.target.value)}
-                                    className="px-2.5 py-1 bg-white rounded-lg border-2 border-[#005C53] text-xs font-extrabold text-[#005C53] focus:outline-none shadow-2xs cursor-pointer inline-block"
-                                  >
-                                    <option value="">-- Select --</option>
-                                    {sec.wordBankOptions.map((opt, oIdx) => {
-                                      const letterLabel = String.fromCharCode(65 + oIdx);
-                                      return (
-                                        <option key={oIdx} value={`${letterLabel} ${opt}`}>
-                                          {letterLabel} {opt}
-                                        </option>
-                                      );
-                                    })}
-                                  </select>
+                                    <select
+                                      value={currentVal}
+                                      onChange={(e) => handleUpdate(e.target.value)}
+                                      className="px-2.5 py-1 bg-white rounded-lg border-2 border-[#005C53] text-xs font-extrabold text-[#005C53] focus:outline-none shadow-2xs cursor-pointer inline-block"
+                                    >
+                                      <option value="">-- Select --</option>
+                                      {sec.wordBankOptions.map((opt, oIdx) => {
+                                        const useLetters = sec.wordBankLabelStyle !== 'none';
+                                        const letterLabel = String.fromCharCode(65 + oIdx);
+                                        const val = useLetters ? `${letterLabel} ${opt}` : opt;
+                                        return (
+                                          <option key={oIdx} value={val}>
+                                            {val}
+                                          </option>
+                                        );
+                                      })}
+                                    </select>
                                 ) : (
                                   <input
                                     type="text"
@@ -430,14 +432,15 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                   {sec.wordBankOptions && sec.wordBankOptions.length > 0 && (
                     <div className="pt-4 border-t border-slate-200 space-y-3">
                       <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                        List of Words / Options (A–{String.fromCharCode(64 + sec.wordBankOptions.length)})
+                        List of Words / Options {sec.wordBankLabelStyle !== 'none' && `(A–${String.fromCharCode(64 + sec.wordBankOptions.length)})`}
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 font-sans text-xs">
                         {sec.wordBankOptions.map((opt, oIdx) => {
+                          const useLetters = sec.wordBankLabelStyle !== 'none';
                           const letterLabel = String.fromCharCode(65 + oIdx);
                           return (
                             <div key={oIdx} className="flex items-center space-x-2 py-0.5">
-                              <span className="font-black text-slate-900 w-4 text-left">{letterLabel}</span>
+                              {useLetters && <span className="font-black text-slate-900 w-4 text-left">{letterLabel}</span>}
                               <span className="text-slate-800 font-medium">{opt}</span>
                             </div>
                           );
