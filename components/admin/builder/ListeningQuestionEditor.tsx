@@ -87,7 +87,19 @@ export function ListeningQuestionEditor({ section, onChange }: ListeningQuestion
                   </button>
                   <button
                     type="button"
-                    onClick={() => updateSection({ type: 'multiple_choice_multi', isMultiSelect: true, wordBankOptions: ['Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5'] })}
+                    onClick={() => updateSection({
+                      type: 'multiple_choice_multi',
+                      isMultiSelect: true,
+                      requiredSelectionCount: 2,
+                      questions: Array.from({ length: 2 }, (_, i) => ({
+                        id: `q-${section.id}-${Date.now()}-${i}`,
+                        sectionId: section.id,
+                        type: 'multiple_choice_multi' as const,
+                        prompt: '',
+                        correctAnswer: ''
+                      })),
+                      wordBankOptions: section.wordBankOptions?.length ? section.wordBankOptions : ['Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5']
+                    })}
                     className="px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700"
                   >
                     Multiple Answers
@@ -159,9 +171,9 @@ export function ListeningQuestionEditor({ section, onChange }: ListeningQuestion
       }
 
       case 'multiple_choice_multi': {
-        const requiredCount = section.requiredSelectionCount || 2;
+        const requiredCount = section.requiredSelectionCount ?? 2;
         const opts = section.wordBankOptions || [];
-        const correctAnswers = section.questions.map(q => q.correctAnswer).filter(Boolean) as string[];
+        const correctAnswers = section.questions.slice(0, requiredCount).map(q => q.correctAnswer).filter(Boolean) as string[];
 
         return (
           <div className="space-y-4">
@@ -178,44 +190,51 @@ export function ListeningQuestionEditor({ section, onChange }: ListeningQuestion
                   </button>
                   <button
                     type="button"
+                    onClick={() => updateSection({
+                      type: 'multiple_choice_multi',
+                      isMultiSelect: true,
+                      requiredSelectionCount: 2,
+                      questions: Array.from({ length: 2 }, (_, i) => ({
+                        id: `q-${section.id}-${Date.now()}-${i}`,
+                        sectionId: section.id,
+                        type: 'multiple_choice_multi' as const,
+                        prompt: '',
+                        correctAnswer: ''
+                      })),
+                      wordBankOptions: section.wordBankOptions?.length ? section.wordBankOptions : ['Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5']
+                    })}
                     className="px-3 py-1 rounded-lg text-xs font-bold bg-[#005C53] text-white"
                   >
                     Multiple Answers
                   </button>
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">How many options must the user choose?</label>
                 <input
                   type="number"
+                  min={1}
                   value={requiredCount}
                   onChange={(e) => {
                     const newCount = Math.max(1, Number(e.target.value));
-                    
-                    // Sync the number of questions to the required selection count
-                    let newQuestions = [...section.questions];
-                    if (newQuestions.length < newCount) {
-                      while (newQuestions.length < newCount) {
-                        newQuestions.push({
-                          id: `q-${section.id}-${Date.now()}-${newQuestions.length}`,
-                          sectionId: section.id,
-                          type: section.type,
-                          prompt: '',
-                          correctAnswer: ''
-                        });
-                      }
-                    } else if (newQuestions.length > newCount) {
-                      newQuestions = newQuestions.slice(0, newCount);
-                    }
-                    
+                    const existingCorrect = section.questions.map(q => q.correctAnswer);
+                    const newQuestions = Array.from({ length: newCount }, (_, i) => ({
+                      id: section.questions[i]?.id ?? `q-${section.id}-${Date.now()}-${i}`,
+                      sectionId: section.id,
+                      type: section.type,
+                      prompt: '',
+                      correctAnswer: existingCorrect[i] ?? ''
+                    }));
                     updateSection({ requiredSelectionCount: newCount, questions: newQuestions });
                   }}
                   className="w-32 px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold"
                 />
-                <p className="text-[10px] text-slate-500 mt-1">This will automatically allocate {requiredCount} question numbers for this section.</p>
+                <p className="text-[10px] text-slate-500 mt-1">This will allocate {requiredCount} question numbers and {requiredCount} marks for this section.</p>
               </div>
             </div>
+
+
 
             <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3">
               <h4 className="font-extrabold text-slate-900 text-sm">Shared Options List</h4>
