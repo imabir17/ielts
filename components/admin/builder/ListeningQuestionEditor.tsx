@@ -249,7 +249,7 @@ export function ListeningQuestionEditor({ section, onChange }: ListeningQuestion
                       onChange={(e) => {
                         let newAnswers = [...correctAnswers];
                         if (e.target.checked) {
-                          if (newAnswers.length < section.questions.length) newAnswers.push(opt);
+                          if (newAnswers.length < requiredCount) newAnswers.push(opt);
                         } else {
                           newAnswers = newAnswers.filter(a => a !== opt);
                         }
