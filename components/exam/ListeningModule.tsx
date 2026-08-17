@@ -118,7 +118,7 @@ export function ListeningModule({ allSections, audioUrl, onAnswerChange }: Liste
         )}
         
         {/* 1. Multiple Choice */}
-        {(qSec.type === 'multiple_choice_single' || qSec.type === 'multiple_choice_multi' || qSec.type === 'multiple-choice') && (
+        {(qSec.type === 'multiple_choice_single' || qSec.type === 'multiple-choice') && (
           <div className="space-y-6">
             {qSec.questions.map(q => {
               const isMulti = qSec.type === 'multiple_choice_multi' || qSec.isMultiSelect;
@@ -165,6 +165,80 @@ export function ListeningModule({ allSections, audioUrl, onAnswerChange }: Liste
                 </div>
               );
             })}
+          </div>
+        )}
+
+
+        {/* Multiple Choice Multi (List Selection) Section-Level Card */}
+        {qSec.type === 'multiple_choice_multi' && qSec.questions.length > 0 && (
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center space-x-2">
+                <span className="bg-slate-900 text-white font-extrabold text-xs px-3 py-1 rounded-xl flex items-center justify-center">
+                  Questions {qSec.questions[0].questionNumber} - {qSec.questions[qSec.questions.length - 1].questionNumber}
+                </span>
+              </div>
+            </div>
+
+            {qSec.questions[0]?.prompt ? (
+              <p className="font-bold text-slate-900 text-base leading-snug">
+                {qSec.questions[0].prompt}
+              </p>
+            ) : qSec.instructions ? (
+              <p className="font-bold text-slate-900 text-base leading-snug">
+                {qSec.instructions}
+              </p>
+            ) : null}
+            
+            <div className="text-xs font-bold text-amber-700 bg-amber-50 inline-block px-2.5 py-1 rounded-lg border border-amber-200 mb-2">
+              Instruction: Choose {qSec.requiredSelectionCount || 2} letters
+            </div>
+
+            <div className="space-y-2 pt-1">
+              {(qSec.wordBankOptions || []).map((opt, idx) => {
+                const selectedQuestions = qSec.questions.filter(q => userAnswers[q.id] === opt);
+                const isChecked = selectedQuestions.length > 0;
+                
+                const totalSelected = qSec.questions.filter(q => userAnswers[q.id]).length;
+                const isMaxReached = totalSelected >= (qSec.requiredSelectionCount || 2) && !isChecked;
+                
+                const letter = String.fromCharCode(65 + idx);
+
+                return (
+                  <button
+                    key={opt}
+                    disabled={isMaxReached}
+                    onClick={() => {
+                      if (isChecked) {
+                        selectedQuestions.forEach(q => handleAnswerChange(q.id, ''));
+                      } else {
+                        const emptyQ = qSec.questions.find(q => !userAnswers[q.id]);
+                        if (emptyQ) {
+                          handleAnswerChange(emptyQ.id, opt);
+                        }
+                      }
+                    }}
+                    className={`w-full text-left p-3.5 rounded-2xl border text-sm font-medium transition-all flex items-center justify-between ${
+                      isChecked
+                        ? 'bg-[#005C53] text-white border-[#005C53]'
+                        : isMaxReached
+                        ? 'bg-slate-50 text-slate-400 border-slate-200 opacity-60 cursor-not-allowed'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shrink-0 transition-colors ${
+                        isChecked ? 'bg-white text-[#005C53] shadow-sm' : isMaxReached ? 'bg-slate-200 text-slate-400' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {letter}
+                      </span>
+                      <span>{opt}</span>
+                    </div>
+                    {isChecked && <CheckCircle className="w-5 h-5 text-emerald-300" />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

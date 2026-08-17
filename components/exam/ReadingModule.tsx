@@ -517,9 +517,11 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                     </div>
                   </div>
 
-                  <p className="font-bold text-slate-900 text-base leading-snug">
-                    {sec.instructions}
-                  </p>
+                  {sec.questions[0]?.prompt && (
+                    <p className="font-bold text-slate-900 text-base leading-snug">
+                      {sec.questions[0].prompt}
+                    </p>
+                  )}
                   
                   <div className="text-xs font-bold text-amber-700 bg-amber-50 inline-block px-2.5 py-1 rounded-lg border border-amber-200 mb-2">
                     Instruction: Choose {sec.requiredSelectionCount || 2} letters
