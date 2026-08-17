@@ -675,8 +675,6 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
 
                     {/* 4. Free-Text & Gap Fill Inputs */}
                     {(sec.type === 'sentence_completion' ||
-                      sec.type === 'summary_completion' ||
-                      sec.type === 'note_completion' ||
                       sec.type === 'table_completion' ||
                       sec.type === 'flow_chart_completion' ||
                       sec.type === 'diagram_labeling' ||
