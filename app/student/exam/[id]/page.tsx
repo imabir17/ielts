@@ -91,28 +91,62 @@ export default function ExamPage() {
     if (!test) return score;
     const moduleData = test[module] || [];
     const moduleAnswers = answers[module] || {};
-    
-    moduleData.forEach((section: any) => {
-      const qs = section.questions || [];
-      qs.forEach((q: any) => {
+
+    // Walk top-level sections (Listening parts / Reading passages)
+    moduleData.forEach((topLevel: any) => {
+      // Collect all QuestionSection objects (nested inside passages/parts)
+      const questionSections: any[] = topLevel.sections || [];
+
+      questionSections.forEach((sec: any) => {
+        const qs: any[] = sec.questions || [];
+
+        if (sec.type === 'multiple_choice_multi') {
+          // Each placeholder question corresponds to one selected option.
+          // 1 mark per correctly selected option.
+          qs.forEach((q: any) => {
+            const userAns = moduleAnswers[q.id];
+            const correct = q.correctAnswer;
+            if (userAns && correct && typeof userAns === 'string' && typeof correct === 'string') {
+              if (userAns.toLowerCase().trim() === correct.toLowerCase().trim()) {
+                score++;
+              }
+            }
+          });
+        } else {
+          qs.forEach((q: any) => {
+            const userAns = moduleAnswers[q.id];
+            if (!userAns) return;
+            const correct = q.correctAnswer;
+            if (Array.isArray(correct)) {
+              if (Array.isArray(userAns) && correct.length === userAns.length && correct.every((val: string, index: number) => val === userAns[index])) {
+                score++;
+              }
+            } else if (typeof correct === 'string') {
+              if (typeof userAns === 'string' && userAns.toLowerCase().trim() === correct.toLowerCase().trim()) {
+                score++;
+              }
+            }
+          });
+        }
+      });
+
+      // Fallback: also score any flat questions directly on the top-level (legacy data)
+      const flatQs: any[] = (topLevel.questions || []).filter((q: any) =>
+        !questionSections.some((sec: any) => sec.questions?.some((sq: any) => sq.id === q.id))
+      );
+      flatQs.forEach((q: any) => {
         const userAns = moduleAnswers[q.id];
         if (!userAns) return;
-        
         const correct = q.correctAnswer;
-        if (Array.isArray(correct)) {
-          // If array, just checking if userAns contains all or any. Let's do simple exact match for now.
-          if (Array.isArray(userAns) && correct.length === userAns.length && correct.every((val, index) => val === userAns[index])) {
-            score++;
-          }
-        } else if (typeof correct === 'string') {
-          if (typeof userAns === 'string' && userAns.toLowerCase().trim() === correct.toLowerCase().trim()) {
-            score++;
-          }
+        if (typeof correct === 'string' && typeof userAns === 'string' && userAns.toLowerCase().trim() === correct.toLowerCase().trim()) {
+          score++;
         }
       });
     });
+
     return score;
   };
+
 
   const finishExam = () => {
     const studentInfo = students.find(s => s.id === currentUser.id);
