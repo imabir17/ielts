@@ -234,7 +234,7 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
                       onChange={(e) => {
                         let newAnswers = [...correctAnswers];
                         if (e.target.checked) {
-                          if (newAnswers.length < requiredCount) newAnswers.push(opt);
+                          if (newAnswers.length < section.questions.length) newAnswers.push(opt);
                         } else {
                           newAnswers = newAnswers.filter(a => a !== opt);
                         }
