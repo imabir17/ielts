@@ -131,7 +131,7 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
                 return (
                   <div key={q.id} className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex items-center justify-center rounded-lg">Q{qIdx + 1}</span>
+                      <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex items-center justify-center rounded-lg">Q{q.questionNumber || (qIdx + 1)}</span>
                       <button onClick={() => removeQuestion(qIdx)} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                     </div>
                     <input
@@ -202,7 +202,7 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
             {section.questions.map((q, qIdx) => (
               <div key={q.id} className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex items-center justify-center rounded-lg">Q{qIdx + 1}</span>
+                  <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex items-center justify-center rounded-lg">Q{q.questionNumber || (qIdx + 1)}</span>
                   <button onClick={() => removeQuestion(qIdx)} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                 </div>
                 <input
@@ -275,7 +275,7 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
               </div>
               {section.questions.map((q, qIdx) => (
                 <div key={q.id} className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 flex items-start space-x-3">
-                  <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-lg mt-1">Q{qIdx + 1}</span>
+                  <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-lg mt-1">Q{q.questionNumber || (qIdx + 1)}</span>
                   <div className="flex-1 space-y-2">
                     <input type="text" value={q.prompt} onChange={(e) => updateQuestion(qIdx, { prompt: e.target.value })} placeholder="Paragraph Label (e.g. Paragraph A)" className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
                     <select value={q.correctAnswer as string} onChange={(e) => updateQuestion(qIdx, { correctAnswer: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50">
@@ -332,7 +332,7 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
               </div>
               {section.questions.map((q, qIdx) => (
                 <div key={q.id} className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 flex items-start space-x-3">
-                  <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-lg mt-1">Q{qIdx + 1}</span>
+                  <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-lg mt-1">Q{q.questionNumber || (qIdx + 1)}</span>
                   <div className="flex-1 space-y-2">
                     <input type="text" value={q.prompt} onChange={(e) => updateQuestion(qIdx, { prompt: e.target.value })} placeholder="Statement text..." className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
                     <select value={q.correctAnswer as string} onChange={(e) => updateQuestion(qIdx, { correctAnswer: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50">
@@ -361,7 +361,7 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
             </div>
             {section.questions.map((q, qIdx) => (
               <div key={q.id} className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 flex items-start space-x-3">
-                <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-lg mt-1">Q{qIdx + 1}</span>
+                <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-lg mt-1">Q{q.questionNumber || (qIdx + 1)}</span>
                 <div className="flex-1 space-y-2">
                   <input type="text" value={q.prompt} onChange={(e) => updateQuestion(qIdx, { prompt: e.target.value })} placeholder="Statement to match..." className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
                   <input type="text" value={q.correctAnswer as string} onChange={(e) => updateQuestion(qIdx, { correctAnswer: e.target.value })} placeholder="Answer Key (e.g. A, B, C)" className="w-full px-3 py-2 rounded-xl border border-emerald-300 bg-emerald-50 text-sm font-semibold" />
@@ -437,7 +437,7 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
             <div className="bg-white p-1 rounded-2xl border border-slate-200 divide-y divide-slate-100">
               {section.questions.map((q, qIdx) => (
                 <div key={q.id} className="p-3 flex items-center space-x-3">
-                  <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-lg">Q{qIdx + 1}</span>
+                  <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-lg">Q{q.questionNumber || (qIdx + 1)}</span>
                   <div className="flex-1 grid grid-cols-2 gap-3">
                     <input
                       type="text"
@@ -554,7 +554,7 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {section.questions.map((q, qIdx) => (
                     <div key={q.id} className="flex items-center space-x-2 bg-white p-2 rounded-xl border border-slate-200">
-                      <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex items-center justify-center rounded-lg">Q{qIdx + 1}</span>
+                      <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex items-center justify-center rounded-lg">Q{q.questionNumber || (qIdx + 1)}</span>
                       <input
                         type="text"
                         value={q.correctAnswer as string}
@@ -814,7 +814,7 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
               {section.questions.map((q, qIdx) => (
                 <div key={q.id} className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 flex flex-col">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex items-center justify-center rounded-lg">Q{qIdx + 1}</span>
+                    <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex items-center justify-center rounded-lg">Q{q.questionNumber || (qIdx + 1)}</span>
                     <button onClick={() => removeQuestion(qIdx)} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                   </div>
                   <input
@@ -855,7 +855,7 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
               
               {section.questions.map((q, qIdx) => (
                 <div key={q.id} className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 flex items-start space-x-3">
-                  <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-lg mt-1">Q{qIdx + 1}</span>
+                  <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-lg mt-1">Q{q.questionNumber || (qIdx + 1)}</span>
                   <div className="flex-1 space-y-2">
                     <input
                       type="text"
