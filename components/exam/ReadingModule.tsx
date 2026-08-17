@@ -583,6 +583,9 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
               {/* Questions List */}
               {sec.questions.map((q) => {
                 if (sec.type === 'multiple_choice_multi') return null;
+                if (sec.type === 'note_completion' || sec.type === 'summary_completion') {
+                  return <div key={q.id} id={`question-card-${q.id}`} className="hidden" />;
+                }
 
                 const isFlagged = flaggedQuestions[q.id];
                 const studentAns = userAnswers[q.id];
