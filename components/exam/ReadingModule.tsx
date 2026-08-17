@@ -451,15 +451,15 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                 </div>
               )}
 
-              {/* Shared Headings Pool Box */}
-              {sec.type === 'matching_headings' && sec.headingsPool && (
+              {/* Paragraphs Pool Box (new matching_headings) */}
+              {sec.type === 'matching_headings' && sec.paragraphsPool && sec.paragraphsPool.filter(Boolean).length > 0 && (
                 <div className="p-4 bg-slate-900 text-white rounded-2xl space-y-2 text-xs">
-                  <div className="font-bold text-emerald-400">List of Headings</div>
-                  <div className="grid grid-cols-1 gap-1.5 font-sans text-slate-200">
-                    {sec.headingsPool.map((h) => (
-                      <div key={h.id}>
-                        <strong className="text-emerald-300 font-mono">{h.label}.</strong> {h.text}
-                      </div>
+                  <div className="font-bold text-emerald-400">List of Paragraphs</div>
+                  <div className="flex flex-wrap gap-2 font-sans">
+                    {sec.paragraphsPool.filter(Boolean).map((p, idx) => (
+                      <span key={idx} className="bg-slate-800 text-emerald-300 px-3 py-1 rounded-xl font-bold border border-slate-700">
+                        {p}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -754,19 +754,20 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                       </div>
                     )}
 
-                    {/* 5. Matching Headings */}
-                    {sec.type === 'matching_headings' && sec.headingsPool && (
+                    {/* 5. Matching Headings — pick a paragraph for each heading */}
+                    {sec.type === 'matching_headings' && sec.paragraphsPool && (
                       <select
                         value={studentAns || ''}
                         onChange={(e) => setUserAnswers({ ...userAnswers, [q.id]: e.target.value })}
                         className="w-full p-3 rounded-2xl border border-slate-300 text-xs font-bold text-[#005C53] bg-white focus:outline-none focus:ring-2 focus:ring-[#005C53]"
                       >
-                        <option value="">-- Select Matching Heading --</option>
-                        {sec.headingsPool.map((h) => {
-                          const isUsedElsewhere = sec.usedOnceOnly && Object.values(userAnswers).includes(`${h.label}. ${h.text}`) && studentAns !== `${h.label}. ${h.text}`;
+                        <option value="">-- Select Paragraph --</option>
+                        {sec.paragraphsPool.filter(Boolean).map((p, pIdx) => {
+                          const isUsedElsewhere = sec.usedOnceOnly &&
+                            sec.questions.some(oq => oq.id !== q.id && userAnswers[oq.id] === p);
                           return (
-                            <option key={h.id} value={`${h.label}. ${h.text}`} disabled={isUsedElsewhere}>
-                              {h.label}. {h.text} {isUsedElsewhere ? '(Already Selected)' : ''}
+                            <option key={pIdx} value={p} disabled={isUsedElsewhere}>
+                              {p}{isUsedElsewhere ? ' (Already Selected)' : ''}
                             </option>
                           );
                         })}

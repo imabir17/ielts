@@ -329,52 +329,61 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
       }
 
       case 'matching_headings': {
+        const paragraphsPool: string[] = section.paragraphsPool || [];
         return (
           <div className="space-y-4">
+            {/* Paragraphs Pool */}
             <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-800">Shared Headings Pool (i, ii, iii...)</label>
+                <label className="text-xs font-bold text-slate-800">List of Paragraphs (dropdown options)</label>
                 <button
                   type="button"
                   onClick={() => updateSection({ usedOnceOnly: !section.usedOnceOnly })}
                   className={`px-3 py-1 rounded-xl text-xs font-bold ${section.usedOnceOnly ? 'bg-amber-500 text-slate-900' : 'bg-slate-200 text-slate-700'}`}
                 >
-                  {section.usedOnceOnly ? 'Used Once Only ON' : 'Used Once Only OFF'}
+                  {section.usedOnceOnly ? 'Each Paragraph Used Once' : 'Paragraphs Reusable'}
                 </button>
               </div>
               <textarea
                 rows={4}
-                placeholder="Enter Headings (one per line)...&#10;i. The architecture of reefs&#10;ii. Thermal stress factors"
-                value={(section.headingsPool || []).map((h) => `${h.label}. ${h.text}`).join('\n')}
+                placeholder={"Enter paragraph labels (one per line)...\nParagraph A\nParagraph B\nParagraph C\nNot in passage"}
+                value={paragraphsPool.join('\n')}
                 onChange={(e) => {
-                  const lines = e.target.value.split('\n').filter(Boolean);
-                  const pool = lines.map((line, idx) => {
-                    const parts = line.split('.');
-                    const label = parts.length > 1 ? parts[0].trim() : `heading-${idx + 1}`;
-                    const text = parts.length > 1 ? parts.slice(1).join('.').trim() : line.trim();
-                    return { id: `h-${idx}`, label, text };
-                  });
-                  updateSection({ headingsPool: pool });
+                  const lines = e.target.value.split('\n');
+                  updateSection({ paragraphsPool: lines });
                 }}
                 className="w-full p-3 rounded-xl border border-slate-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#005C53]"
               />
+              <p className="text-[10px] text-slate-400">Students will see these as dropdown options for each heading.</p>
             </div>
+
+            {/* Headings list – one question per heading */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="font-extrabold text-slate-900 text-sm">Paragraphs to Match ({section.questions.length})</h4>
+                <h4 className="font-extrabold text-slate-900 text-sm">Headings ({section.questions.length})</h4>
                 <button onClick={() => addQuestion()} className="px-3 py-1.5 bg-[#005C53] text-white text-xs font-bold rounded-xl">
-                  <Plus className="w-3.5 h-3.5 inline mr-1" /> Add Paragraph
+                  <Plus className="w-3.5 h-3.5 inline mr-1" /> Add Heading
                 </button>
               </div>
               {section.questions.map((q, qIdx) => (
                 <div key={q.id} className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 flex items-start space-x-3">
                   <span className="font-bold text-xs bg-slate-900 text-white w-6 h-6 flex flex-shrink-0 items-center justify-center rounded-lg mt-1">Q{q.questionNumber || (qIdx + 1)}</span>
                   <div className="flex-1 space-y-2">
-                    <input type="text" value={q.prompt} onChange={(e) => updateQuestion(qIdx, { prompt: e.target.value })} placeholder="Paragraph Label (e.g. Paragraph A)" className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
-                    <select value={q.correctAnswer as string} onChange={(e) => updateQuestion(qIdx, { correctAnswer: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50">
-                      <option value="">Select Correct Match...</option>
-                      {(section.headingsPool || []).map((h, oIdx) => (
-                        <option key={oIdx} value={`${h.label}. ${h.text}`}>{h.label}. {h.text}</option>
+                    <input
+                      type="text"
+                      value={q.prompt}
+                      onChange={(e) => updateQuestion(qIdx, { prompt: e.target.value })}
+                      placeholder="Heading text (e.g. The rise of digital agriculture)"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                    />
+                    <select
+                      value={q.correctAnswer as string}
+                      onChange={(e) => updateQuestion(qIdx, { correctAnswer: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50"
+                    >
+                      <option value="">Select Correct Paragraph...</option>
+                      {paragraphsPool.filter(Boolean).map((p, pIdx) => (
+                        <option key={pIdx} value={p}>{p}</option>
                       ))}
                     </select>
                   </div>

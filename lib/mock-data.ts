@@ -200,7 +200,8 @@ export interface QuestionSection {
   wordBankLabelStyle?: 'letters' | 'none';
   // Shared Pools
   wordBankOptions?: string[];
-  headingsPool?: { id: string; label: string; text: string }[];
+  headingsPool?: { id: string; label: string; text: string }[]; // legacy – kept for old data compatibility
+  paragraphsPool?: string[]; // new: list of paragraph labels students pick from in matching_headings
   featuresPool?: { id: string; text: string }[];
   sentenceEndingsPool?: { id: string; text: string }[];
   // Specific Structure Data
@@ -328,36 +329,19 @@ export const MOCK_IELTS_TEST: Test = {
           helpGuide: 'Choose YES if the statement agrees with the writer claims, NO if it contradicts, or NOT GIVEN if impossible to tell.',
         },
         {
-          id: 'q-4',
-          questionNumber: 4,
-          type: 'matching_headings',
-          prompt: '4. Match the heading to Paragraph B.',
-          instruction: 'Drag the correct heading into the drop box.',
-          itemsToMatch: [
-            { id: 'h-1', text: 'i. Symbiotic Relationship & Carbon Translocation' },
-            { id: 'h-2', text: 'ii. Thermal Stress & Bleaching Mechanism' },
-            { id: 'h-3', text: 'iii. Global Marine Species Distribution' },
-          ],
-          categories: [
-            { id: 'p-B', title: 'Paragraph B Heading' },
-          ],
-          correctAnswer: 'i. Symbiotic Relationship & Carbon Translocation',
-          helpGuide: 'Click and drag a heading into the target paragraph box.',
-        },
-        {
           id: 'q-5',
-          questionNumber: 5,
+          questionNumber: 4,
           type: 'sentence_completion',
-          prompt: '5. When ocean waters exceed historical maximums, zooxanthellae produce toxic ________.',
+          prompt: '4. When ocean waters exceed historical maximums, zooxanthellae produce toxic ________.',
           instruction: 'Write NO MORE THAN THREE WORDS from the passage. You can copy text directly from the passage.',
           correctAnswer: 'reactive oxygen species',
           helpGuide: 'Type your answer or select words in the passage and paste them directly into the text box.',
         },
         {
           id: 'q-6',
-          questionNumber: 6,
+          questionNumber: 5,
           type: 'short_answer',
-          prompt: '6. What process turns corals white when polyps expel algae?',
+          prompt: '5. What process turns corals white when polyps expel algae?',
           instruction: 'Write NO MORE THAN TWO WORDS from the passage.',
           correctAnswer: 'coral bleaching',
           helpGuide: 'Write your answer in the box.',
