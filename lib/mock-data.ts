@@ -200,6 +200,8 @@ export interface QuestionSection {
   wordBankLabelStyle?: 'letters' | 'none';
   // Shared Pools
   wordBankOptions?: string[];
+  multiCorrectAnswers?: string[]; // for multiple_choice_multi: the set of correct option texts
+
   headingsPool?: { id: string; label: string; text: string }[]; // legacy – kept for old data compatibility
   paragraphsPool?: string[]; // new: list of paragraph labels students pick from in matching_headings
   featuresPool?: { id: string; text: string }[];

@@ -238,61 +238,63 @@ export function ListeningQuestionEditor({ section, onChange }: ListeningQuestion
 
             <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3">
               <h4 className="font-extrabold text-slate-900 text-sm">Shared Options List</h4>
-              <p className="text-xs text-slate-500">Add the available options here, and check the correct ones.</p>
-              
+              <p className="text-xs text-slate-500">
+                Add the available options here. Check up to <strong>{requiredCount}</strong> as correct answers.
+              </p>
+
+              {(section.multiCorrectAnswers || []).length > 0 && (
+                <div className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
+                  ✓ {(section.multiCorrectAnswers || []).length} of {requiredCount} correct answers selected
+                </div>
+              )}
+
               <div className="space-y-2">
-                {opts.map((opt, oIdx) => (
-                  <div key={oIdx} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={correctAnswers.includes(opt)}
-                      onChange={(e) => {
-                        let newAnswers = [...correctAnswers];
-                        if (e.target.checked) {
-                          if (newAnswers.length < requiredCount) newAnswers.push(opt);
-                        } else {
-                          newAnswers = newAnswers.filter(a => a !== opt);
-                        }
-                        
-                        // Map answers back to the questions
-                        const newQuestions = section.questions.map((q, i) => ({
-                          ...q,
-                          correctAnswer: newAnswers[i] || ''
-                        }));
-                        updateSection({ questions: newQuestions });
-                      }}
-                      className="w-4 h-4 text-[#005C53]"
-                    />
-                    <span className="font-bold text-xs text-slate-500 w-4">{String.fromCharCode(65 + oIdx)}.</span>
-                    <input
-                      type="text"
-                      value={opt}
-                      onChange={(e) => {
-                        const newOpts = [...opts];
-                        const oldVal = newOpts[oIdx];
-                        newOpts[oIdx] = e.target.value;
-                        
-                        // Update correct answers if the option text changed
-                        const newQuestions = section.questions.map(q => ({
-                          ...q,
-                          correctAnswer: q.correctAnswer === oldVal ? e.target.value : q.correctAnswer
-                        }));
-                        
-                        updateSection({ wordBankOptions: newOpts, questions: newQuestions });
-                      }}
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs"
-                    />
-                    <button onClick={() => {
-                      updateSection({ wordBankOptions: opts.filter((_, idx) => idx !== oIdx) });
-                    }} className="text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></button>
-                  </div>
-                ))}
+                {opts.map((opt, oIdx) => {
+                  const isCorrect = (section.multiCorrectAnswers || []).includes(opt);
+                  const atLimit = (section.multiCorrectAnswers || []).length >= requiredCount && !isCorrect;
+                  return (
+                    <div key={oIdx} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={isCorrect}
+                        disabled={atLimit}
+                        onChange={(e) => {
+                          const current = section.multiCorrectAnswers || [];
+                          const updated = e.target.checked
+                            ? current.length < requiredCount ? [...current, opt] : current
+                            : current.filter(a => a !== opt);
+                          updateSection({ multiCorrectAnswers: updated });
+                        }}
+                        className="w-4 h-4 text-[#005C53] disabled:opacity-40"
+                      />
+                      <span className="font-bold text-xs text-slate-500 w-4">{String.fromCharCode(65 + oIdx)}.</span>
+                      <input
+                        type="text"
+                        value={opt}
+                        onChange={(e) => {
+                          const newOpts = [...opts];
+                          const oldVal = newOpts[oIdx];
+                          newOpts[oIdx] = e.target.value;
+                          const updatedCorrect = (section.multiCorrectAnswers || []).map(a => a === oldVal ? e.target.value : a);
+                          updateSection({ wordBankOptions: newOpts, multiCorrectAnswers: updatedCorrect });
+                        }}
+                        className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs"
+                      />
+                      <button onClick={() => {
+                        const newOpts = opts.filter((_, idx) => idx !== oIdx);
+                        const updatedCorrect = (section.multiCorrectAnswers || []).filter(a => a !== opt);
+                        updateSection({ wordBankOptions: newOpts, multiCorrectAnswers: updatedCorrect });
+                      }} className="text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+                    </div>
+                  );
+                })}
                 <button onClick={() => updateSection({ wordBankOptions: [...opts, `Option ${opts.length + 1}`] })} className="text-xs font-bold text-[#005C53] hover:underline mt-1">+ Add Option</button>
               </div>
             </div>
           </div>
         );
       }
+
       case 'matching': {
         return (
           <div className="space-y-4">

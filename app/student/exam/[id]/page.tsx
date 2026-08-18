@@ -101,15 +101,13 @@ export default function ExamPage() {
         const qs: any[] = sec.questions || [];
 
         if (sec.type === 'multiple_choice_multi') {
-          // Each placeholder question corresponds to one selected option.
-          // 1 mark per correctly selected option.
+          // Each placeholder question holds one student-selected option.
+          // 1 mark per selection that appears in multiCorrectAnswers.
+          const correctSet: string[] = sec.multiCorrectAnswers || [];
           qs.forEach((q: any) => {
             const userAns = moduleAnswers[q.id];
-            const correct = q.correctAnswer;
-            if (userAns && correct && typeof userAns === 'string' && typeof correct === 'string') {
-              if (userAns.toLowerCase().trim() === correct.toLowerCase().trim()) {
-                score++;
-              }
+            if (userAns && typeof userAns === 'string' && correctSet.some(c => c.toLowerCase().trim() === userAns.toLowerCase().trim())) {
+              score++;
             }
           });
         } else {
