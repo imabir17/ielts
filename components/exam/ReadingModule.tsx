@@ -4,8 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Passage, QuestionSection, Question, QuestionType } from '@/lib/mock-data';
 import { calculateTestScore, ScoreResult } from '@/lib/scoring-engine';
 import {
-  BookOpen, Flag, HelpCircle, EyeOff, CheckCircle2, Copy, Highlighter, StickyNote, X, RefreshCw, MapPin, ListPlus
+  BookOpen, Flag, HelpCircle, EyeOff, CheckCircle2, Copy, Highlighter, StickyNote, X, RefreshCw, MapPin, ListPlus, Underline, Trash2
 } from 'lucide-react';
+import { QuestionNavigator, NavigatorQuestionItem } from './QuestionNavigator';
 
 interface ReadingModuleProps {
   passage: Passage;
@@ -16,7 +17,9 @@ interface ReadingModuleProps {
 interface HighlightItem {
   id: string;
   text: string;
+  style?: 'highlight' | 'underline';
   note?: string;
+  createdAt?: string;
 }
 
 export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingModuleProps) {
@@ -32,6 +35,8 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
   const [textMenuPos, setTextMenuPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isAddingNote, setIsAddingNote] = useState<boolean>(false);
   const [noteInput, setNoteInput] = useState<string>('');
+  const [showNotepad, setShowNotepad] = useState<boolean>(false);
+  const [freeNotes, setFreeNotes] = useState<string>('');
 
   // Modals & Overlays
   const [isScreenHidden, setIsScreenHidden] = useState<boolean>(false);
@@ -42,6 +47,7 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
   const [activePassageIdx, setActivePassageIdx] = useState<number>(0);
   const passagesToRender = allPassages && allPassages.length > 0 ? allPassages : [passage];
   const currentPassage = passagesToRender[activePassageIdx];
+
 
   // 1. Debounced Local Autosave
   const storageKey = `ielts_answers_${passagesToRender[0].id}`;
@@ -77,16 +83,27 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
     }
   };
 
-  const addHighlight = () => {
+  const addHighlight = (style: 'highlight' | 'underline' = 'highlight') => {
     if (!selectedText) return;
-    const newHl: HighlightItem = { id: `hl-${Date.now()}`, text: selectedText };
+    const newHl: HighlightItem = {
+      id: `hl-${Date.now()}`,
+      text: selectedText,
+      style,
+      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
     setHighlights([...highlights, newHl]);
     setShowTextMenu(false);
   };
 
   const addNoteWithText = () => {
     if (!selectedText || !noteInput.trim()) return;
-    const newHl: HighlightItem = { id: `hl-${Date.now()}`, text: selectedText, note: noteInput.trim() };
+    const newHl: HighlightItem = {
+      id: `hl-${Date.now()}`,
+      text: selectedText,
+      style: 'highlight',
+      note: noteInput.trim(),
+      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
     setHighlights([...highlights, newHl]);
     setNoteInput('');
     setIsAddingNote(false);
@@ -103,8 +120,6 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
     setFlaggedQuestions({ ...flaggedQuestions, [qId]: !flaggedQuestions[qId] });
   };
 
-  // Submit handled by parent now
-
   // Extract all questions in current passage for rendering
   const sectionsList: QuestionSection[] = currentPassage.sections || [
     {
@@ -117,10 +132,36 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
   ];
 
   // Extract all 40 questions across ALL passages for the bottom navigation dock
-  const allGlobalQuestions = passagesToRender.flatMap((p) => {
+  const allGlobalQuestions = passagesToRender.flatMap((p, pIdx) => {
     const secs = p.sections || [{ questions: p.questions || [] }];
-    return secs.flatMap(s => s.questions);
+    return secs.flatMap(s => s.questions.map(q => ({
+      ...q,
+      passageIndex: pIdx
+    })));
   });
+
+  const navigatorItems: NavigatorQuestionItem[] = allGlobalQuestions.map(q => ({
+    id: q.id,
+    questionNumber: q.questionNumber || 1,
+    isAnswered: Boolean(userAnswers[q.id]),
+    isFlagged: Boolean(flaggedQuestions[q.id]),
+    passageOrPartIndex: (q as any).passageIndex
+  }));
+
+  const handleSelectNavigatorQuestion = (item: NavigatorQuestionItem) => {
+    if (item.passageOrPartIndex !== undefined && item.passageOrPartIndex !== activePassageIdx) {
+      setActivePassageIdx(item.passageOrPartIndex);
+      setTimeout(() => {
+        setActiveQuestionId(item.id);
+        const el = document.getElementById(`question-card-${item.id}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+    } else {
+      setActiveQuestionId(item.id);
+      const el = document.getElementById(`question-card-${item.id}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
 
   return (
     <div className="relative h-full flex flex-col font-sans select-none bg-slate-100 overflow-hidden">
@@ -167,8 +208,6 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
         </div>
       )}
 
-
-
       {/* TOP HEADER CONTROLS */}
       <div className="bg-white px-6 py-2.5 border-b border-slate-200 flex items-center justify-between shadow-sm shrink-0 select-none">
         <div className="flex items-center space-x-6">
@@ -197,6 +236,20 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
         </div>
 
         <div className="flex items-center space-x-3">
+          {/* Notepad Toggle Button */}
+          <button
+            onClick={() => setShowNotepad(!showNotepad)}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              showNotepad
+                ? 'bg-[#005C53] text-white shadow-sm'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            }`}
+            title="Open Exam Notepad & Highlights List"
+          >
+            <StickyNote className="w-4 h-4 text-amber-500" />
+            <span>Notepad {highlights.length > 0 ? `(${highlights.length})` : ''}</span>
+          </button>
+
           <button
             onClick={() => setIsScreenHidden(true)}
             className="flex items-center space-x-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-colors"
@@ -212,13 +265,11 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
             <HelpCircle className="w-4 h-4 text-[#005C53]" />
             <span>Help</span>
           </button>
-
-
         </div>
       </div>
 
       {/* MAIN SPLIT-SCREEN VIEWPORT */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden relative">
         {/* LEFT COLUMN: PASSAGE (Independently Scrollable + Selection Tools) */}
         <div
           ref={passageContainerRef}
@@ -232,40 +283,69 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
               className="fixed z-40 bg-slate-900 text-white p-1.5 rounded-2xl shadow-xl flex items-center space-x-1 text-xs font-sans animate-in fade-in zoom-in-95 duration-150"
             >
               <button
-                onClick={addHighlight}
+                onClick={() => addHighlight('highlight')}
                 className="flex items-center space-x-1 bg-yellow-400 text-slate-900 px-2.5 py-1 rounded-xl hover:bg-yellow-300 transition-colors font-bold"
+                title="Highlight in yellow"
               >
                 <Highlighter className="w-3.5 h-3.5" />
                 <span>Highlight</span>
               </button>
 
               <button
+                onClick={() => addHighlight('underline')}
+                className="flex items-center space-x-1 bg-sky-500 text-white px-2.5 py-1 rounded-xl hover:bg-sky-400 transition-colors font-bold"
+                title="Underline text"
+              >
+                <Underline className="w-3.5 h-3.5" />
+                <span>Underline</span>
+              </button>
+
+              <button
                 onClick={() => setIsAddingNote(true)}
                 className="flex items-center space-x-1 bg-emerald-700 text-white px-2.5 py-1 rounded-xl hover:bg-emerald-600 transition-colors font-bold"
+                title="Add a note to this selection"
               >
                 <StickyNote className="w-3.5 h-3.5" />
                 <span>Note</span>
               </button>
 
+              {activeQuestionId && (
+                <button
+                  onClick={() => {
+                    copyToActiveInput(selectedText);
+                    setShowTextMenu(false);
+                  }}
+                  className="flex items-center space-x-1 bg-slate-800 text-slate-200 px-2.5 py-1 rounded-xl hover:bg-slate-700 transition-colors font-bold"
+                  title="Copy selected text into current question"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy</span>
+                </button>
+              )}
             </div>
           )}
 
-          {/* Sticky Note Modal */}
+          {/* Sticky Note Creation Box */}
           {isAddingNote && (
             <div className="p-4 bg-yellow-50 rounded-2xl border border-yellow-300 shadow-md space-y-2 text-xs font-sans mb-4">
-              <div className="font-bold text-yellow-900">Add Sticky Note:</div>
+              <div className="font-bold text-yellow-900">Add Sticky Note for selected text:</div>
+              <div className="p-2 bg-yellow-100/70 rounded-lg text-slate-700 italic border border-yellow-200">
+                "{selectedText}"
+              </div>
               <input
                 type="text"
                 value={noteInput}
+                placeholder="Type your note here..."
                 onChange={(e) => setNoteInput(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-xl border border-yellow-400 text-xs bg-white text-slate-900 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl border border-yellow-400 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 font-sans"
               />
               <div className="flex justify-end space-x-2">
                 <button onClick={() => setIsAddingNote(false)} className="px-3 py-1 text-slate-600">Cancel</button>
-                <button onClick={addNoteWithText} className="px-3 py-1 bg-yellow-500 text-slate-900 font-bold rounded-lg">Save Note</button>
+                <button onClick={addNoteWithText} className="px-3 py-1 bg-yellow-500 text-slate-900 font-bold rounded-lg hover:bg-yellow-400">Save Note</button>
               </div>
             </div>
           )}
+
 
           {/* Optional Passage Diagram Image (TOP) */}
           {currentPassage.diagramUrl && (!currentPassage.imagePosition || currentPassage.imagePosition === 'top') && (
@@ -818,56 +898,112 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
             </div>
           ))}
         </div>
-      </div>
 
-      {/* BOTTOM 1-40 QUESTION NAVIGATION DOCK */}
-      <div className="bg-slate-900 text-white p-3 border-t border-slate-800 flex items-center justify-between shadow-2xl shrink-0 select-none">
-        <div className="flex items-center space-x-2 overflow-x-auto py-1 px-2">
-          {allGlobalQuestions.map((q) => {
-            const qId = q.id;
-            const qNum = q.questionNumber || 1;
-            const isFlagged = flaggedQuestions[qId];
-            const isAnswered = Boolean(userAnswers[qId]);
-
-            return (
+        {/* NOTEPAD & HIGHLIGHTS SLIDE-OUT DRAWER */}
+        {showNotepad && (
+          <div className="absolute right-0 top-0 bottom-0 w-full sm:w-96 bg-white border-l border-slate-300 shadow-2xl z-40 flex flex-col animate-in slide-in-from-right duration-200">
+            <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <StickyNote className="w-5 h-5 text-amber-400" />
+                <h3 className="font-bold text-sm">Exam Notepad & Notes</h3>
+              </div>
               <button
-                key={qId}
-                onClick={() => {
-                  const targetPassageIdx = passagesToRender.findIndex(p => {
-                    const secs = p.sections || [{ questions: p.questions || [] }];
-                    return secs.some(s => s.questions.some(qq => qq.id === qId));
-                  });
-                  
-                  if (targetPassageIdx !== -1 && targetPassageIdx !== activePassageIdx) {
-                    setActivePassageIdx(targetPassageIdx);
-                    setTimeout(() => {
-                      setActiveQuestionId(qId);
-                      const el = document.getElementById(`question-card-${qId}`);
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 150);
-                  } else {
-                    setActiveQuestionId(qId);
-                    const el = document.getElementById(`question-card-${qId}`);
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }
-                }}
-                className={`relative min-w-[32px] h-8 rounded-xl font-extrabold text-xs flex items-center justify-center transition-all px-2 ${
-                  isAnswered
-                    ? 'bg-[#005C53] text-white shadow-sm'
-                    : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
-                }`}
+                onClick={() => setShowNotepad(false)}
+                className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"
               >
-                <span>{qNum}</span>
-                {isFlagged && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border border-slate-900 flex items-center justify-center">
-                    <Flag className="w-2 h-2 text-slate-900 fill-slate-900" />
-                  </span>
-                )}
+                <X className="w-5 h-5" />
               </button>
-            );
-          })}
-        </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs">
+              {/* Free Scratchpad */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 block text-[11px] uppercase tracking-wider">
+                  Quick Scratchpad / Rough Notes
+                </label>
+                <textarea
+                  value={freeNotes}
+                  onChange={(e) => setFreeNotes(e.target.value)}
+                  placeholder="Type any quick thoughts, reminders, or drafts here..."
+                  className="w-full h-28 p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005C53] text-slate-900 resize-none font-sans text-xs"
+                />
+              </div>
+
+              {/* Highlights & Text Notes List */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 block text-[11px] uppercase tracking-wider">
+                    Passage Highlights ({highlights.length})
+                  </label>
+                  {highlights.length > 0 && (
+                    <button
+                      onClick={() => setHighlights([])}
+                      className="text-[10px] text-red-600 hover:underline font-semibold"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+
+                {highlights.length === 0 ? (
+                  <div className="p-6 text-center text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+                    <Highlighter className="w-6 h-6 mx-auto mb-2 text-slate-300" />
+                    <p className="text-xs">No highlights yet.</p>
+                    <p className="text-[11px] mt-1 text-slate-400">
+                      Select text in the passage on the left to highlight or add sticky notes.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                    {highlights.map((hl) => (
+                      <div
+                        key={hl.id}
+                        className={`p-3 rounded-xl border space-y-1.5 ${
+                          hl.style === 'underline'
+                            ? 'bg-sky-50 border-sky-200 text-sky-950'
+                            : 'bg-yellow-50 border-yellow-200 text-yellow-950'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                            hl.style === 'underline' ? 'bg-sky-200 text-sky-800' : 'bg-yellow-200 text-yellow-800'
+                          }`}>
+                            {hl.style === 'underline' ? 'Underlined' : 'Highlighted'}
+                          </span>
+                          <button
+                            onClick={() => setHighlights(highlights.filter((h) => h.id !== hl.id))}
+                            className="text-slate-400 hover:text-red-500 p-0.5"
+                            title="Delete note"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <p className="text-xs italic leading-snug">"{hl.text}"</p>
+                        {hl.note && (
+                          <div className="pt-1 border-t border-yellow-200/80 font-semibold text-xs flex items-start space-x-1">
+                            <span className="text-slate-500">Note:</span>
+                            <span className="text-slate-900">{hl.note}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* QUESTION NAVIGATOR DOCK */}
+      <QuestionNavigator
+        questions={navigatorItems}
+        activeQuestionId={activeQuestionId}
+        onSelectQuestion={handleSelectNavigatorQuestion}
+        onToggleFlag={toggleFlag}
+        title="Reading Questions"
+      />
     </div>
   );
 }
+

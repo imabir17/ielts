@@ -2,27 +2,100 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ListeningSection, QuestionSection, Question, TableCell, FlowStep, DiagramPin } from '@/lib/mock-data';
-import { Volume2, VolumeX, Headphones, CheckCircle } from 'lucide-react';
+import { Volume2, VolumeX, Headphones, CheckCircle, Highlighter, Underline, StickyNote, X, Trash2, Flag } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
+import { QuestionNavigator, NavigatorQuestionItem } from './QuestionNavigator';
 
 interface ListeningModuleProps {
   allSections: ListeningSection[];
   audioUrl?: string;
+  volume?: number;
   onAnswerChange?: (answers: Record<string, any>) => void;
 }
 
-export function ListeningModule({ allSections, audioUrl, onAnswerChange }: ListeningModuleProps) {
+interface HighlightItem {
+  id: string;
+  text: string;
+  style?: 'highlight' | 'underline';
+  note?: string;
+  createdAt?: string;
+}
+
+export function ListeningModule({ allSections, audioUrl, volume = 0.8, onAnswerChange }: ListeningModuleProps) {
   const [activeSectionIdx, setActiveSectionIdx] = useState(0);
   const section = allSections[activeSectionIdx];
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [userAnswers, setUserAnswers] = useState<Record<string, any>>({});
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Record<string, boolean>>({});
+  const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
+
+  // Tools & Highlights State
+  const [highlights, setHighlights] = useState<HighlightItem[]>([]);
+  const [selectedText, setSelectedText] = useState<string>('');
+  const [showTextMenu, setShowTextMenu] = useState<boolean>(false);
+  const [textMenuPos, setTextMenuPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isAddingNote, setIsAddingNote] = useState<boolean>(false);
+  const [noteInput, setNoteInput] = useState<string>('');
+  const [showNotepad, setShowNotepad] = useState<boolean>(false);
+  const [freeNotes, setFreeNotes] = useState<string>('');
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Sync external volume prop
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume;
+    }
+  }, [volume, isMuted]);
 
   useEffect(() => {
     if (onAnswerChange) onAnswerChange(userAnswers);
   }, [userAnswers, onAnswerChange]);
+
+  const handleTextSelection = (e: React.MouseEvent) => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const text = selection.toString().trim();
+      setSelectedText(text);
+      setTextMenuPos({ x: e.clientX, y: Math.max(10, e.clientY - 50) });
+      setShowTextMenu(true);
+    } else {
+      setShowTextMenu(false);
+    }
+  };
+
+  const addHighlight = (style: 'highlight' | 'underline' = 'highlight') => {
+    if (!selectedText) return;
+    const newHl: HighlightItem = {
+      id: `hl-${Date.now()}`,
+      text: selectedText,
+      style,
+      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setHighlights([...highlights, newHl]);
+    setShowTextMenu(false);
+  };
+
+  const addNoteWithText = () => {
+    if (!selectedText || !noteInput.trim()) return;
+    const newHl: HighlightItem = {
+      id: `hl-${Date.now()}`,
+      text: selectedText,
+      style: 'highlight',
+      note: noteInput.trim(),
+      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setHighlights([...highlights, newHl]);
+    setNoteInput('');
+    setIsAddingNote(false);
+    setShowTextMenu(false);
+  };
+
+  const toggleFlag = (qId: string) => {
+    setFlaggedQuestions(prev => ({ ...prev, [qId]: !prev[qId] }));
+  };
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -507,52 +580,119 @@ export function ListeningModule({ allSections, audioUrl, onAnswerChange }: Liste
     );
   };
 
+  // Extract all questions across all listening parts for the bottom QuestionNavigator
+  const allGlobalQuestions = allSections.flatMap((sec, sIdx) => {
+    if (sec.sections && sec.sections.length > 0) {
+      return sec.sections.flatMap(subSec => subSec.questions.map(q => ({
+        ...q,
+        partIndex: sIdx
+      })));
+    }
+    return (sec.questions || []).map(q => ({
+      ...q,
+      partIndex: sIdx
+    }));
+  });
+
+  const navigatorItems: NavigatorQuestionItem[] = allGlobalQuestions.map(q => ({
+    id: q.id,
+    questionNumber: q.questionNumber || 1,
+    isAnswered: Boolean(userAnswers[q.id]),
+    isFlagged: Boolean(flaggedQuestions[q.id]),
+    passageOrPartIndex: (q as any).partIndex
+  }));
+
+  const handleSelectNavigatorQuestion = (item: NavigatorQuestionItem) => {
+    if (item.passageOrPartIndex !== undefined && item.passageOrPartIndex !== activeSectionIdx) {
+      setActiveSectionIdx(item.passageOrPartIndex);
+      setTimeout(() => {
+        setActiveQuestionId(item.id);
+        const el = document.getElementById(`question-card-${item.id}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+    } else {
+      setActiveQuestionId(item.id);
+      const el = document.getElementById(`question-card-${item.id}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-slate-100 font-sans overflow-hidden">
-      {/* LOCKED AUDIO PLAYER AT TOP */}
-      <div className="sticky top-0 z-30 bg-[#002A25] text-white p-4 shadow-lg border-b border-emerald-800">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-6">
+    <div className="h-[calc(100vh-64px)] flex flex-col bg-slate-100 font-sans overflow-hidden relative">
+      {/* LOCKED AUDIO PLAYER & PART TABS AT TOP */}
+      <div className="sticky top-0 z-30 bg-[#002A25] text-white px-6 py-3.5 shadow-lg border-b border-emerald-800 flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* Audio Play & Time Info */}
+        <div className="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-start">
           <div className="flex items-center space-x-3">
             <button
               onClick={togglePlay}
-              className="w-12 h-12 rounded-2xl bg-red-600 hover:bg-red-700 text-white flex items-center justify-center font-bold shadow-md transition-transform active:scale-95 shrink-0"
+              className="w-10 h-10 rounded-xl bg-red-600 hover:bg-red-700 text-white flex items-center justify-center font-bold shadow-md transition-transform active:scale-95 shrink-0"
+              title={isPlaying ? 'Pause Audio' : 'Play Audio'}
             >
               {isPlaying ? '⏸' : '▶'}
             </button>
             <div>
               <div className="flex items-center space-x-2">
                 <Headphones className="w-4 h-4 text-emerald-400" />
-                <h3 className="font-bold text-sm text-white">Listening Module Audio</h3>
+                <h3 className="font-bold text-xs text-white uppercase tracking-wider">Listening Audio Track</h3>
               </div>
-              <div className="text-xs text-emerald-300 font-mono mt-0.5">
+              <div className="text-xs text-emerald-300 font-mono">
                 {formatTime(currentTime)}
               </div>
             </div>
           </div>
 
-          {/* Audio Scrubber */}
-          <div className="flex-1 max-w-md hidden sm:block">
-            <input
-              type="range"
-              min={0}
-              max={audioRef.current?.duration || 100}
-              value={currentTime}
-              onChange={handleSeek}
-              className="w-full h-2 bg-emerald-950 rounded-lg appearance-none cursor-pointer accent-red-500"
-            />
+          {/* Notepad Toggle in Audio Bar */}
+          <button
+            onClick={() => setShowNotepad(!showNotepad)}
+            className={`md:hidden flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+              showNotepad ? 'bg-amber-400 text-slate-950' : 'bg-emerald-900 text-emerald-200 hover:bg-emerald-800'
+            }`}
+          >
+            <StickyNote className="w-3.5 h-3.5" />
+            <span>Notepad {highlights.length > 0 ? `(${highlights.length})` : ''}</span>
+          </button>
+        </div>
+
+        {/* Audio Scrubber */}
+        <div className="flex-1 max-w-md hidden lg:block px-4">
+          <input
+            type="range"
+            min={0}
+            max={audioRef.current?.duration || 100}
+            value={currentTime}
+            onChange={handleSeek}
+            className="w-full h-2 bg-emerald-950 rounded-lg appearance-none cursor-pointer accent-red-500"
+          />
+        </div>
+
+        {/* Part Tabs & Notepad */}
+        <div className="flex items-center space-x-2 shrink-0">
+          <div className="flex items-center space-x-1 bg-emerald-950/80 p-1 rounded-xl border border-emerald-800">
+            {allSections.map((sec, idx) => (
+              <button
+                key={sec.id}
+                onClick={() => setActiveSectionIdx(idx)}
+                className={`px-3 py-1 rounded-lg font-bold text-xs transition-all ${
+                  activeSectionIdx === idx
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-emerald-300 hover:text-white hover:bg-emerald-900/60'
+                }`}
+              >
+                Part {idx + 1}
+              </button>
+            ))}
           </div>
 
-          {/* Volume Button */}
           <button
-            onClick={() => {
-              if (audioRef.current) {
-                audioRef.current.muted = !isMuted;
-                setIsMuted(!isMuted);
-              }
-            }}
-            className="p-2 text-emerald-300 hover:text-white transition-colors"
+            onClick={() => setShowNotepad(!showNotepad)}
+            className={`hidden md:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              showNotepad ? 'bg-amber-400 text-slate-950 shadow-sm' : 'bg-emerald-900/80 text-emerald-200 hover:bg-emerald-800 border border-emerald-700'
+            }`}
+            title="Open Notes & Highlights"
           >
-            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            <StickyNote className="w-3.5 h-3.5" />
+            <span>Notepad {highlights.length > 0 ? `(${highlights.length})` : ''}</span>
           </button>
         </div>
 
@@ -564,14 +704,75 @@ export function ListeningModule({ allSections, audioUrl, onAnswerChange }: Liste
         />
       </div>
 
-      {/* SCROLLABLE QUESTIONS BELOW */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-10 max-w-7xl mx-auto w-full space-y-8">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-red-600 bg-red-50 px-2.5 py-1 rounded-md">
-            Listening Module Instructions
-          </span>
+      {/* SCROLLABLE QUESTIONS AREA (WITH HIGHLIGHT SELECTION HANDLER) */}
+      <div
+        onMouseUp={handleTextSelection}
+        className="flex-1 overflow-y-auto p-6 md:p-10 max-w-5xl mx-auto w-full space-y-8 select-text relative"
+      >
+        {/* FLOATING TEXT SELECTION TOOLBAR */}
+        {showTextMenu && (
+          <div
+            style={{ left: `${textMenuPos.x}px`, top: `${textMenuPos.y}px` }}
+            className="fixed z-40 bg-slate-900 text-white p-1.5 rounded-2xl shadow-xl flex items-center space-x-1 text-xs font-sans animate-in fade-in zoom-in-95 duration-150 select-none"
+          >
+            <button
+              onClick={() => addHighlight('highlight')}
+              className="flex items-center space-x-1 bg-yellow-400 text-slate-900 px-2.5 py-1 rounded-xl hover:bg-yellow-300 transition-colors font-bold"
+              title="Highlight text"
+            >
+              <Highlighter className="w-3.5 h-3.5" />
+              <span>Highlight</span>
+            </button>
+
+            <button
+              onClick={() => addHighlight('underline')}
+              className="flex items-center space-x-1 bg-sky-500 text-white px-2.5 py-1 rounded-xl hover:bg-sky-400 transition-colors font-bold"
+              title="Underline text"
+            >
+              <Underline className="w-3.5 h-3.5" />
+              <span>Underline</span>
+            </button>
+
+            <button
+              onClick={() => setIsAddingNote(true)}
+              className="flex items-center space-x-1 bg-emerald-700 text-white px-2.5 py-1 rounded-xl hover:bg-emerald-600 transition-colors font-bold"
+              title="Add a note"
+            >
+              <StickyNote className="w-3.5 h-3.5" />
+              <span>Note</span>
+            </button>
+          </div>
+        )}
+
+        {/* Sticky Note Creation Box */}
+        {isAddingNote && (
+          <div className="p-4 bg-yellow-50 rounded-2xl border border-yellow-300 shadow-md space-y-2 text-xs font-sans mb-4 select-none">
+            <div className="font-bold text-yellow-900">Add Sticky Note for selected text:</div>
+            <div className="p-2 bg-yellow-100/70 rounded-lg text-slate-700 italic border border-yellow-200">
+              "{selectedText}"
+            </div>
+            <input
+              type="text"
+              value={noteInput}
+              placeholder="Type your note here..."
+              onChange={(e) => setNoteInput(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-yellow-400 text-xs bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 font-sans"
+            />
+            <div className="flex justify-end space-x-2">
+              <button onClick={() => setIsAddingNote(false)} className="px-3 py-1 text-slate-600">Cancel</button>
+              <button onClick={addNoteWithText} className="px-3 py-1 bg-yellow-500 text-slate-900 font-bold rounded-lg hover:bg-yellow-400">Save Note</button>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2 select-none">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-red-600 bg-red-50 px-2.5 py-1 rounded-md">
+              Listening Module Instructions (Part {activeSectionIdx + 1})
+            </span>
+          </div>
           <p className="text-xs text-slate-600 leading-relaxed">
-            Listen to the audio track carefully. Answer the questions as you listen. You will not be able to replay the track in an official IELTS exam session.
+            Listen to the audio track and answer the questions directly as you listen. You can highlight text, add notes, and review your answers freely.
           </p>
         </div>
 
@@ -579,7 +780,6 @@ export function ListeningModule({ allSections, audioUrl, onAnswerChange }: Liste
         {section.sections ? (
           section.sections.map(qSec => renderQuestionSection(qSec))
         ) : (
-          /* Fallback for direct section.questions if it's treated as a single QuestionSection */
           renderQuestionSection({
             id: section.id,
             type: section.questions[0]?.type || 'text-input',
@@ -590,27 +790,113 @@ export function ListeningModule({ allSections, audioUrl, onAnswerChange }: Liste
         )}
         
         {/* Extra space at bottom to account for footer */}
-        <div className="h-16"></div>
+        <div className="h-12"></div>
       </div>
 
-      {/* BOTTOM NAVIGATION BARS */}
-      <div className="bg-white border-t border-slate-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="max-w-7xl mx-auto flex items-center justify-center space-x-2">
-          {allSections.map((sec, idx) => (
+      {/* NOTEPAD & HIGHLIGHTS SLIDE-OUT DRAWER */}
+      {showNotepad && (
+        <div className="absolute right-0 top-16 bottom-14 w-full sm:w-96 bg-white border-l border-slate-300 shadow-2xl z-40 flex flex-col animate-in slide-in-from-right duration-200">
+          <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <StickyNote className="w-5 h-5 text-amber-400" />
+              <h3 className="font-bold text-sm">Listening Notepad & Notes</h3>
+            </div>
             <button
-              key={sec.id}
-              onClick={() => setActiveSectionIdx(idx)}
-              className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${
-                activeSectionIdx === idx
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
-              }`}
+              onClick={() => setShowNotepad(false)}
+              className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"
             >
-              Part {idx + 1}
+              <X className="w-5 h-5" />
             </button>
-          ))}
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs">
+            {/* Free Scratchpad */}
+            <div className="space-y-1.5">
+              <label className="font-bold text-slate-700 block text-[11px] uppercase tracking-wider">
+                Quick Scratchpad / Rough Notes
+              </label>
+              <textarea
+                value={freeNotes}
+                onChange={(e) => setFreeNotes(e.target.value)}
+                placeholder="Jot down keywords, numbers, or names while listening..."
+                className="w-full h-32 p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005C53] text-slate-900 resize-none font-sans text-xs"
+              />
+            </div>
+
+            {/* Highlights & Text Notes List */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-700 block text-[11px] uppercase tracking-wider">
+                  Highlights & Notes ({highlights.length})
+                </label>
+                {highlights.length > 0 && (
+                  <button
+                    onClick={() => setHighlights([])}
+                    className="text-[10px] text-red-600 hover:underline font-semibold"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+
+              {highlights.length === 0 ? (
+                <div className="p-6 text-center text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+                  <Highlighter className="w-6 h-6 mx-auto mb-2 text-slate-300" />
+                  <p className="text-xs">No highlights yet.</p>
+                  <p className="text-[11px] mt-1 text-slate-400">
+                    Select any question prompt text to highlight or save notes.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                  {highlights.map((hl) => (
+                    <div
+                      key={hl.id}
+                      className={`p-3 rounded-xl border space-y-1.5 ${
+                        hl.style === 'underline'
+                          ? 'bg-sky-50 border-sky-200 text-sky-950'
+                          : 'bg-yellow-50 border-yellow-200 text-yellow-950'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                          hl.style === 'underline' ? 'bg-sky-200 text-sky-800' : 'bg-yellow-200 text-yellow-800'
+                        }`}>
+                          {hl.style === 'underline' ? 'Underlined' : 'Highlighted'}
+                        </span>
+                        <button
+                          onClick={() => setHighlights(highlights.filter((h) => h.id !== hl.id))}
+                          className="text-slate-400 hover:text-red-500 p-0.5"
+                          title="Delete note"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <p className="text-xs italic leading-snug">"{hl.text}"</p>
+                      {hl.note && (
+                        <div className="pt-1 border-t border-yellow-200/80 font-semibold text-xs flex items-start space-x-1">
+                          <span className="text-slate-500">Note:</span>
+                          <span className="text-slate-900">{hl.note}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* QUESTION NAVIGATOR DOCK */}
+      <QuestionNavigator
+        questions={navigatorItems}
+        activeQuestionId={activeQuestionId}
+        onSelectQuestion={handleSelectNavigatorQuestion}
+        onToggleFlag={toggleFlag}
+        title="Listening Questions"
+      />
     </div>
   );
 }
+

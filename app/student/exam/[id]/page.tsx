@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { getTestById } from '@/lib/test-store';
 import { ExamTimer } from '@/components/exam/ExamTimer';
+import { AccessibilityBar } from '@/components/exam/AccessibilityBar';
 import { ReadingModule } from '@/components/exam/ReadingModule';
 import { ListeningModule } from '@/components/exam/ListeningModule';
 import { WritingModule } from '@/components/exam/WritingModule';
 import { SpeakingModule } from '@/components/exam/SpeakingModule';
-import { BookOpen, Headphones, Edit3, Mic, LogOut, CheckCircle2, ChevronRight, AlertCircle, Clock } from 'lucide-react';
+import { BookOpen, Headphones, Edit3, Mic, LogOut, CheckCircle2, ChevronRight, AlertCircle, AlertTriangle, Clock, X } from 'lucide-react';
 import { useStore } from '@/components/providers/StoreProvider';
 import { ExamLog, SpeakingRequest } from '@/lib/mock-data';
 
@@ -29,12 +30,17 @@ export default function ExamPage() {
   const [selectedModules, setSelectedModules] = useState<ModuleType[]>([]);
   const [currentModuleIdx, setCurrentModuleIdx] = useState<number>(0);
   
+  // Accessibility & Audio State
+  const [audioVolume, setAudioVolume] = useState<number>(0.8);
+  const [toastAlert, setToastAlert] = useState<{ message: string; type: 'warning' | 'critical' } | null>(null);
+
   const [answers, setAnswers] = useState({
     reading: {} as Record<string, any>,
     listening: {} as Record<string, any>,
     writing: {} as Record<string, any>,
     speaking: {} as Record<string, any>
   });
+
 
   const existingLog = examLogs.find(l => l.studentId === currentUser?.id && l.testId === testId);
 
@@ -314,34 +320,103 @@ export default function ExamPage() {
     );
   }
 
+  const handleWarningThreshold = (threshold: 10 | 5) => {
+    if (threshold === 10) {
+      setToastAlert({
+        message: '10 Minutes Remaining: Please begin reviewing your answers and checking remaining questions.',
+        type: 'warning'
+      });
+    } else if (threshold === 5) {
+      setToastAlert({
+        message: '5 Minutes Remaining: Final warning! Ensure all responses are completed before submission.',
+        type: 'critical'
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (toastAlert) {
+      const timer = setTimeout(() => {
+        setToastAlert(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastAlert]);
+
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[var(--paper-alt)] font-sans">
-      <header className="h-16 bg-[var(--sidebar)] text-white px-6 flex items-center justify-between shrink-0 select-none">
-        <div className="flex items-center space-x-4">
-          <div>
-            <h1 className="font-medium text-[15px] text-white leading-tight">{test.title}</h1>
-            <span className="text-[11px] text-[var(--sidebar-text-dim)] font-mono">Candidate: {currentUser.name} ({students.find(s=>s.id===currentUser.id)?.studentId})</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-2 bg-[var(--ink)] px-4 py-1.5 rounded-[3px] border border-[var(--sidebar-line)]">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-[var(--sidebar-text-dim)]">Current Module</span>
-            <span className="font-bold text-white capitalize">{activeModule}</span>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          {activeModule !== 'speaking' && (
-            <ExamTimer initialSeconds={getModuleTimer(activeModule)} onTimeUp={handleModuleComplete} />
+    <div className="h-screen flex flex-col overflow-hidden bg-[var(--paper-alt)] font-sans relative exam-root">
+      {/* FLOATING TIMER WARNING TOAST */}
+      {toastAlert && (
+        <div
+          className={`absolute top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 border text-xs font-bold animate-in fade-in slide-in-from-top-4 duration-300 max-w-lg w-full ${
+            toastAlert.type === 'critical'
+              ? 'bg-red-600 text-white border-red-700 ring-4 ring-red-500/30'
+              : 'bg-amber-500 text-slate-950 border-amber-600 ring-4 ring-amber-400/30'
+          }`}
+        >
+          {toastAlert.type === 'critical' ? (
+            <AlertCircle className="w-5 h-5 text-white animate-bounce shrink-0" />
+          ) : (
+            <AlertTriangle className="w-5 h-5 text-slate-950 shrink-0" />
           )}
+          <div className="flex-1 font-sans leading-snug">
+            {toastAlert.message}
+          </div>
+          <button
+            onClick={() => setToastAlert(null)}
+            className="p-1 hover:bg-black/10 rounded-lg text-current"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
-          <button onClick={handleModuleComplete} className="btn btn-fill bg-[var(--brick)] border-[var(--brick)] text-[12px] px-4 py-1.5">
+      {/* TOP EXAM HEADER */}
+      <header className="h-16 bg-[var(--sidebar)] text-white px-4 md:px-6 flex items-center justify-between shrink-0 select-none z-40 border-b border-slate-800 shadow-md">
+        {/* Left: Test Title & Candidate Info */}
+        <div className="flex items-center space-x-3">
+          <div>
+            <div className="flex items-center space-x-2">
+              <h1 className="font-bold text-sm text-white leading-tight">{test.title}</h1>
+              <span className="hidden sm:inline-block bg-[#005C53] text-emerald-200 text-[10px] uppercase font-bold px-2 py-0.5 rounded capitalize">
+                {activeModule}
+              </span>
+            </div>
+            <span className="text-[11px] text-[var(--sidebar-text-dim)] font-mono">
+              Candidate: {currentUser.name} ({students.find(s=>s.id===currentUser.id)?.studentId})
+            </span>
+          </div>
+        </div>
+
+        {/* Center: TOP-CENTER STOPWATCH / TIMER */}
+        <div className="flex items-center justify-center">
+          {activeModule !== 'speaking' && (
+            <ExamTimer
+              initialSeconds={getModuleTimer(activeModule)}
+              onTimeUp={handleModuleComplete}
+              onWarningThreshold={handleWarningThreshold}
+            />
+          )}
+        </div>
+
+        {/* Right: ACCESSIBILITY CONTROLS (Font, Contrast, Volume) & SUBMIT BUTTON */}
+        <div className="flex items-center space-x-3">
+          <AccessibilityBar
+            volume={audioVolume}
+            onVolumeChange={(v) => setAudioVolume(v)}
+            showVolume={activeModule === 'listening'}
+          />
+
+          <button
+            onClick={handleModuleComplete}
+            className="btn btn-fill bg-[#B23A2A] hover:bg-[#8C2C1F] border-none text-[12px] px-3.5 py-1.5 font-bold shadow-sm"
+          >
             Submit {activeModule}
           </button>
         </div>
       </header>
 
+      {/* ACTIVE MODULE CONTAINER */}
       <div className="flex-1 overflow-hidden relative">
         {activeModule === 'reading' && (
           <ReadingModule 
@@ -354,6 +429,7 @@ export default function ExamPage() {
           <ListeningModule 
             allSections={test.listening} 
             audioUrl={test.listeningAudioUrl} 
+            volume={audioVolume}
             onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, listening: { ...prev.listening, ...ans } }))}
           />
         )}
@@ -373,3 +449,4 @@ export default function ExamPage() {
     </div>
   );
 }
+

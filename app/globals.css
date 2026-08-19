@@ -246,3 +246,94 @@ hr.rule { border: none; border-top: 1px solid var(--line); margin: 26px 0 32px; 
 .audit-table tr:last-child td { border-bottom: none; }
 .audit-table td.who { color: var(--ink); font-weight: 500; }
 .audit-table td.time { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+
+/* --- IELTS Computer-Based Test (CBT) Accessibility Styles --- */
+.exam-root {
+  font-size: calc(1rem * var(--exam-font-scale, 1));
+}
+
+/* Yellow on Black Theme (Standard Official IELTS CBT Contrast Mode) */
+[data-exam-theme="yellow-on-black"] {
+  background-color: #000000 !important;
+  color: #ffff00 !important;
+}
+
+[data-exam-theme="yellow-on-black"] .bg-white,
+[data-exam-theme="yellow-on-black"] .bg-slate-50,
+[data-exam-theme="yellow-on-black"] .bg-slate-100,
+[data-exam-theme="yellow-on-black"] .bg-emerald-50,
+[data-exam-theme="yellow-on-black"] .bg-slate-200 {
+  background-color: #000000 !important;
+  color: #ffff00 !important;
+  border-color: #ffff00 !important;
+}
+
+[data-exam-theme="yellow-on-black"] .text-slate-900,
+[data-exam-theme="yellow-on-black"] .text-slate-800,
+[data-exam-theme="yellow-on-black"] .text-slate-700,
+[data-exam-theme="yellow-on-black"] .text-slate-600,
+[data-exam-theme="yellow-on-black"] .text-slate-500,
+[data-exam-theme="yellow-on-black"] p,
+[data-exam-theme="yellow-on-black"] span,
+[data-exam-theme="yellow-on-black"] h1,
+[data-exam-theme="yellow-on-black"] h2,
+[data-exam-theme="yellow-on-black"] h3,
+[data-exam-theme="yellow-on-black"] h4 {
+  color: #ffff00 !important;
+}
+
+[data-exam-theme="yellow-on-black"] input,
+[data-exam-theme="yellow-on-black"] textarea,
+[data-exam-theme="yellow-on-black"] select {
+  background-color: #0a0a0a !important;
+  color: #ffff00 !important;
+  border-color: #ffff00 !important;
+}
+
+/* High Contrast Dark Mode */
+[data-exam-theme="high-contrast"] {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+[data-exam-theme="high-contrast"] .bg-white,
+[data-exam-theme="high-contrast"] .bg-slate-50,
+[data-exam-theme="high-contrast"] .bg-slate-100 {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+[data-exam-theme="high-contrast"] .text-slate-900,
+[data-exam-theme="high-contrast"] .text-slate-800,
+[data-exam-theme="high-contrast"] .text-slate-700 {
+  color: #f8fafc !important;
+}
+
+[data-exam-theme="high-contrast"] .text-slate-600,
+[data-exam-theme="high-contrast"] .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+[data-exam-theme="high-contrast"] input,
+[data-exam-theme="high-contrast"] textarea,
+[data-exam-theme="high-contrast"] select {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+
+/* Soft Sepia Theme */
+[data-exam-theme="sepia"] {
+  background-color: #fbf0d9 !important;
+  color: #433422 !important;
+}
+
+[data-exam-theme="sepia"] .bg-white,
+[data-exam-theme="sepia"] .bg-slate-50,
+[data-exam-theme="sepia"] .bg-slate-100 {
+  background-color: #f4e8cf !important;
+  color: #433422 !important;
+  border-color: #d8c8a8 !important;
+}
+
