@@ -18,14 +18,14 @@ export function SpeakingModule({ parts, testId }: SpeakingModuleProps) {
   const [requested, setRequested] = useState(false);
 
   const handleRequestMock = () => {
-    if (!currentUser) return;
-    const studentInfo = students.find(s => s.id === currentUser.id);
-    if (!studentInfo) return;
+    const studentUser = currentUser || students?.[0];
+    if (!studentUser) return;
+    const studentInfo = students.find(s => s.id === studentUser.id) || studentUser;
 
     addSpeakingRequest({
       id: `sr-${Date.now()}`,
-      studentId: currentUser.id,
-      orgId: studentInfo.orgId,
+      studentId: studentUser.id,
+      orgId: studentInfo.orgId || '',
       testId: testId,
       status: 'pending',
       requestedAt: new Date().toISOString()
@@ -34,7 +34,8 @@ export function SpeakingModule({ parts, testId }: SpeakingModuleProps) {
     setRequested(true);
   };
 
-  const existingRequest = speakingRequests.find(r => r.studentId === currentUser?.id && r.testId === testId);
+  const studentUser = currentUser || students?.[0];
+  const existingRequest = speakingRequests.find(r => r.studentId === studentUser?.id && r.testId === testId);
 
   return (
     <div className="h-[calc(100vh-64px)] flex flex-col bg-slate-100 font-sans overflow-hidden p-6 md:p-10 max-w-4xl mx-auto w-full">

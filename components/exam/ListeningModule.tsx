@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ListeningSection, QuestionSection, Question, TableCell, FlowStep, DiagramPin } from '@/lib/mock-data';
 import { Volume2, VolumeX, Headphones, CheckCircle, Highlighter, Underline, StickyNote, X, Trash2, Flag } from 'lucide-react';
-import MDEditor from '@uiw/react-md-editor';
 import { QuestionNavigator, NavigatorQuestionItem } from './QuestionNavigator';
 
 interface ListeningModuleProps {
@@ -178,8 +177,8 @@ export function ListeningModule({ allSections, audioUrl, volume = 0.8, onAnswerC
     return (
       <div key={qSec.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6 hover:border-[#005C53]/40 transition-colors">
         {qSec.instructions && (
-          <div className="text-xs font-medium text-[#005C53] bg-emerald-50 p-3 rounded-lg overflow-hidden prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2">
-            <MDEditor.Markdown source={qSec.instructions} style={{ backgroundColor: 'transparent', color: 'inherit', fontSize: 'inherit', fontFamily: 'inherit' }} />
+          <div className="text-xs font-medium text-[#005C53] bg-emerald-50 p-3 rounded-lg overflow-hidden whitespace-pre-wrap leading-relaxed">
+            {qSec.instructions}
           </div>
         )}
 
@@ -322,8 +321,8 @@ export function ListeningModule({ allSections, audioUrl, volume = 0.8, onAnswerC
             {qSec.wordBankOptions && qSec.wordBankOptions.length > 0 && (
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
                 {qSec.wordBankTitle && (
-                  <div className="mb-3 text-sm font-bold text-slate-800 prose prose-sm max-w-none">
-                    <MDEditor.Markdown source={qSec.wordBankTitle} style={{ backgroundColor: 'transparent', color: 'inherit', fontSize: 'inherit', fontFamily: 'inherit' }} />
+                  <div className="mb-3 text-sm font-bold text-slate-800 whitespace-pre-wrap">
+                    {qSec.wordBankTitle}
                   </div>
                 )}
                 <div className="space-y-1">
@@ -337,8 +336,8 @@ export function ListeningModule({ allSections, audioUrl, volume = 0.8, onAnswerC
             {/* Questions List */}
             <div className="space-y-4">
               {qSec.questionsTitle && (
-                <div className="mb-2 text-sm font-bold text-slate-800 prose prose-sm max-w-none">
-                  <MDEditor.Markdown source={qSec.questionsTitle} style={{ backgroundColor: 'transparent', color: 'inherit', fontSize: 'inherit', fontFamily: 'inherit' }} />
+                <div className="mb-2 text-sm font-bold text-slate-800 whitespace-pre-wrap">
+                  {qSec.questionsTitle}
                 </div>
               )}
               {qSec.questions.map(q => (

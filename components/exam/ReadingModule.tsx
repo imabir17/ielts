@@ -45,12 +45,12 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
   const passageContainerRef = useRef<HTMLDivElement>(null);
 
   const [activePassageIdx, setActivePassageIdx] = useState<number>(0);
-  const passagesToRender = allPassages && allPassages.length > 0 ? allPassages : [passage];
-  const currentPassage = passagesToRender[activePassageIdx];
-
+  const defaultPassage: Passage = { id: 'passage-1', passageNumber: 1, title: 'Reading Passage 1', content: '', questions: [] };
+  const passagesToRender = (allPassages && allPassages.length > 0) ? allPassages : (passage ? [passage] : [defaultPassage]);
+  const currentPassage = passagesToRender[activePassageIdx] || passagesToRender[0] || defaultPassage;
 
   // 1. Debounced Local Autosave
-  const storageKey = `ielts_answers_${passagesToRender[0].id}`;
+  const storageKey = `ielts_answers_${passagesToRender[0]?.id || 'default'}`;
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
     if (saved) {
