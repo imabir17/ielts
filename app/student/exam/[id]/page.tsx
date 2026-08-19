@@ -68,6 +68,11 @@ export default function ExamPage() {
         if (isMountedLocal) {
           if (fetchedTest) {
             setTest(fetchedTest);
+            const availableModules = fetchedTest.moduleTypes && fetchedTest.moduleTypes.length > 0 
+              ? fetchedTest.moduleTypes 
+              : ['listening', 'reading', 'writing', 'speaking'];
+            const fixedOrder: ModuleType[] = ['listening', 'reading', 'writing', 'speaking'];
+            setSelectedModules(fixedOrder.filter(m => availableModules.includes(m)));
           }
         }
       } catch (err) {
@@ -136,20 +141,8 @@ export default function ExamPage() {
   }
 
 
-  const handleModuleSelection = (mod: ModuleType) => {
-    if (selectedModules.includes(mod)) {
-      setSelectedModules(selectedModules.filter(m => m !== mod));
-    } else {
-      setSelectedModules([...selectedModules, mod]);
-    }
-  };
-
   const handleStartExam = () => {
     if (selectedModules.length === 0) return;
-    // Sort to enforce order: Reading -> Writing -> Listening -> Speaking
-    const order: ModuleType[] = ['reading', 'writing', 'listening', 'speaking'];
-    const sorted = [...selectedModules].sort((a, b) => order.indexOf(a) - order.indexOf(b));
-    setSelectedModules(sorted);
     setCurrentModuleIdx(0);
     setExamState('warning');
   };
@@ -287,24 +280,26 @@ export default function ExamPage() {
         <div className="flex-1 max-w-4xl w-full mx-auto p-8 flex flex-col justify-center">
           <div className="panel p-10 text-center">
             <h2 className="font-display text-[32px] text-[var(--ink)] mb-2">{test.title}</h2>
-            <p className="text-[15px] text-[var(--ink-soft)] mb-8">Select the modules you wish to take in this session. The system will automatically sequence them.</p>
+            <p className="text-[15px] text-[var(--ink-soft)] mb-8">You are about to begin the full mock exam. The modules will be administered in the official sequence.</p>
             
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10 text-left">
               {[
-                { id: 'reading', label: 'Reading', icon: BookOpen, desc: '60 Minutes' },
                 { id: 'listening', label: 'Listening', icon: Headphones, desc: 'Audio + 10 Mins' },
+                { id: 'reading', label: 'Reading', icon: BookOpen, desc: '60 Minutes' },
                 { id: 'writing', label: 'Writing', icon: Edit3, desc: '60 Minutes' },
                 { id: 'speaking', label: 'Speaking', icon: Mic, desc: 'Practice Mode' }
               ].map(mod => {
-                const isSel = selectedModules.includes(mod.id as ModuleType);
+                const isAvailable = selectedModules.includes(mod.id as ModuleType);
+                if (!isAvailable) return null;
+
                 const isPreviouslyTaken = existingLog?.modulesTaken?.includes(mod.id as ModuleType);
                 
                 return (
-                  <div key={mod.id} onClick={() => handleModuleSelection(mod.id as ModuleType)} className={`panel p-5 cursor-pointer transition-all border-2 ${isSel ? 'border-[var(--ink)] bg-[var(--paper)] ring-4 ring-[var(--ink)]/10' : 'border-[var(--line)] bg-[var(--paper-card)] hover:border-[var(--ink-faint)]'}`}>
+                  <div key={mod.id} className={`panel p-5 transition-all border-2 border-[var(--ink)] bg-[var(--paper)] ring-2 ring-[var(--ink)]/10`}>
                     <div className="flex justify-between items-start mb-3">
-                      <mod.icon className={`w-6 h-6 ${isSel ? 'text-[var(--brick)]' : 'text-[var(--ink-faint)]'}`} />
-                      <div className={`w-5 h-5 rounded-[4px] border-2 flex items-center justify-center ${isSel ? 'bg-[var(--ink)] border-[var(--ink)]' : 'border-[var(--line-soft)]'}`}>
-                        {isSel && <CheckCircle2 className="w-3 h-3 text-white" />}
+                      <mod.icon className="w-6 h-6 text-[var(--brick)]" />
+                      <div className="w-5 h-5 rounded-[4px] border-2 flex items-center justify-center bg-[var(--ink)] border-[var(--ink)]">
+                        <CheckCircle2 className="w-3 h-3 text-white" />
                       </div>
                     </div>
                     <div className="font-medium text-[var(--ink)] text-[16px]">{mod.label}</div>
@@ -318,7 +313,7 @@ export default function ExamPage() {
             </div>
 
             <button onClick={handleStartExam} disabled={selectedModules.length === 0} className="btn btn-fill px-12 py-4 text-[16px] disabled:opacity-50">
-              Proceed to Exam <ChevronRight className="w-5 h-5 ml-2" />
+              Start Full Exam <ChevronRight className="w-5 h-5 ml-2" />
             </button>
           </div>
         </div>

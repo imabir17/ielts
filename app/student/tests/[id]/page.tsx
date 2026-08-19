@@ -111,7 +111,7 @@ export default function TestDetailsPage() {
           </div>
           <h1 className="font-display text-[28px] text-[var(--ink)] m-0">{test.title}</h1>
           <p className="text-[14px] text-[var(--ink-soft)] mt-2 max-w-2xl">
-            This test replicates the official IELTS computer-delivered format. You can take the modules all at once or one by one.
+            This test replicates the official IELTS computer-delivered format. The modules must be taken sequentially in a single session.
           </p>
         </div>
 
@@ -119,8 +119,8 @@ export default function TestDetailsPage() {
           <h3 className="font-medium text-[16px] text-[var(--ink)] mb-4">Test Modules</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
-              { id: 'reading', label: 'Reading', icon: BookOpen, time: '60 mins' },
               { id: 'listening', label: 'Listening', icon: Headphones, time: 'Audio + 10 mins' },
+              { id: 'reading', label: 'Reading', icon: BookOpen, time: '60 mins' },
               { id: 'writing', label: 'Writing', icon: Edit3, time: '60 mins' },
               { id: 'speaking', label: 'Speaking', icon: Mic, time: '11-14 mins' },
             ].map(mod => {
@@ -154,7 +154,7 @@ export default function TestDetailsPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[var(--line-soft)]">
             <div className="flex items-center gap-2 text-[13px] text-[var(--ink-soft)] bg-[var(--paper-card)] p-3 rounded-[3px] flex-1">
               <ShieldAlert className="w-5 h-5 text-[var(--gold)] shrink-0" />
-              <span>You can take any remaining modules now, or retake completed modules to overwrite your previous attempt.</span>
+              <span>The test will automatically guide you through all required modules in sequence. Your progress is saved as you advance.</span>
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
