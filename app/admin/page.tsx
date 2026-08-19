@@ -71,7 +71,9 @@ export default function AdminDashboardPage() {
           <div className="panel-body">
             {examLogs.map((log) => (
               <div key={log.id} className="log-row">
-                <span className="log-time">{log.completedAt}</span>
+                <span className="log-time">
+                  {new Date(log.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
                 <span className="log-text">
                   <b>{log.studentName}</b> completed {log.testTitle} — {log.orgName}
                 </span>
