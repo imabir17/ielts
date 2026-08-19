@@ -446,7 +446,7 @@ export function ListeningModule({ allSections, audioUrl, volume = 0.8, onAnswerC
                         <td key={cIdx} className="p-3 border border-slate-300 text-sm">
                           {cell.isGap ? (
                             <span className="text-slate-800">
-                              {(cell.text || '___').split('___').map((part, pIdx, arr) => (
+                              {(cell.text || '___').replace(/\.{3,}/g, '___').replace(/…+/g, '___').split('___').map((part, pIdx, arr) => (
                                 <React.Fragment key={pIdx}>
                                   {part}
                                   {pIdx < arr.length - 1 && ' .................... '}
@@ -487,7 +487,7 @@ export function ListeningModule({ allSections, audioUrl, volume = 0.8, onAnswerC
                   <div className="bg-white border-2 border-emerald-600 p-4 rounded-lg shadow-sm text-center min-w-[250px] max-w-sm">
                     {step.isGap ? (
                       <span className="text-slate-800">
-                        {(step.text || '___').split('___').map((part, pIdx, arr) => (
+                        {(step.text || '___').replace(/\.{3,}/g, '___').replace(/…+/g, '___').split('___').map((part, pIdx, arr) => (
                           <React.Fragment key={pIdx}>
                             {part}
                             {pIdx < arr.length - 1 && ' .................... '}
@@ -523,7 +523,7 @@ export function ListeningModule({ allSections, audioUrl, volume = 0.8, onAnswerC
         {qSec.type === 'sentence_completion' && (
           <div className="space-y-4">
             {qSec.questions.map(q => {
-              const parts = q.prompt.split('___');
+              const parts = q.prompt.replace(/\.{3,}/g, '___').replace(/…+/g, '___').split('___');
               return (
                 <div key={q.id} className="text-slate-800 leading-8">
                   <span className="font-bold mr-2">{q.questionNumber}.</span>
