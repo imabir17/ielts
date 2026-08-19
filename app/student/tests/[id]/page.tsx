@@ -4,72 +4,22 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/components/providers/StoreProvider';
-import { fetchTestByIdAsync, getTestById } from '@/lib/test-store';
-import { BookOpen, Headphones, Edit3, Mic, Play, ChevronLeft, ShieldAlert, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
-import { Test } from '@/lib/mock-data';
+import { getTestById } from '@/lib/test-store';
+import { BookOpen, Headphones, Edit3, Mic, Play, ChevronLeft, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
 export default function TestDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const testId = typeof params?.id === 'string' ? params.id : '';
   
-  const { currentUser, setCurrentUser, students, examLogs, speakingRequests, addSpeakingRequest, tests } = useStore();
-  const [test, setTest] = useState<Test | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { currentUser, examLogs, speakingRequests, addSpeakingRequest } = useStore();
+  const [test, setTest] = useState<any>(null);
 
   useEffect(() => {
-    let isCancelled = false;
+    setTest(getTestById(testId));
+  }, [testId]);
 
-    async function load() {
-      setIsLoading(true);
-
-      if (!currentUser) {
-        const fallbackStudent = (students && students.length > 0)
-          ? students[0]
-          : {
-              id: 'student-1',
-              studentId: 'STD-1001',
-              name: 'Candidate Student',
-              role: 'student',
-              orgId: 'tenant-1'
-            };
-        setCurrentUser(fallbackStudent);
-      }
-
-      const fetched = await fetchTestByIdAsync(testId, tests);
-      if (!isCancelled) {
-        if (fetched) setTest(fetched);
-        setIsLoading(false);
-      }
-    }
-
-    if (testId) load();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [testId, tests, currentUser, students, setCurrentUser]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-[400px] flex flex-col items-center justify-center p-12 text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#005C53] mb-4" />
-        <div className="font-bold text-slate-800 text-sm">Loading Test Details...</div>
-      </div>
-    );
-  }
-
-  if (!test) {
-    return (
-      <div className="panel max-w-md mx-auto my-12 p-8 text-center bg-white rounded-2xl border border-slate-200 space-y-4">
-        <AlertCircle className="w-10 h-10 text-amber-600 mx-auto" />
-        <h2 className="text-lg font-bold text-slate-900">Test Not Found</h2>
-        <p className="text-xs text-slate-600">The test ID {testId} could not be found.</p>
-        <Link href="/student/tests" className="btn btn-fill inline-block text-xs">Browse All Tests</Link>
-      </div>
-    );
-  }
-
+  if (!currentUser || !test) return null;
 
   const log = examLogs.find(l => l.studentId === currentUser.id && l.testId === testId);
   const speakingReq = speakingRequests.find(r => r.studentId === currentUser.id && r.testId === testId);
@@ -111,7 +61,7 @@ export default function TestDetailsPage() {
           </div>
           <h1 className="font-display text-[28px] text-[var(--ink)] m-0">{test.title}</h1>
           <p className="text-[14px] text-[var(--ink-soft)] mt-2 max-w-2xl">
-            This test replicates the official IELTS computer-delivered format. The modules must be taken sequentially in a single session.
+            This test replicates the official IELTS computer-delivered format. You can take the modules all at once or one by one.
           </p>
         </div>
 
@@ -119,8 +69,8 @@ export default function TestDetailsPage() {
           <h3 className="font-medium text-[16px] text-[var(--ink)] mb-4">Test Modules</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
-              { id: 'listening', label: 'Listening', icon: Headphones, time: 'Audio + 10 mins' },
               { id: 'reading', label: 'Reading', icon: BookOpen, time: '60 mins' },
+              { id: 'listening', label: 'Listening', icon: Headphones, time: 'Audio + 10 mins' },
               { id: 'writing', label: 'Writing', icon: Edit3, time: '60 mins' },
               { id: 'speaking', label: 'Speaking', icon: Mic, time: '11-14 mins' },
             ].map(mod => {
@@ -154,7 +104,7 @@ export default function TestDetailsPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[var(--line-soft)]">
             <div className="flex items-center gap-2 text-[13px] text-[var(--ink-soft)] bg-[var(--paper-card)] p-3 rounded-[3px] flex-1">
               <ShieldAlert className="w-5 h-5 text-[var(--gold)] shrink-0" />
-              <span>The test will automatically guide you through all required modules in sequence. Your progress is saved as you advance.</span>
+              <span>You can take any remaining modules now, or retake completed modules to overwrite your previous attempt.</span>
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">

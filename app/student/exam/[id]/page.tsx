@@ -3,16 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { fetchTestByIdAsync, getTestById } from '@/lib/test-store';
+import { getTestById } from '@/lib/test-store';
 import { ExamTimer } from '@/components/exam/ExamTimer';
-import { AccessibilityBar } from '@/components/exam/AccessibilityBar';
 import { ReadingModule } from '@/components/exam/ReadingModule';
 import { ListeningModule } from '@/components/exam/ListeningModule';
 import { WritingModule } from '@/components/exam/WritingModule';
 import { SpeakingModule } from '@/components/exam/SpeakingModule';
-import { BookOpen, Headphones, Edit3, Mic, LogOut, CheckCircle2, ChevronRight, AlertCircle, AlertTriangle, Clock, X, ArrowLeft, Loader2 } from 'lucide-react';
+import { AccessibilityBar } from '@/components/exam/AccessibilityBar';
+import { BookOpen, Headphones, Edit3, Mic, LogOut, CheckCircle2, ChevronRight, AlertCircle, Clock } from 'lucide-react';
 import { useStore } from '@/components/providers/StoreProvider';
-import { ExamLog, SpeakingRequest, Test } from '@/lib/mock-data';
+import { ExamLog, SpeakingRequest } from '@/lib/mock-data';
 
 type ModuleType = 'reading' | 'listening' | 'writing' | 'speaking';
 type ExamState = 'setup' | 'warning' | 'taking' | 'completed';
@@ -21,20 +21,15 @@ export default function ExamPage() {
   const params = useParams();
   const router = useRouter();
   const testId = typeof params?.id === 'string' ? params.id : '';
-  const { currentUser, setCurrentUser, examLogs, updateExamLog, addExamLog, addSpeakingRequest, updateStudent, students, tests } = useStore();
+  const { currentUser, examLogs, updateExamLog, addExamLog, addSpeakingRequest, updateStudent, students } = useStore();
 
   const [isMounted, setIsMounted] = useState(false);
-  const [test, setTest] = useState<Test | null>(null);
-  const [isLoadingTest, setIsLoadingTest] = useState(true);
+  const [test, setTest] = useState<any>(null);
   
   const [examState, setExamState] = useState<ExamState>('setup');
   const [selectedModules, setSelectedModules] = useState<ModuleType[]>([]);
   const [currentModuleIdx, setCurrentModuleIdx] = useState<number>(0);
   
-  // Accessibility & Audio State
-  const [audioVolume, setAudioVolume] = useState<number>(0.8);
-  const [toastAlert, setToastAlert] = useState<{ message: string; type: 'warning' | 'critical' } | null>(null);
-
   const [answers, setAnswers] = useState({
     reading: {} as Record<string, any>,
     listening: {} as Record<string, any>,
@@ -42,59 +37,13 @@ export default function ExamPage() {
     speaking: {} as Record<string, any>
   });
 
-  const activeStudent = currentUser || (students && students.length > 0 ? students[0] : {
-    id: 'student-1',
-    studentId: 'STD-1001',
-    name: 'Candidate Student',
-    role: 'student',
-    orgId: 'tenant-1'
-  });
+  const existingLog = examLogs.find(l => l.studentId === currentUser?.id && l.testId === testId);
 
-  const existingLog = examLogs.find(l => l.studentId === activeStudent?.id && l.testId === testId);
-
-  // Robust test loader - runs once per testId change
   useEffect(() => {
     setIsMounted(true);
-    let isMountedLocal = true;
-
-    async function loadTest() {
-      if (!testId) {
-        setIsLoadingTest(false);
-        return;
-      }
-      setIsLoadingTest(true);
-      try {
-        const fetchedTest = await fetchTestByIdAsync(testId, tests);
-        if (isMountedLocal) {
-          if (fetchedTest) {
-            setTest(fetchedTest);
-            const testAny = fetchedTest as any;
-            const availableModules = testAny.moduleTypes && testAny.moduleTypes.length > 0 
-              ? testAny.moduleTypes 
-              : ['listening', 'reading', 'writing', 'speaking'];
-            const fixedOrder: ModuleType[] = ['listening', 'reading', 'writing', 'speaking'];
-            setSelectedModules(fixedOrder.filter(m => availableModules.includes(m)));
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load test:', err);
-      } finally {
-        if (isMountedLocal) {
-          setIsLoadingTest(false);
-        }
-      }
-    }
-
-    loadTest();
-
-    return () => {
-      isMountedLocal = false;
-    };
-  }, [testId, tests]);
-
-  // Pre-fill answers from existing log if available
-  useEffect(() => {
-    if (existingLog?.answers) {
+    setTest(getTestById(testId));
+    // Pre-fill answers from existing log if available
+    if (existingLog) {
       setAnswers(prev => ({
         ...prev,
         reading: existingLog.answers?.reading || {},
@@ -103,47 +52,26 @@ export default function ExamPage() {
         speaking: existingLog.answers?.speaking || {},
       }));
     }
-  }, [existingLog]);
+  }, [testId, existingLog]);
 
-
-  if (!isMounted || isLoadingTest) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--paper)] p-6 text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#005C53] mb-4" />
-        <div className="font-display text-lg text-slate-800 font-bold">Loading Test Environment...</div>
-        <p className="text-xs text-slate-500 font-mono mt-1">Synchronizing exam materials & question items ({testId})</p>
-      </div>
-    );
+  if (!isMounted || !test || !currentUser) {
+    return <div className="p-10 text-center text-[var(--ink-faint)] font-mono text-[11px] uppercase tracking-wider">Loading test environment...</div>;
   }
 
-  if (!test) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--paper)] p-6 text-center font-sans">
-        <div className="panel max-w-md w-full p-8 text-center bg-white shadow-xl rounded-2xl border border-slate-200 space-y-4">
-          <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-          <h2 className="text-xl font-bold text-slate-900">Test Not Found</h2>
-          <p className="text-xs text-slate-600 leading-relaxed">
-            The requested test <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-[11px] text-slate-800">{testId}</code> could not be located in the exam catalog or database.
-          </p>
-          <div className="pt-2">
-            <Link
-              href="/student/tests"
-              className="px-6 py-2.5 bg-[#005C53] hover:bg-[#004740] text-white font-bold text-xs rounded-xl shadow-sm inline-flex items-center space-x-2 transition-all"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Browse Available Tests</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  const handleModuleSelection = (mod: ModuleType) => {
+    if (selectedModules.includes(mod)) {
+      setSelectedModules(selectedModules.filter(m => m !== mod));
+    } else {
+      setSelectedModules([...selectedModules, mod]);
+    }
+  };
 
   const handleStartExam = () => {
     if (selectedModules.length === 0) return;
+    // Sort to enforce order: Reading -> Writing -> Listening -> Speaking
+    const order: ModuleType[] = ['reading', 'writing', 'listening', 'speaking'];
+    const sorted = [...selectedModules].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    setSelectedModules(sorted);
     setCurrentModuleIdx(0);
     setExamState('warning');
   };
@@ -220,7 +148,7 @@ export default function ExamPage() {
 
 
   const finishExam = () => {
-    const studentInfo = students.find(s => s.id === activeStudent?.id);
+    const studentInfo = students.find(s => s.id === currentUser.id);
     
     const computedScores: Record<string, number> = existingLog ? { ...existingLog.scores } : {};
     if (selectedModules.includes('reading')) computedScores.reading = calculateModuleScore('reading');
@@ -240,9 +168,9 @@ export default function ExamPage() {
     } else {
       const newLog: ExamLog = {
         id: `log-${Date.now()}`,
-        studentId: activeStudent?.id || 'student-1',
-        studentName: activeStudent?.name || 'Candidate Student',
-        orgId: studentInfo?.orgId || activeStudent?.orgId || '',
+        studentId: currentUser.id,
+        studentName: currentUser.name || 'Unknown',
+        orgId: studentInfo?.orgId || '',
         orgName: 'Unknown',
         testId: test.id,
         testTitle: test.title,
@@ -255,7 +183,7 @@ export default function ExamPage() {
       addExamLog(newLog);
       
       if (studentInfo) {
-        updateStudent(studentInfo.id, { completedTests: (studentInfo.completedTests || 0) + 1 });
+        updateStudent(studentInfo.id, { completedTests: studentInfo.completedTests + 1 });
       }
     }
 
@@ -266,10 +194,22 @@ export default function ExamPage() {
     if (mod === 'reading') return 60 * 60; // 60 mins
     if (mod === 'writing') return 60 * 60; // 60 mins
     if (mod === 'listening') {
-      const audioDuration = test.listening?.[0]?.duration || 180;
+      const audioDuration = test.listening[0]?.duration || 180;
       return audioDuration + (10 * 60); // Audio + 10 mins transfer time
     }
     return 0; // Speaking has no strict timer in this practice mode
+  };
+
+  const [toast, setToast] = useState<{ msg: string; color: 'amber' | 'red' } | null>(null);
+  const [globalVolume, setGlobalVolume] = useState<number>(1);
+
+  const handleTimerWarning = (type: 'warning' | 'critical', mins: number) => {
+    setToast({
+      msg: `${mins} minutes remaining!`,
+      color: type === 'warning' ? 'amber' : 'red'
+    });
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => setToast(null), 5000);
   };
 
   if (examState === 'setup') {
@@ -281,26 +221,24 @@ export default function ExamPage() {
         <div className="flex-1 max-w-4xl w-full mx-auto p-8 flex flex-col justify-center">
           <div className="panel p-10 text-center">
             <h2 className="font-display text-[32px] text-[var(--ink)] mb-2">{test.title}</h2>
-            <p className="text-[15px] text-[var(--ink-soft)] mb-8">You are about to begin the full mock exam. The modules will be administered in the official sequence.</p>
+            <p className="text-[15px] text-[var(--ink-soft)] mb-8">Select the modules you wish to take in this session. The system will automatically sequence them.</p>
             
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10 text-left">
               {[
-                { id: 'listening', label: 'Listening', icon: Headphones, desc: 'Audio + 10 Mins' },
                 { id: 'reading', label: 'Reading', icon: BookOpen, desc: '60 Minutes' },
+                { id: 'listening', label: 'Listening', icon: Headphones, desc: 'Audio + 10 Mins' },
                 { id: 'writing', label: 'Writing', icon: Edit3, desc: '60 Minutes' },
                 { id: 'speaking', label: 'Speaking', icon: Mic, desc: 'Practice Mode' }
               ].map(mod => {
-                const isAvailable = selectedModules.includes(mod.id as ModuleType);
-                if (!isAvailable) return null;
-
+                const isSel = selectedModules.includes(mod.id as ModuleType);
                 const isPreviouslyTaken = existingLog?.modulesTaken?.includes(mod.id as ModuleType);
                 
                 return (
-                  <div key={mod.id} className={`panel p-5 transition-all border-2 border-[var(--ink)] bg-[var(--paper)] ring-2 ring-[var(--ink)]/10`}>
+                  <div key={mod.id} onClick={() => handleModuleSelection(mod.id as ModuleType)} className={`panel p-5 cursor-pointer transition-all border-2 ${isSel ? 'border-[var(--ink)] bg-[var(--paper)] ring-4 ring-[var(--ink)]/10' : 'border-[var(--line)] bg-[var(--paper-card)] hover:border-[var(--ink-faint)]'}`}>
                     <div className="flex justify-between items-start mb-3">
-                      <mod.icon className="w-6 h-6 text-[var(--brick)]" />
-                      <div className="w-5 h-5 rounded-[4px] border-2 flex items-center justify-center bg-[var(--ink)] border-[var(--ink)]">
-                        <CheckCircle2 className="w-3 h-3 text-white" />
+                      <mod.icon className={`w-6 h-6 ${isSel ? 'text-[var(--brick)]' : 'text-[var(--ink-faint)]'}`} />
+                      <div className={`w-5 h-5 rounded-[4px] border-2 flex items-center justify-center ${isSel ? 'bg-[var(--ink)] border-[var(--ink)]' : 'border-[var(--line-soft)]'}`}>
+                        {isSel && <CheckCircle2 className="w-3 h-3 text-white" />}
                       </div>
                     </div>
                     <div className="font-medium text-[var(--ink)] text-[16px]">{mod.label}</div>
@@ -314,7 +252,7 @@ export default function ExamPage() {
             </div>
 
             <button onClick={handleStartExam} disabled={selectedModules.length === 0} className="btn btn-fill px-12 py-4 text-[16px] disabled:opacity-50">
-              Start Full Exam <ChevronRight className="w-5 h-5 ml-2" />
+              Proceed to Exam <ChevronRight className="w-5 h-5 ml-2" />
             </button>
           </div>
         </div>
@@ -389,128 +327,80 @@ export default function ExamPage() {
     );
   }
 
-  const handleWarningThreshold = (threshold: 10 | 5) => {
-    if (threshold === 10) {
-      setToastAlert({
-        message: '10 Minutes Remaining: Please begin reviewing your answers and checking remaining questions.',
-        type: 'warning'
-      });
-    } else if (threshold === 5) {
-      setToastAlert({
-        message: '5 Minutes Remaining: Final warning! Ensure all responses are completed before submission.',
-        type: 'critical'
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (toastAlert) {
-      const timer = setTimeout(() => {
-        setToastAlert(null);
-      }, 7000);
-      return () => clearTimeout(timer);
-    }
-  }, [toastAlert]);
-
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[var(--paper-alt)] font-sans relative exam-root">
-      {/* FLOATING TIMER WARNING TOAST */}
-      {toastAlert && (
-        <div
-          className={`absolute top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 border text-xs font-bold animate-in fade-in slide-in-from-top-4 duration-300 max-w-lg w-full ${
-            toastAlert.type === 'critical'
-              ? 'bg-red-600 text-white border-red-700 ring-4 ring-red-500/30'
-              : 'bg-amber-500 text-slate-950 border-amber-600 ring-4 ring-amber-400/30'
-          }`}
-        >
-          {toastAlert.type === 'critical' ? (
-            <AlertCircle className="w-5 h-5 text-white animate-bounce shrink-0" />
-          ) : (
-            <AlertTriangle className="w-5 h-5 text-slate-950 shrink-0" />
-          )}
-          <div className="flex-1 font-sans leading-snug">
-            {toastAlert.message}
+    <div className="h-screen flex flex-col overflow-hidden bg-[var(--paper-alt)] font-sans relative">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50">
+          <div className={`px-6 py-3 rounded-lg shadow-xl font-bold text-white flex items-center space-x-3 ${toast.color === 'amber' ? 'bg-amber-500' : 'bg-red-600'}`}>
+            <AlertCircle className="w-5 h-5" />
+            <span>{toast.msg}</span>
+            <button onClick={() => setToast(null)} className="ml-4 opacity-70 hover:opacity-100">
+              ✕
+            </button>
           </div>
-          <button
-            onClick={() => setToastAlert(null)}
-            className="p-1 hover:bg-black/10 rounded-lg text-current"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
       )}
 
-      {/* TOP EXAM HEADER */}
-      <header className="h-16 bg-[var(--sidebar)] text-white px-4 md:px-6 flex items-center justify-between shrink-0 select-none z-40 border-b border-slate-800 shadow-md">
-        {/* Left: Test Title & Candidate Info */}
-        <div className="flex items-center space-x-3">
+      <header className="h-16 bg-[var(--sidebar)] text-white px-6 flex items-center justify-between shrink-0 select-none">
+        <div className="flex items-center space-x-4 flex-1">
           <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="font-bold text-sm text-white leading-tight">{test.title}</h1>
-              <span className="hidden sm:inline-block bg-[#005C53] text-emerald-200 text-[10px] uppercase font-bold px-2 py-0.5 rounded capitalize">
-                {activeModule}
-              </span>
-            </div>
-            <span className="text-[11px] text-[var(--sidebar-text-dim)] font-mono">
-              Candidate: {activeStudent?.name || 'Candidate'} ({activeStudent?.studentId || 'STD'})
-            </span>
+            <h1 className="font-medium text-[15px] text-white leading-tight">{test.title}</h1>
+            <span className="text-[11px] text-[var(--sidebar-text-dim)] font-mono">Candidate: {currentUser.name} ({students.find(s=>s.id===currentUser.id)?.studentId})</span>
           </div>
         </div>
 
-        {/* Center: TOP-CENTER STOPWATCH / TIMER */}
-        <div className="flex items-center justify-center">
+        {/* Center: Timer */}
+        <div className="flex-1 flex justify-center">
           {activeModule !== 'speaking' && (
-            <ExamTimer
-              initialSeconds={getModuleTimer(activeModule)}
+            <ExamTimer 
+              initialSeconds={getModuleTimer(activeModule)} 
               onTimeUp={handleModuleComplete}
-              onWarningThreshold={handleWarningThreshold}
+              onWarning={handleTimerWarning} 
             />
           )}
         </div>
 
-        {/* Right: ACCESSIBILITY CONTROLS (Font, Contrast, Volume) & SUBMIT BUTTON */}
-        <div className="flex items-center space-x-3">
-          <AccessibilityBar
-            volume={audioVolume}
-            onVolumeChange={(v) => setAudioVolume(v)}
-            showVolume={activeModule === 'listening'}
-          />
+        {/* Right side: Accessibility + Submit */}
+        <div className="flex flex-1 items-center justify-end space-x-4">
+          <div className="hidden md:flex items-center gap-2 bg-[var(--ink)] px-4 py-1.5 rounded-[3px] border border-[var(--sidebar-line)]">
+            <span className="text-[10px] uppercase font-mono tracking-wider text-[var(--sidebar-text-dim)]">Module</span>
+            <span className="font-bold text-white capitalize">{activeModule}</span>
+          </div>
 
-          <button
-            onClick={handleModuleComplete}
-            className="btn btn-fill bg-[#B23A2A] hover:bg-[#8C2C1F] border-none text-[12px] px-3.5 py-1.5 font-bold shadow-sm"
-          >
+          <AccessibilityBar onVolumeChange={setGlobalVolume} />
+
+          <button onClick={handleModuleComplete} className="btn btn-fill bg-[var(--brick)] border-[var(--brick)] text-[12px] px-4 py-1.5">
             Submit {activeModule}
           </button>
         </div>
       </header>
 
-      {/* ACTIVE MODULE CONTAINER */}
       <div className="flex-1 overflow-hidden relative">
         {activeModule === 'reading' && (
           <ReadingModule 
-            passage={test.reading?.[0] || undefined} 
-            allPassages={test.reading || []} 
+            passage={test.reading[0]} 
+            allPassages={test.reading} 
             onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, reading: { ...prev.reading, ...ans } }))} 
           />
         )}
         {activeModule === 'listening' && (
           <ListeningModule 
-            allSections={test.listening || []} 
-            audioUrl={test.listeningAudioUrl} 
-            volume={audioVolume}
+            allSections={test.listening} 
+            audioUrl={test.listeningAudioUrl}
+            volume={globalVolume}
             onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, listening: { ...prev.listening, ...ans } }))}
           />
         )}
         {activeModule === 'writing' && (
           <WritingModule 
-            allTasks={test.writing || []} 
+            allTasks={test.writing} 
             onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, writing: { ...prev.writing, ...ans } }))}
           />
         )}
         {activeModule === 'speaking' && (
           <SpeakingModule 
-            parts={test.speaking || []} 
+            parts={test.speaking} 
             testId={test.id}
           />
         )}
@@ -518,4 +408,3 @@ export default function ExamPage() {
     </div>
   );
 }
-

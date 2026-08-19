@@ -1,0 +1,32 @@
+{
+  "id": "test-ielts-reading-1",
+  "title": "IELTS Reading Test 1",
+  "category": "Academic",
+  "totalDurationMinutes": 60,
+  "status": "published",
+  "tierAccess": "All Orgs",
+  "questionCount": 40,
+  "createdDate": "2026-08-19",
+  "moduleTypes": [
+    "reading"
+  ],
+  "reading": [
+    {
+      "id": "pas-1",
+      "passageNumber": 1,
+      "title": "Attitudes to Language",
+      "content": "...",
+      "sections": [
+        {
+          "id": "sec-1-1",
+          "type": "yes_no_ng",
+          "instruction": "Do the following statements agree with the claims of the writer in Reading Passage 1?",
+          "questions": []
+        }
+      ]
+    }
+  ],
+  "listening": [],
+  "writing": [],
+  "speaking": []
+}

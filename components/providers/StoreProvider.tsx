@@ -55,125 +55,107 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function fetchData() {
-      try {
-        const [
-          { data: orgs },
-          { data: pkgs },
-          { data: stds },
-          { data: mgrs },
-          { data: logs },
-          { data: reqs },
-          { data: tsts }
-        ] = await Promise.all([
-          supabase.from('organizations').select('*'),
-          supabase.from('packages').select('*'),
-          supabase.from('students').select('*'),
-          supabase.from('managers').select('*'),
-          supabase.from('exam_logs').select('*'),
-          supabase.from('speaking_requests').select('*'),
-          supabase.from('tests').select('id, title, type, status, total_duration_minutes, tier_access, question_count, created_date, is_published, module_types, listening_audio_url')
-        ]);
+      const [
+        { data: orgs },
+        { data: pkgs },
+        { data: stds },
+        { data: mgrs },
+        { data: logs },
+        { data: reqs },
+        { data: tsts }
+      ] = await Promise.all([
+        supabase.from('organizations').select('*'),
+        supabase.from('packages').select('*'),
+        supabase.from('students').select('*'),
+        supabase.from('managers').select('*'),
+        supabase.from('exam_logs').select('*'),
+        supabase.from('speaking_requests').select('*'),
+        supabase.from('tests').select('*')
+      ]);
 
-        if (orgs) {
-          setTenants(orgs.map((o: any) => ({
-            ...o,
-            contactEmail: o.contact_email,
-            subscriptionTier: o.subscription_tier,
-            maxSeats: o.max_seats,
-            maxExamsPerMonth: o.max_exams_per_month,
-            examsUsedThisMonth: o.exams_used_this_month,
-            studentCount: o.student_count,
-            activeTests: o.active_tests,
-            createdDate: o.created_date,
-            orgAdminName: o.org_admin_name,
-            orgAdminEmail: o.org_admin_email,
-            packageIds: o.package_ids
-          })));
-        }
-        
-        if (pkgs) {
-          setPackages(pkgs.map((p: any) => ({
-            ...p,
-            idLimit: p.id_limit,
-            examLimit: p.exam_limit
-          })));
-        }
-
-        if (stds) {
-          setStudents(stds.map((s: any) => ({
-            ...s,
-            studentId: s.student_id,
-            orgId: s.org_id,
-            assignedTests: s.assigned_tests,
-            completedTests: s.completed_tests,
-            averageBand: s.average_band
-          })));
-        }
-
-        if (mgrs) {
-          setManagers(mgrs);
-        }
-
-        if (logs) {
-          setExamLogs(logs.map((l: any) => ({
-            ...l,
-            studentName: l.student_name,
-            studentId: l.student_id,
-            orgName: l.org_name,
-            orgId: l.org_id,
-            testTitle: l.test_title,
-            testId: l.test_id,
-            completedAt: l.completed_at,
-            modulesTaken: l.modules_taken,
-            overallBand: l.overall_band,
-            writingFeedback: l.writing_feedback
-          })));
-        }
-
-        if (reqs) {
-          setSpeakingRequests(reqs.map((r: any) => ({
-            ...r,
-            studentId: r.student_id,
-            orgId: r.org_id,
-            testId: r.test_id,
-            scheduledDate: r.scheduled_date,
-            requestedAt: r.requested_at
-          })));
-        }
-
-        if (tsts) {
-          setTests(tsts.map((t: any) => ({
-            ...t,
-            totalDurationMinutes: t.total_duration_minutes ?? t.totalDurationMinutes,
-            tierAccess: t.tier_access ?? t.tierAccess,
-            questionCount: t.question_count ?? t.questionCount,
-            createdDate: t.created_date ?? t.createdDate,
-            listeningAudioUrl: t.listening_audio_url ?? t.listeningAudioUrl
-          })));
-        }
-
-        const storedUser = localStorage.getItem('mockielts_user');
-        if (storedUser) {
-          try {
-            setCurrentUser(JSON.parse(storedUser));
-          } catch {
-            setCurrentUser(null);
-          }
-        } else if (stds && stds.length > 0) {
-          const first = stds[0];
-          setCurrentUser({
-            id: first.id,
-            name: first.name,
-            studentId: first.student_id,
-            role: 'student',
-            orgId: first.org_id
-          });
-        }
-      } catch (err) {
-        console.error('Error in StoreProvider fetchData:', err);
-      } finally {
-        setIsInitialized(true);
+      if (orgs) {
+        // map snake_case to camelCase
+        setTenants(orgs.map((o: any) => ({
+          ...o,
+          contactEmail: o.contact_email,
+          subscriptionTier: o.subscription_tier,
+          maxSeats: o.max_seats,
+          maxExamsPerMonth: o.max_exams_per_month,
+          examsUsedThisMonth: o.exams_used_this_month,
+          studentCount: o.student_count,
+          activeTests: o.active_tests,
+          createdDate: o.created_date,
+          orgAdminName: o.org_admin_name,
+          orgAdminEmail: o.org_admin_email,
+          packageIds: o.package_ids
+        })));
       }
+      
+      if (pkgs) {
+        setPackages(pkgs.map((p: any) => ({
+          ...p,
+          idLimit: p.id_limit,
+          examLimit: p.exam_limit
+        })));
+      }
+
+      if (stds) {
+        setStudents(stds.map((s: any) => ({
+          ...s,
+          studentId: s.student_id,
+          orgId: s.org_id,
+          assignedTests: s.assigned_tests,
+          completedTests: s.completed_tests,
+          averageBand: s.average_band
+        })));
+      }
+
+      if (mgrs) {
+        setManagers(mgrs);
+      }
+
+      if (logs) {
+        setExamLogs(logs.map((l: any) => ({
+          ...l,
+          studentName: l.student_name,
+          studentId: l.student_id,
+          orgName: l.org_name,
+          orgId: l.org_id,
+          testTitle: l.test_title,
+          testId: l.test_id,
+          completedAt: l.completed_at,
+          modulesTaken: l.modules_taken,
+          overallBand: l.overall_band,
+          writingFeedback: l.writing_feedback
+        })));
+      }
+
+      if (reqs) {
+        setSpeakingRequests(reqs.map((r: any) => ({
+          ...r,
+          studentId: r.student_id,
+          orgId: r.org_id,
+          testId: r.test_id,
+          scheduledDate: r.scheduled_date,
+          requestedAt: r.requested_at
+        })));
+      }
+
+      if (tsts) {
+        setTests(tsts.map((t: any) => ({
+          ...t,
+          totalDurationMinutes: t.total_duration_minutes,
+          tierAccess: t.tier_access,
+          questionCount: t.question_count,
+          createdDate: t.created_date,
+          listeningAudioUrl: t.listening_audio_url
+        })));
+      }
+
+      const storedUser = localStorage.getItem('mockielts_user');
+      if (storedUser) setCurrentUser(JSON.parse(storedUser));
+
+      setIsInitialized(true);
     }
 
     fetchData();
