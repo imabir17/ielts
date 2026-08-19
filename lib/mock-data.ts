@@ -30,6 +30,29 @@ export interface Package {
   description: string;
 }
 
+export interface WritingTaskFeedback {
+  taskNumber: number;
+  taskAchievementScore?: number; // Task 1 Task Achievement / Task 2 Task Response
+  taskAchievementFeedback?: string;
+  coherenceScore?: number; // Coherence and Cohesion
+  coherenceFeedback?: string;
+  lexicalScore?: number; // Lexical Resource
+  lexicalFeedback?: string;
+  grammarScore?: number; // Grammatical Range and Accuracy
+  grammarFeedback?: string;
+  overallTaskBand?: number;
+  wordCount?: number;
+}
+
+export interface WritingAssessment {
+  task1?: WritingTaskFeedback;
+  task2?: WritingTaskFeedback;
+  overallWritingBand?: number;
+  generalNotes?: string;
+  gradedAt?: string;
+  gradedBy?: string;
+}
+
 export interface ExamLog {
   id: string;
   studentName: string;
@@ -55,7 +78,9 @@ export interface ExamLog {
   };
   overallBand?: number;
   writingFeedback?: string;
+  writingAssessment?: WritingAssessment;
 }
+
 
 export interface SpeakingRequest {
   id: string;
