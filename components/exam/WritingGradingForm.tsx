@@ -165,7 +165,7 @@ export function WritingGradingForm({
               <span className={`px-2 py-0.5 rounded font-mono text-[11px] ${
                 activeTaskTab === idx ? 'bg-emerald-900/80 text-emerald-200' : 'bg-slate-100 text-slate-600'
               }`}>
-                {count} words
+                Band {band.toFixed(1)} • {count}w
               </span>
             </button>
           );

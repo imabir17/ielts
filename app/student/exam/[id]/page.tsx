@@ -68,8 +68,9 @@ export default function ExamPage() {
         if (isMountedLocal) {
           if (fetchedTest) {
             setTest(fetchedTest);
-            const availableModules = fetchedTest.moduleTypes && fetchedTest.moduleTypes.length > 0 
-              ? fetchedTest.moduleTypes 
+            const testAny = fetchedTest as any;
+            const availableModules = testAny.moduleTypes && testAny.moduleTypes.length > 0 
+              ? testAny.moduleTypes 
               : ['listening', 'reading', 'writing', 'speaking'];
             const fixedOrder: ModuleType[] = ['listening', 'reading', 'writing', 'speaking'];
             setSelectedModules(fixedOrder.filter(m => availableModules.includes(m)));
