@@ -51,7 +51,8 @@ export function ListeningModule({ allSections, audioUrl, volume = 0.8, onAnswerC
 
   useEffect(() => {
     if (onAnswerChange) onAnswerChange(userAnswers);
-  }, [userAnswers, onAnswerChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userAnswers]);
 
   const handleTextSelection = (e: React.MouseEvent) => {
     const selection = window.getSelection();

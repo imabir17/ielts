@@ -23,7 +23,8 @@ export function WritingModule({ allTasks, onAnswerChange }: WritingModuleProps) 
 
   React.useEffect(() => {
     if (onAnswerChange) onAnswerChange(essayTexts);
-  }, [essayTexts, onAnswerChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [essayTexts]);
 
   if (!task) return <div className="p-10 text-center text-slate-500 font-sans">No writing tasks available.</div>;
 

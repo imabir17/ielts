@@ -272,7 +272,7 @@ export default function ExamPage() {
     if (mod === 'reading') return 60 * 60; // 60 mins
     if (mod === 'writing') return 60 * 60; // 60 mins
     if (mod === 'listening') {
-      const audioDuration = test.listening[0]?.duration || 180;
+      const audioDuration = test.listening?.[0]?.duration || 180;
       return audioDuration + (10 * 60); // Audio + 10 mins transfer time
     }
     return 0; // Speaking has no strict timer in this practice mode
@@ -493,14 +493,14 @@ export default function ExamPage() {
       <div className="flex-1 overflow-hidden relative">
         {activeModule === 'reading' && (
           <ReadingModule 
-            passage={test.reading[0]} 
-            allPassages={test.reading} 
+            passage={test.reading?.[0] || undefined} 
+            allPassages={test.reading || []} 
             onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, reading: { ...prev.reading, ...ans } }))} 
           />
         )}
         {activeModule === 'listening' && (
           <ListeningModule 
-            allSections={test.listening} 
+            allSections={test.listening || []} 
             audioUrl={test.listeningAudioUrl} 
             volume={audioVolume}
             onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, listening: { ...prev.listening, ...ans } }))}
@@ -508,13 +508,13 @@ export default function ExamPage() {
         )}
         {activeModule === 'writing' && (
           <WritingModule 
-            allTasks={test.writing} 
+            allTasks={test.writing || []} 
             onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, writing: { ...prev.writing, ...ans } }))}
           />
         )}
         {activeModule === 'speaking' && (
           <SpeakingModule 
-            parts={test.speaking} 
+            parts={test.speaking || []} 
             testId={test.id}
           />
         )}

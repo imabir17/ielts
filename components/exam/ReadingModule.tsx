@@ -63,7 +63,8 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(userAnswers));
     if (onAnswerChange) onAnswerChange(userAnswers);
-  }, [userAnswers, storageKey, onAnswerChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userAnswers, storageKey]);
 
   // Passage Text Selection Toolbar Handler
   const handlePassageTextSelection = (e: React.MouseEvent) => {
