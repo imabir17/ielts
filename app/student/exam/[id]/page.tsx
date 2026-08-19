@@ -42,44 +42,53 @@ export default function ExamPage() {
     speaking: {} as Record<string, any>
   });
 
-  const existingLog = examLogs.find(l => l.studentId === currentUser?.id && l.testId === testId);
+  const activeStudent = currentUser || (students && students.length > 0 ? students[0] : {
+    id: 'student-1',
+    studentId: 'STD-1001',
+    name: 'Candidate Student',
+    role: 'student',
+    orgId: 'tenant-1'
+  });
 
+  const existingLog = examLogs.find(l => l.studentId === activeStudent?.id && l.testId === testId);
+
+  // Robust test loader - runs once per testId change
   useEffect(() => {
     setIsMounted(true);
-    let isCancelled = false;
+    let isMountedLocal = true;
 
     async function loadTest() {
-      setIsLoadingTest(true);
-
-      // Auto-assign default candidate user if none logged in
-      if (!currentUser) {
-        const fallbackStudent = (students && students.length > 0)
-          ? students[0]
-          : {
-              id: 'student-1',
-              studentId: 'STD-1001',
-              name: 'Candidate Student',
-              role: 'student',
-              orgId: 'tenant-1'
-            };
-        setCurrentUser(fallbackStudent);
-      }
-
-      const fetchedTest = await fetchTestByIdAsync(testId, tests);
-      if (!isCancelled) {
-        if (fetchedTest) {
-          setTest(fetchedTest);
-        }
+      if (!testId) {
         setIsLoadingTest(false);
+        return;
+      }
+      setIsLoadingTest(true);
+      try {
+        const fetchedTest = await fetchTestByIdAsync(testId, tests);
+        if (isMountedLocal) {
+          if (fetchedTest) {
+            setTest(fetchedTest);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load test:', err);
+      } finally {
+        if (isMountedLocal) {
+          setIsLoadingTest(false);
+        }
       }
     }
 
-    if (testId) {
-      loadTest();
-    }
+    loadTest();
 
-    // Pre-fill answers from existing log if available
-    if (existingLog) {
+    return () => {
+      isMountedLocal = false;
+    };
+  }, [testId, tests]);
+
+  // Pre-fill answers from existing log if available
+  useEffect(() => {
+    if (existingLog?.answers) {
       setAnswers(prev => ({
         ...prev,
         reading: existingLog.answers?.reading || {},
@@ -88,11 +97,8 @@ export default function ExamPage() {
         speaking: existingLog.answers?.speaking || {},
       }));
     }
+  }, [existingLog]);
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [testId, existingLog, tests, currentUser, students, setCurrentUser]);
 
   if (!isMounted || isLoadingTest) {
     return (
@@ -220,7 +226,7 @@ export default function ExamPage() {
 
 
   const finishExam = () => {
-    const studentInfo = students.find(s => s.id === currentUser.id);
+    const studentInfo = students.find(s => s.id === activeStudent?.id);
     
     const computedScores: Record<string, number> = existingLog ? { ...existingLog.scores } : {};
     if (selectedModules.includes('reading')) computedScores.reading = calculateModuleScore('reading');
@@ -240,9 +246,9 @@ export default function ExamPage() {
     } else {
       const newLog: ExamLog = {
         id: `log-${Date.now()}`,
-        studentId: currentUser.id,
-        studentName: currentUser.name || 'Unknown',
-        orgId: studentInfo?.orgId || '',
+        studentId: activeStudent?.id || 'student-1',
+        studentName: activeStudent?.name || 'Candidate Student',
+        orgId: studentInfo?.orgId || activeStudent?.orgId || '',
         orgName: 'Unknown',
         testId: test.id,
         testTitle: test.title,
@@ -255,7 +261,7 @@ export default function ExamPage() {
       addExamLog(newLog);
       
       if (studentInfo) {
-        updateStudent(studentInfo.id, { completedTests: studentInfo.completedTests + 1 });
+        updateStudent(studentInfo.id, { completedTests: (studentInfo.completedTests || 0) + 1 });
       }
     }
 
@@ -450,7 +456,7 @@ export default function ExamPage() {
               </span>
             </div>
             <span className="text-[11px] text-[var(--sidebar-text-dim)] font-mono">
-              Candidate: {currentUser.name} ({students.find(s=>s.id===currentUser.id)?.studentId})
+              Candidate: {activeStudent?.name || 'Candidate'} ({activeStudent?.studentId || 'STD'})
             </span>
           </div>
         </div>
