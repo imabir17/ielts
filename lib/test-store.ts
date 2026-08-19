@@ -83,7 +83,7 @@ export function getTestById(testId: string, inMemoryTests?: Test[]): Test | unde
  */
 export async function fetchTestByIdAsync(testId: string, inMemoryTests?: Test[]): Promise<Test | undefined> {
   const local = getTestById(testId, inMemoryTests);
-  if (local) return local;
+  if (local && (local.reading || local.listening || local.writing || local.speaking)) return local;
 
   try {
     const { data, error } = await supabase

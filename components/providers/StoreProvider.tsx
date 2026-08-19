@@ -71,7 +71,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           supabase.from('managers').select('*'),
           supabase.from('exam_logs').select('*'),
           supabase.from('speaking_requests').select('*'),
-          supabase.from('tests').select('*')
+          supabase.from('tests').select('id, title, type, status, total_duration_minutes, tier_access, question_count, created_date, is_published, module_types, listening_audio_url')
         ]);
 
         if (orgs) {

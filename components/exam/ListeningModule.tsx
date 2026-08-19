@@ -22,7 +22,8 @@ interface HighlightItem {
 
 export function ListeningModule({ allSections, audioUrl, volume = 0.8, onAnswerChange }: ListeningModuleProps) {
   const [activeSectionIdx, setActiveSectionIdx] = useState(0);
-  const section = allSections[activeSectionIdx];
+  const fallbackSection: ListeningSection = { id: 'fallback', title: 'No Listening Section', audioUrl: '', duration: 180, questions: [] };
+  const section = allSections[activeSectionIdx] || allSections[0] || fallbackSection;
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
@@ -782,10 +783,10 @@ export function ListeningModule({ allSections, audioUrl, volume = 0.8, onAnswerC
         ) : (
           renderQuestionSection({
             id: section.id,
-            type: section.questions[0]?.type || 'text-input',
+            type: section.questions?.[0]?.type || 'text-input',
             instructions: '',
             orderIndex: 0,
-            questions: section.questions
+            questions: section.questions || []
           })
         )}
         

@@ -12,7 +12,8 @@ interface SpeakingModuleProps {
 
 export function SpeakingModule({ parts, testId }: SpeakingModuleProps) {
   const [activePartIndex, setActivePartIndex] = useState(0);
-  const currentPart = parts[activePartIndex] || parts[0];
+  const fallbackPart: SpeakingPart = { id: 's-fallback', partNumber: 1, topic: 'General Conversation', prompts: [] };
+  const currentPart = parts[activePartIndex] || parts[0] || fallbackPart;
   const { currentUser, addSpeakingRequest, speakingRequests, students } = useStore();
 
   const [requested, setRequested] = useState(false);
