@@ -3,16 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { getTestById } from '@/lib/test-store';
+import { fetchTestByIdAsync, getTestById } from '@/lib/test-store';
 import { ExamTimer } from '@/components/exam/ExamTimer';
 import { AccessibilityBar } from '@/components/exam/AccessibilityBar';
 import { ReadingModule } from '@/components/exam/ReadingModule';
 import { ListeningModule } from '@/components/exam/ListeningModule';
 import { WritingModule } from '@/components/exam/WritingModule';
 import { SpeakingModule } from '@/components/exam/SpeakingModule';
-import { BookOpen, Headphones, Edit3, Mic, LogOut, CheckCircle2, ChevronRight, AlertCircle, AlertTriangle, Clock, X } from 'lucide-react';
+import { BookOpen, Headphones, Edit3, Mic, LogOut, CheckCircle2, ChevronRight, AlertCircle, AlertTriangle, Clock, X, ArrowLeft, Loader2 } from 'lucide-react';
 import { useStore } from '@/components/providers/StoreProvider';
-import { ExamLog, SpeakingRequest } from '@/lib/mock-data';
+import { ExamLog, SpeakingRequest, Test } from '@/lib/mock-data';
 
 type ModuleType = 'reading' | 'listening' | 'writing' | 'speaking';
 type ExamState = 'setup' | 'warning' | 'taking' | 'completed';
@@ -21,10 +21,11 @@ export default function ExamPage() {
   const params = useParams();
   const router = useRouter();
   const testId = typeof params?.id === 'string' ? params.id : '';
-  const { currentUser, examLogs, updateExamLog, addExamLog, addSpeakingRequest, updateStudent, students } = useStore();
+  const { currentUser, setCurrentUser, examLogs, updateExamLog, addExamLog, addSpeakingRequest, updateStudent, students, tests } = useStore();
 
   const [isMounted, setIsMounted] = useState(false);
-  const [test, setTest] = useState<any>(null);
+  const [test, setTest] = useState<Test | null>(null);
+  const [isLoadingTest, setIsLoadingTest] = useState(true);
   
   const [examState, setExamState] = useState<ExamState>('setup');
   const [selectedModules, setSelectedModules] = useState<ModuleType[]>([]);
@@ -41,12 +42,42 @@ export default function ExamPage() {
     speaking: {} as Record<string, any>
   });
 
-
   const existingLog = examLogs.find(l => l.studentId === currentUser?.id && l.testId === testId);
 
   useEffect(() => {
     setIsMounted(true);
-    setTest(getTestById(testId));
+    let isCancelled = false;
+
+    async function loadTest() {
+      setIsLoadingTest(true);
+
+      // Auto-assign default candidate user if none logged in
+      if (!currentUser) {
+        const fallbackStudent = (students && students.length > 0)
+          ? students[0]
+          : {
+              id: 'student-1',
+              studentId: 'STD-1001',
+              name: 'Candidate Student',
+              role: 'student',
+              orgId: 'tenant-1'
+            };
+        setCurrentUser(fallbackStudent);
+      }
+
+      const fetchedTest = await fetchTestByIdAsync(testId, tests);
+      if (!isCancelled) {
+        if (fetchedTest) {
+          setTest(fetchedTest);
+        }
+        setIsLoadingTest(false);
+      }
+    }
+
+    if (testId) {
+      loadTest();
+    }
+
     // Pre-fill answers from existing log if available
     if (existingLog) {
       setAnswers(prev => ({
@@ -57,11 +88,47 @@ export default function ExamPage() {
         speaking: existingLog.answers?.speaking || {},
       }));
     }
-  }, [testId, existingLog]);
 
-  if (!isMounted || !test || !currentUser) {
-    return <div className="p-10 text-center text-[var(--ink-faint)] font-mono text-[11px] uppercase tracking-wider">Loading test environment...</div>;
+    return () => {
+      isCancelled = true;
+    };
+  }, [testId, existingLog, tests, currentUser, students, setCurrentUser]);
+
+  if (!isMounted || isLoadingTest) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--paper)] p-6 text-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#005C53] mb-4" />
+        <div className="font-display text-lg text-slate-800 font-bold">Loading Test Environment...</div>
+        <p className="text-xs text-slate-500 font-mono mt-1">Synchronizing exam materials & question items ({testId})</p>
+      </div>
+    );
   }
+
+  if (!test) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--paper)] p-6 text-center font-sans">
+        <div className="panel max-w-md w-full p-8 text-center bg-white shadow-xl rounded-2xl border border-slate-200 space-y-4">
+          <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900">Test Not Found</h2>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            The requested test <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-[11px] text-slate-800">{testId}</code> could not be located in the exam catalog or database.
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/student/tests"
+              className="px-6 py-2.5 bg-[#005C53] hover:bg-[#004740] text-white font-bold text-xs rounded-xl shadow-sm inline-flex items-center space-x-2 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Browse Available Tests</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   const handleModuleSelection = (mod: ModuleType) => {
     if (selectedModules.includes(mod)) {

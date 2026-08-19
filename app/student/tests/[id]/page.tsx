@@ -4,22 +4,72 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/components/providers/StoreProvider';
-import { getTestById } from '@/lib/test-store';
-import { BookOpen, Headphones, Edit3, Mic, Play, ChevronLeft, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { fetchTestByIdAsync, getTestById } from '@/lib/test-store';
+import { BookOpen, Headphones, Edit3, Mic, Play, ChevronLeft, ShieldAlert, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { Test } from '@/lib/mock-data';
 
 export default function TestDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const testId = typeof params?.id === 'string' ? params.id : '';
   
-  const { currentUser, examLogs, speakingRequests, addSpeakingRequest } = useStore();
-  const [test, setTest] = useState<any>(null);
+  const { currentUser, setCurrentUser, students, examLogs, speakingRequests, addSpeakingRequest, tests } = useStore();
+  const [test, setTest] = useState<Test | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setTest(getTestById(testId));
-  }, [testId]);
+    let isCancelled = false;
 
-  if (!currentUser || !test) return null;
+    async function load() {
+      setIsLoading(true);
+
+      if (!currentUser) {
+        const fallbackStudent = (students && students.length > 0)
+          ? students[0]
+          : {
+              id: 'student-1',
+              studentId: 'STD-1001',
+              name: 'Candidate Student',
+              role: 'student',
+              orgId: 'tenant-1'
+            };
+        setCurrentUser(fallbackStudent);
+      }
+
+      const fetched = await fetchTestByIdAsync(testId, tests);
+      if (!isCancelled) {
+        if (fetched) setTest(fetched);
+        setIsLoading(false);
+      }
+    }
+
+    if (testId) load();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [testId, tests, currentUser, students, setCurrentUser]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[400px] flex flex-col items-center justify-center p-12 text-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#005C53] mb-4" />
+        <div className="font-bold text-slate-800 text-sm">Loading Test Details...</div>
+      </div>
+    );
+  }
+
+  if (!test) {
+    return (
+      <div className="panel max-w-md mx-auto my-12 p-8 text-center bg-white rounded-2xl border border-slate-200 space-y-4">
+        <AlertCircle className="w-10 h-10 text-amber-600 mx-auto" />
+        <h2 className="text-lg font-bold text-slate-900">Test Not Found</h2>
+        <p className="text-xs text-slate-600">The test ID {testId} could not be found.</p>
+        <Link href="/student/tests" className="btn btn-fill inline-block text-xs">Browse All Tests</Link>
+      </div>
+    );
+  }
+
 
   const log = examLogs.find(l => l.studentId === currentUser.id && l.testId === testId);
   const speakingReq = speakingRequests.find(r => r.studentId === currentUser.id && r.testId === testId);

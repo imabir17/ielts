@@ -1,4 +1,5 @@
 import { Test, MOCK_TESTS_CATALOG } from './mock-data';
+import { supabase } from './supabase';
 
 const STORAGE_KEY = 'ielts_custom_tests_catalog_v1';
 
@@ -63,9 +64,50 @@ export function deleteTestFromStorage(testId: string): Test[] {
 }
 
 /**
- * Get a specific Test by ID
+ * Get a specific Test by ID synchronously from memory or storage
  */
-export function getTestById(testId: string): Test | undefined {
+export function getTestById(testId: string, inMemoryTests?: Test[]): Test | undefined {
+  if (inMemoryTests && inMemoryTests.length > 0) {
+    const found = inMemoryTests.find((t) => t.id === testId);
+    if (found) return found;
+  }
   const tests = getStoredTests();
-  return tests.find((t) => t.id === testId) || tests[0];
+  const matched = tests.find((t) => t.id === testId);
+  if (matched) return matched;
+  const mockMatched = MOCK_TESTS_CATALOG.find((t) => t.id === testId);
+  return mockMatched;
 }
+
+/**
+ * Robust async fetch: checks memory, storage, catalog, and finally Supabase
+ */
+export async function fetchTestByIdAsync(testId: string, inMemoryTests?: Test[]): Promise<Test | undefined> {
+  const local = getTestById(testId, inMemoryTests);
+  if (local) return local;
+
+  try {
+    const { data, error } = await supabase
+      .from('tests')
+      .select('*')
+      .eq('id', testId)
+      .maybeSingle();
+
+    if (data && !error) {
+      const normalized: Test = {
+        ...data,
+        totalDurationMinutes: data.total_duration_minutes ?? data.totalDurationMinutes,
+        tierAccess: data.tier_access ?? data.tierAccess,
+        questionCount: data.question_count ?? data.questionCount,
+        createdDate: data.created_date ?? data.createdDate,
+        listeningAudioUrl: data.listening_audio_url ?? data.listeningAudioUrl
+      };
+      saveTestToStorage(normalized);
+      return normalized;
+    }
+  } catch (err) {
+    console.error('Error fetching test from Supabase:', err);
+  }
+
+  return undefined;
+}
+
