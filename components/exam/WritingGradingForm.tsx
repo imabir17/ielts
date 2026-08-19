@@ -141,15 +141,6 @@ export function WritingGradingForm({
           </p>
         </div>
 
-        <div className="flex items-center space-x-4 bg-black/30 px-5 py-3 rounded-xl border border-white/10 shrink-0">
-          <div className="text-right">
-            <div className="text-[10px] text-slate-300 uppercase font-mono tracking-wider">Computed Overall Band</div>
-            <div className="text-xs text-emerald-300 font-medium">Task 1 (33%) + Task 2 (67%)</div>
-          </div>
-          <div className="text-3xl font-extrabold text-amber-300 font-mono">
-            {calcOverallWritingBand().toFixed(1)}
-          </div>
-        </div>
       </div>
 
       {/* Task Selector Tabs */}
