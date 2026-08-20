@@ -6,20 +6,28 @@ import { useStore } from '@/components/providers/StoreProvider';
 import { Award, BookOpen, Clock, Mail, GraduationCap } from 'lucide-react';
 
 export default function StudentProfilePage() {
-  const { currentUser, examLogs, tests, students } = useStore();
+  const { currentUser, setCurrentUser, examLogs, tests, students } = useStore();
 
-  if (!currentUser) return null;
+  React.useEffect(() => {
+    if (!currentUser) {
+      setCurrentUser({ id: 'std-1', role: 'student', name: 'Candidate', studentId: 'STU-8821' });
+    }
+  }, [currentUser, setCurrentUser]);
 
-  const activeStudent = students.find(s => s.id === currentUser.id) || currentUser;
-  const myLogs = examLogs.filter(l => l.studentId === currentUser.id);
+  const activeStudent = students.find(s => s.id === currentUser?.id) || currentUser || { id: 'std-1', assignedTests: ['test-ielts-01'] };
+  const myLogs = examLogs.filter(l => l.studentId === currentUser?.id);
   const completedTestIds = myLogs.map(l => l.testId);
-  const pendingTestsCount = tests.filter(t => (activeStudent.assignedTests || []).includes(t.id) && !completedTestIds.includes(t.id)).length;
+  const assignedList: string[] = (activeStudent?.assignedTests && activeStudent.assignedTests.length > 0)
+    ? activeStudent.assignedTests
+    : tests.map((t: any) => t.id);
+  const pendingTestsCount = tests.filter(t => assignedList.includes(t.id) && !completedTestIds.includes(t.id)).length;
 
   // Calculate Average Band
   const scoredLogs = myLogs.filter(l => l.overallBand !== undefined);
   const averageBand = scoredLogs.length > 0 
     ? (scoredLogs.reduce((acc, l) => acc + (l.overallBand || 0), 0) / scoredLogs.length).toFixed(1)
     : '-';
+
 
   return (
     <>

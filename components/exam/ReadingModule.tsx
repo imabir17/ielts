@@ -40,11 +40,11 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
   const passageContainerRef = useRef<HTMLDivElement>(null);
 
   const [activePassageIdx, setActivePassageIdx] = useState<number>(0);
-  const passagesToRender = allPassages && allPassages.length > 0 ? allPassages : [passage];
-  const currentPassage = passagesToRender[activePassageIdx];
+  const passagesToRender = allPassages && allPassages.length > 0 ? allPassages : (passage ? [passage] : []);
+  const currentPassage = passagesToRender[activePassageIdx] || passagesToRender[0];
 
   // 1. Debounced Local Autosave
-  const storageKey = `ielts_answers_${passagesToRender[0].id}`;
+  const storageKey = `ielts_answers_${passagesToRender[0]?.id || 'default'}`;
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
     if (saved) {
@@ -53,6 +53,7 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
       } catch (e) {}
     }
   }, [storageKey]);
+
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(userAnswers));
@@ -105,22 +106,31 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
 
   // Submit handled by parent now
 
+  if (!currentPassage) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-12 text-slate-500 font-medium">
+        No reading passages available in this test.
+      </div>
+    );
+  }
+
   // Extract all questions in current passage for rendering
-  const sectionsList: QuestionSection[] = currentPassage.sections || [
+  const sectionsList: QuestionSection[] = currentPassage?.sections || [
     {
       id: 'sec-default',
       orderIndex: 0,
       type: 'multiple_choice_single' as QuestionType,
       instructions: '',
-      questions: currentPassage.questions || [],
+      questions: currentPassage?.questions || [],
     },
   ];
 
   // Extract all 40 questions across ALL passages for the bottom navigation dock
   const allGlobalQuestions = passagesToRender.flatMap((p) => {
-    const secs = p.sections || [{ questions: p.questions || [] }];
-    return secs.flatMap(s => s.questions);
+    const secs = p?.sections || [{ questions: p?.questions || [] }];
+    return secs.flatMap(s => s?.questions || []);
   });
+
 
   return (
     <div className="relative h-full flex flex-col font-sans select-none bg-slate-100 overflow-hidden">

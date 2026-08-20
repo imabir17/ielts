@@ -46,10 +46,19 @@ export default function LoginPage() {
         s.password === password
       );
       if (student) {
-        setCurrentUser({ id: student.id, role: 'student', name: student.name, studentId: student.studentId });
+        setCurrentUser({
+          id: student.id,
+          role: 'student',
+          name: student.name,
+          studentId: student.studentId,
+          email: student.email,
+          orgId: student.orgId,
+          assignedTests: student.assignedTests || []
+        });
         router.push('/student');
         return;
       }
+
 
       setError('Invalid email/ID or password. Please try again.');
       setIsLoading(false);

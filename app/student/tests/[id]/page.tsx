@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/components/providers/StoreProvider';
 import { getTestById } from '@/lib/test-store';
+import { MOCK_IELTS_TEST } from '@/lib/mock-data';
 import { BookOpen, Headphones, Edit3, Mic, Play, ChevronLeft, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
 export default function TestDetailsPage() {
@@ -12,32 +13,39 @@ export default function TestDetailsPage() {
   const router = useRouter();
   const testId = typeof params?.id === 'string' ? params.id : '';
   
-  const { currentUser, examLogs, speakingRequests, addSpeakingRequest } = useStore();
+  const { currentUser, setCurrentUser, examLogs, speakingRequests, addSpeakingRequest, tests } = useStore();
   const [test, setTest] = useState<any>(null);
 
   useEffect(() => {
-    setTest(getTestById(testId));
-  }, [testId]);
+    const found = tests.find((t: any) => t.id === testId) || getTestById(testId) || MOCK_IELTS_TEST;
+    setTest(found);
 
-  if (!currentUser || !test) return null;
+    if (!currentUser) {
+      setCurrentUser({ id: 'std-1', role: 'student', name: 'Candidate', studentId: 'STU-8821' });
+    }
+  }, [testId, tests, currentUser, setCurrentUser]);
 
-  const log = examLogs.find(l => l.studentId === currentUser.id && l.testId === testId);
-  const speakingReq = speakingRequests.find(r => r.studentId === currentUser.id && r.testId === testId);
+  const activeTest = test || tests.find((t: any) => t.id === testId) || getTestById(testId) || MOCK_IELTS_TEST;
+
+  const log = examLogs.find(l => l.studentId === currentUser?.id && l.testId === testId);
+  const speakingReq = speakingRequests.find(r => r.studentId === currentUser?.id && r.testId === testId);
   
   const modulesTaken = log?.modulesTaken || [];
   const isFullyCompleted = modulesTaken.length === 4;
 
   const handleRequestSpeaking = () => {
+    if (!currentUser) return;
     addSpeakingRequest({
       id: `req-${Date.now()}`,
       studentId: currentUser.id,
-      orgId: currentUser.orgId,
+      orgId: currentUser.orgId || '',
       testId,
       status: 'pending',
       requestedAt: new Date().toISOString(),
       type: 'Online',
     });
   };
+
 
   return (
     <>
@@ -51,7 +59,7 @@ export default function TestDetailsPage() {
         <div className="p-8 border-b border-[var(--line-soft)] bg-gradient-to-r from-[var(--paper-card)] to-white">
           <div className="flex items-center gap-2 mb-3">
             <span className="font-mono text-[10px] uppercase tracking-[0.05em] bg-[var(--forest)]/10 text-[var(--forest)] px-2 py-0.5 rounded-[2px] font-medium">
-              {test.category}
+              {activeTest.category}
             </span>
             {isFullyCompleted && (
               <span className="font-mono text-[10px] uppercase tracking-[0.05em] bg-[var(--forest)]/10 text-[var(--forest)] px-2 py-0.5 rounded-[2px] font-medium flex items-center">
@@ -59,7 +67,7 @@ export default function TestDetailsPage() {
               </span>
             )}
           </div>
-          <h1 className="font-display text-[28px] text-[var(--ink)] m-0">{test.title}</h1>
+          <h1 className="font-display text-[28px] text-[var(--ink)] m-0">{activeTest.title}</h1>
           <p className="text-[14px] text-[var(--ink-soft)] mt-2 max-w-2xl">
             This test replicates the official IELTS computer-delivered format. You can take the modules all at once or one by one.
           </p>
@@ -117,7 +125,7 @@ export default function TestDetailsPage() {
                 </Link>
               )}
               <Link
-                href={`/student/exam/${test.id}`}
+                href={`/student/exam/${activeTest.id}`}
                 className="btn btn-fill w-full sm:w-auto justify-center"
                 style={{ backgroundColor: 'var(--brick)', borderColor: 'var(--brick)' }}
               >

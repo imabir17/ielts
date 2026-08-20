@@ -12,14 +12,15 @@ interface ListeningModuleProps {
   onAnswerChange?: (answers: Record<string, any>) => void;
 }
 
-export function ListeningModule({ allSections, audioUrl, volume = 1, onAnswerChange }: ListeningModuleProps) {
+export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnswerChange }: ListeningModuleProps) {
   const [activeSectionIdx, setActiveSectionIdx] = useState(0);
-  const section = allSections[activeSectionIdx];
+  const section = allSections && allSections.length > 0 ? allSections[activeSectionIdx] || allSections[0] : null;
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [userAnswers, setUserAnswers] = useState<Record<string, any>>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
 
   useEffect(() => {
     if (onAnswerChange) onAnswerChange(userAnswers);
@@ -583,18 +584,24 @@ export function ListeningModule({ allSections, audioUrl, volume = 1, onAnswerCha
           </p>
         </div>
 
-        {/* Render Question Sections or fallback to questions directly if no sections array */}
-        {section.sections ? (
-          section.sections.map(qSec => renderQuestionSection(qSec))
+        {!section ? (
+          <div className="p-10 text-center text-slate-500 font-medium bg-white rounded-2xl border border-slate-200">
+            No listening sections available in this test.
+          </div>
         ) : (
-          /* Fallback for direct section.questions if it's treated as a single QuestionSection */
-          renderQuestionSection({
-            id: section.id,
-            type: section.questions[0]?.type || 'text-input',
-            instructions: '',
-            orderIndex: 0,
-            questions: section.questions
-          })
+          /* Render Question Sections or fallback to questions directly if no sections array */
+          section.sections ? (
+            section.sections.map(qSec => renderQuestionSection(qSec))
+          ) : (
+            /* Fallback for direct section.questions if it's treated as a single QuestionSection */
+            renderQuestionSection({
+              id: section.id,
+              type: section.questions?.[0]?.type || 'text-input',
+              instructions: '',
+              orderIndex: 0,
+              questions: section.questions || []
+            })
+          )
         )}
         
         {/* Extra space at bottom to account for footer */}
@@ -624,8 +631,8 @@ export function ListeningModule({ allSections, audioUrl, volume = 1, onAnswerCha
         {/* Question Navigator */}
         <div className="max-w-7xl mx-auto w-full flex items-center space-x-2 overflow-x-auto py-1 px-2">
           {allSections.flatMap((s, sIdx) => 
-            (s.sections || [{ questions: s.questions || [] }]).flatMap(qSec => 
-              qSec.questions.map(q => ({ ...q, partIdx: sIdx }))
+            (s?.sections || [{ questions: s?.questions || [] }]).flatMap(qSec => 
+              (qSec?.questions || []).map(q => ({ ...q, partIdx: sIdx }))
             )
           ).map((q) => {
             const isAnswered = Boolean(userAnswers[q.id]);
@@ -653,6 +660,7 @@ export function ListeningModule({ allSections, audioUrl, volume = 1, onAnswerCha
           })}
         </div>
       </div>
+
     </div>
   );
 }

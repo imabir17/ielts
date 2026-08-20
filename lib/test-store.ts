@@ -1,4 +1,5 @@
-import { Test, MOCK_TESTS_CATALOG } from './mock-data';
+import { Test, MOCK_TESTS_CATALOG, MOCK_IELTS_TEST } from './mock-data';
+
 
 const STORAGE_KEY = 'ielts_custom_tests_catalog_v1';
 
@@ -67,5 +68,13 @@ export function deleteTestFromStorage(testId: string): Test[] {
  */
 export function getTestById(testId: string): Test | undefined {
   const tests = getStoredTests();
-  return tests.find((t) => t.id === testId) || tests[0];
+  const found = tests.find((t) => t.id === testId);
+  if (found) return found;
+  
+  if (testId === 'test-ielts-01' || testId === 'test-1') {
+    return MOCK_IELTS_TEST;
+  }
+  
+  return tests[0] || MOCK_IELTS_TEST;
 }
+

@@ -10,9 +10,9 @@ interface SpeakingModuleProps {
   testId: string;
 }
 
-export function SpeakingModule({ parts, testId }: SpeakingModuleProps) {
+export function SpeakingModule({ parts = [], testId }: SpeakingModuleProps) {
   const [activePartIndex, setActivePartIndex] = useState(0);
-  const currentPart = parts[activePartIndex] || parts[0];
+  const currentPart = (parts && parts.length > 0) ? parts[activePartIndex] || parts[0] : null;
   const { currentUser, addSpeakingRequest, speakingRequests, students } = useStore();
 
   const [requested, setRequested] = useState(false);
@@ -36,6 +36,14 @@ export function SpeakingModule({ parts, testId }: SpeakingModuleProps) {
 
   const existingRequest = speakingRequests.find(r => r.studentId === currentUser?.id && r.testId === testId);
 
+  if (!currentPart) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-12 text-slate-500 font-medium">
+        No speaking parts available in this test.
+      </div>
+    );
+  }
+
   return (
     <div className="h-[calc(100vh-64px)] flex flex-col bg-slate-100 font-sans overflow-hidden p-6 md:p-10 max-w-4xl mx-auto w-full">
       {/* Top Part Selector */}
@@ -47,6 +55,7 @@ export function SpeakingModule({ parts, testId }: SpeakingModuleProps) {
 
         <div className="flex items-center space-x-2 overflow-x-auto pb-2 sm:pb-0">
           {parts.map((p, idx) => (
+
             <button
               key={p.id}
               onClick={() => setActivePartIndex(idx)}

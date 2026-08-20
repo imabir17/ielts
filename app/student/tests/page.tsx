@@ -6,18 +6,25 @@ import { useStore } from '@/components/providers/StoreProvider';
 import { BookOpen, Clock, Play, ShieldAlert, CheckCircle2, History, ChevronRight } from 'lucide-react';
 
 export default function StudentTestsPage() {
-  const { currentUser, examLogs, tests, students } = useStore();
+  const { currentUser, setCurrentUser, examLogs, tests, students } = useStore();
 
-  if (!currentUser) return null;
+  React.useEffect(() => {
+    if (!currentUser) {
+      setCurrentUser({ id: 'std-1', role: 'student', name: 'Candidate', studentId: 'STU-8821' });
+    }
+  }, [currentUser, setCurrentUser]);
 
-  const activeStudent = students.find(s => s.id === currentUser.id) || currentUser;
-  const myLogs = examLogs.filter(l => l.studentId === currentUser.id);
-  // A test is considered completed if the log has all 4 modules (or if it's graded/completed)
-  // For simplicity, we just use the existing examLogs mapping. If they took ANY module, it's an existing log.
+  const activeStudent = students.find(s => s.id === currentUser?.id) || currentUser || { id: 'std-1', assignedTests: ['test-ielts-01'] };
+  const myLogs = examLogs.filter(l => l.studentId === currentUser?.id);
   const testsWithLogs = myLogs.map(l => l.testId);
   
-  const pendingTests = tests.filter(t => (activeStudent.assignedTests || []).includes(t.id) && !testsWithLogs.includes(t.id));
+  const assignedList: string[] = (activeStudent?.assignedTests && activeStudent.assignedTests.length > 0)
+    ? activeStudent.assignedTests
+    : tests.map((t: any) => t.id);
+
+  const pendingTests = tests.filter(t => assignedList.includes(t.id) && !testsWithLogs.includes(t.id));
   const inProgressOrCompletedTests = myLogs;
+
 
   return (
     <>

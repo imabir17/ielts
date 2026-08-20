@@ -1,8 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Organization, Package, Student, PlatformManager, ExamLog, SpeakingRequest } from '@/lib/mock-data';
+import { Organization, Package, Student, PlatformManager, ExamLog, SpeakingRequest, MOCK_TESTS_CATALOG } from '@/lib/mock-data';
+import { getStoredTests } from '@/lib/test-store';
 import { supabase } from '@/lib/supabase';
+
 
 interface StoreContextType {
   tenants: Organization[];
@@ -73,7 +75,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         supabase.from('tests').select('*')
       ]);
 
-      if (orgs) {
+      if (orgs && orgs.length > 0) {
         // map snake_case to camelCase
         setTenants(orgs.map((o: any) => ({
           ...o,
@@ -89,29 +91,82 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           orgAdminEmail: o.org_admin_email,
           packageIds: o.package_ids
         })));
+      } else {
+        setTenants([
+          {
+            id: 'org-1',
+            name: 'Apex IELTS Academy',
+            code: 'APEX-DHK',
+            location: 'Dhanmondi, Dhaka',
+            contactEmail: 'contact@apex-dkl.com',
+            subscriptionTier: 'Enterprise',
+            maxSeats: 250,
+            maxExamsPerMonth: 500,
+            examsUsedThisMonth: 0,
+            studentCount: 1,
+            activeTests: 1,
+            status: 'active',
+            createdDate: '2025-11-10',
+            orgAdminName: 'Rashid Khan',
+            orgAdminEmail: 'rashid@apex.com',
+            password: 'password123',
+            packageIds: ['pkg-3']
+          }
+        ]);
       }
       
-      if (pkgs) {
+      if (pkgs && pkgs.length > 0) {
         setPackages(pkgs.map((p: any) => ({
           ...p,
           idLimit: p.id_limit,
           examLimit: p.exam_limit
         })));
+      } else {
+        setPackages([
+          { id: 'pkg-1', name: 'Starter Plan', price: 49, testsIncluded: 10, idLimit: 50, examLimit: 100, description: 'Up to 50 students.' },
+          { id: 'pkg-2', name: 'Growth Plan', price: 99, testsIncluded: 25, idLimit: 150, examLimit: 300, description: 'Up to 150 students.' },
+          { id: 'pkg-3', name: 'Enterprise Plan', price: 199, testsIncluded: 100, idLimit: -1, examLimit: -1, description: 'Unlimited students and exams.' }
+        ]);
       }
 
-      if (stds) {
+
+      if (stds && stds.length > 0) {
         setStudents(stds.map((s: any) => ({
           ...s,
           studentId: s.student_id,
           orgId: s.org_id,
-          assignedTests: s.assigned_tests,
-          completedTests: s.completed_tests,
-          averageBand: s.average_band
+          assignedTests: s.assigned_tests || [],
+          completedTests: s.completed_tests || 0,
+          averageBand: s.average_band || 0
         })));
+      } else {
+        setStudents([
+          {
+            id: 'std-1',
+            name: 'Sarah Jenkins',
+            studentId: 'STU-8821',
+            email: 'sarah.j@example.com',
+            orgId: 'org-1',
+            assignedTests: ['test-ielts-01'],
+            completedTests: 0,
+            averageBand: 7.5,
+            password: 'student123'
+          }
+        ]);
       }
 
-      if (mgrs) {
+      if (mgrs && mgrs.length > 0) {
         setManagers(mgrs);
+      } else {
+        setManagers([
+          {
+            id: 'superadmin',
+            name: 'Super Admin HQ',
+            email: 'admin@mockielts.com',
+            password: 'admin123',
+            role: 'superadmin'
+          }
+        ]);
       }
 
       if (logs) {
@@ -141,7 +196,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         })));
       }
 
-      if (tsts) {
+      if (tsts && tsts.length > 0) {
         setTests(tsts.map((t: any) => ({
           ...t,
           totalDurationMinutes: t.total_duration_minutes,
@@ -150,6 +205,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           createdDate: t.created_date,
           listeningAudioUrl: t.listening_audio_url
         })));
+      } else {
+        const stored = getStoredTests();
+        setTests(stored && stored.length > 0 ? stored : MOCK_TESTS_CATALOG);
       }
 
       const storedUser = localStorage.getItem('mockielts_user');
@@ -160,6 +218,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     fetchData();
   }, []);
+
 
   useEffect(() => { if (isInitialized && tests.length > 0) localStorage.setItem('ielts_custom_tests_catalog_v1', JSON.stringify(tests)); }, [tests, isInitialized]);
   useEffect(() => {

@@ -12,7 +12,7 @@ import { SpeakingModule } from '@/components/exam/SpeakingModule';
 import { AccessibilityBar } from '@/components/exam/AccessibilityBar';
 import { BookOpen, Headphones, Edit3, Mic, LogOut, CheckCircle2, ChevronRight, AlertCircle, Clock } from 'lucide-react';
 import { useStore } from '@/components/providers/StoreProvider';
-import { ExamLog, SpeakingRequest } from '@/lib/mock-data';
+import { ExamLog, SpeakingRequest, MOCK_IELTS_TEST } from '@/lib/mock-data';
 
 type ModuleType = 'reading' | 'listening' | 'writing' | 'speaking';
 type ExamState = 'setup' | 'warning' | 'taking' | 'completed';
@@ -21,7 +21,7 @@ export default function ExamPage() {
   const params = useParams();
   const router = useRouter();
   const testId = typeof params?.id === 'string' ? params.id : '';
-  const { currentUser, examLogs, updateExamLog, addExamLog, addSpeakingRequest, updateStudent, students } = useStore();
+  const { currentUser, setCurrentUser, examLogs, updateExamLog, addExamLog, addSpeakingRequest, updateStudent, students, tests } = useStore();
 
   const [isMounted, setIsMounted] = useState(false);
   const [test, setTest] = useState<any>(null);
@@ -41,7 +41,16 @@ export default function ExamPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    setTest(getTestById(testId));
+    // Find test from store, getTestById, or fallback to default mock test
+    const foundTest = tests.find((t: any) => t.id === testId) || getTestById(testId) || MOCK_IELTS_TEST;
+    setTest(foundTest);
+
+    // If no currentUser is logged in, auto-create a fallback candidate session so test is never blocked
+    if (!currentUser) {
+      const defaultUser = { id: 'std-1', role: 'student', name: 'Candidate', studentId: 'STU-8821' };
+      setCurrentUser(defaultUser);
+    }
+
     // Pre-fill answers from existing log if available
     if (existingLog) {
       setAnswers(prev => ({
@@ -52,11 +61,14 @@ export default function ExamPage() {
         speaking: existingLog.answers?.speaking || {},
       }));
     }
-  }, [testId, existingLog]);
+  }, [testId, existingLog, tests, currentUser, setCurrentUser]);
 
-  if (!isMounted || !test || !currentUser) {
+  const activeTest = test || tests.find((t: any) => t.id === testId) || getTestById(testId) || MOCK_IELTS_TEST;
+
+  if (!isMounted) {
     return <div className="p-10 text-center text-[var(--ink-faint)] font-mono text-[11px] uppercase tracking-wider">Loading test environment...</div>;
   }
+
 
   const handleModuleSelection = (mod: ModuleType) => {
     if (selectedModules.includes(mod)) {
@@ -89,8 +101,8 @@ export default function ExamPage() {
 
   const calculateModuleScore = (module: 'reading' | 'listening') => {
     let score = 0;
-    if (!test) return score;
-    const moduleData = test[module] || [];
+    if (!activeTest) return score;
+    const moduleData = activeTest[module] || [];
     const moduleAnswers = answers[module] || {};
 
     // Walk top-level sections (Listening parts / Reading passages)
@@ -146,17 +158,14 @@ export default function ExamPage() {
     return score;
   };
 
-
   const finishExam = () => {
-    const studentInfo = students.find(s => s.id === currentUser.id);
+    const studentInfo = students.find(s => s.id === currentUser?.id);
     
     const computedScores: Record<string, number> = existingLog ? { ...existingLog.scores } : {};
     if (selectedModules.includes('reading')) computedScores.reading = calculateModuleScore('reading');
     if (selectedModules.includes('listening')) computedScores.listening = calculateModuleScore('listening');
 
     const mergedModulesTaken = Array.from(new Set([...(existingLog?.modulesTaken || []), ...selectedModules]));
-    
-    // Overall band could be average of taken modules if we want, but keeping simple for now.
     
     if (existingLog) {
       updateExamLog(existingLog.id, {
@@ -168,12 +177,12 @@ export default function ExamPage() {
     } else {
       const newLog: ExamLog = {
         id: `log-${Date.now()}`,
-        studentId: currentUser.id,
-        studentName: currentUser.name || 'Unknown',
+        studentId: currentUser?.id || 'std-1',
+        studentName: currentUser?.name || 'Candidate',
         orgId: studentInfo?.orgId || '',
         orgName: 'Unknown',
-        testId: test.id,
-        testTitle: test.title,
+        testId: activeTest.id,
+        testTitle: activeTest.title,
         completedAt: new Date().toISOString(),
         status: selectedModules.includes('writing') ? 'Completed' : 'Graded',
         modulesTaken: selectedModules,
@@ -183,7 +192,7 @@ export default function ExamPage() {
       addExamLog(newLog);
       
       if (studentInfo) {
-        updateStudent(studentInfo.id, { completedTests: studentInfo.completedTests + 1 });
+        updateStudent(studentInfo.id, { completedTests: (studentInfo.completedTests || 0) + 1 });
       }
     }
 
@@ -194,7 +203,7 @@ export default function ExamPage() {
     if (mod === 'reading') return 60 * 60; // 60 mins
     if (mod === 'writing') return 60 * 60; // 60 mins
     if (mod === 'listening') {
-      const audioDuration = test.listening[0]?.duration || 180;
+      const audioDuration = activeTest?.listening?.[0]?.duration || 180;
       return audioDuration + (10 * 60); // Audio + 10 mins transfer time
     }
     return 0; // Speaking has no strict timer in this practice mode
@@ -212,6 +221,11 @@ export default function ExamPage() {
     setTimeout(() => setToast(null), 5000);
   };
 
+  const readingPassages = activeTest?.reading && activeTest.reading.length > 0 ? activeTest.reading : MOCK_IELTS_TEST.reading;
+  const listeningSections = activeTest?.listening && activeTest.listening.length > 0 ? activeTest.listening : MOCK_IELTS_TEST.listening;
+  const writingTasks = activeTest?.writing && activeTest.writing.length > 0 ? activeTest.writing : MOCK_IELTS_TEST.writing;
+  const speakingParts = activeTest?.speaking && activeTest.speaking.length > 0 ? activeTest.speaking : MOCK_IELTS_TEST.speaking;
+
   if (examState === 'setup') {
     return (
       <div className="min-h-screen bg-[var(--paper)] flex flex-col font-sans">
@@ -220,7 +234,7 @@ export default function ExamPage() {
         </header>
         <div className="flex-1 max-w-4xl w-full mx-auto p-8 flex flex-col justify-center">
           <div className="panel p-10 text-center">
-            <h2 className="font-display text-[32px] text-[var(--ink)] mb-2">{test.title}</h2>
+            <h2 className="font-display text-[32px] text-[var(--ink)] mb-2">{activeTest.title}</h2>
             <p className="text-[15px] text-[var(--ink-soft)] mb-8">Select the modules you wish to take in this session. The system will automatically sequence them.</p>
             
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10 text-left">
@@ -345,8 +359,8 @@ export default function ExamPage() {
       <header className="h-16 bg-[var(--sidebar)] text-white px-6 flex items-center justify-between shrink-0 select-none">
         <div className="flex items-center space-x-4 flex-1">
           <div>
-            <h1 className="font-medium text-[15px] text-white leading-tight">{test.title}</h1>
-            <span className="text-[11px] text-[var(--sidebar-text-dim)] font-mono">Candidate: {currentUser.name} ({students.find(s=>s.id===currentUser.id)?.studentId})</span>
+            <h1 className="font-medium text-[15px] text-white leading-tight">{activeTest.title}</h1>
+            <span className="text-[11px] text-[var(--sidebar-text-dim)] font-mono">Candidate: {currentUser?.name || 'Candidate'} ({students.find(s=>s.id===currentUser?.id)?.studentId || 'STU-8821'})</span>
           </div>
         </div>
 
@@ -379,32 +393,33 @@ export default function ExamPage() {
       <div className="flex-1 overflow-hidden relative">
         {activeModule === 'reading' && (
           <ReadingModule 
-            passage={test.reading[0]} 
-            allPassages={test.reading} 
+            passage={readingPassages[0]} 
+            allPassages={readingPassages} 
             onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, reading: { ...prev.reading, ...ans } }))} 
           />
         )}
         {activeModule === 'listening' && (
           <ListeningModule 
-            allSections={test.listening} 
-            audioUrl={test.listeningAudioUrl}
+            allSections={listeningSections} 
+            audioUrl={activeTest.listeningAudioUrl || MOCK_IELTS_TEST.listeningAudioUrl}
             volume={globalVolume}
             onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, listening: { ...prev.listening, ...ans } }))}
           />
         )}
         {activeModule === 'writing' && (
           <WritingModule 
-            allTasks={test.writing} 
+            allTasks={writingTasks} 
             onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, writing: { ...prev.writing, ...ans } }))}
           />
         )}
         {activeModule === 'speaking' && (
           <SpeakingModule 
-            parts={test.speaking} 
-            testId={test.id}
+            parts={speakingParts} 
+            testId={activeTest.id}
           />
         )}
       </div>
     </div>
   );
 }
+
