@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ListeningSection, QuestionSection, Question, TableCell, FlowStep, DiagramPin } from '@/lib/mock-data';
-import { Volume2, VolumeX, Headphones, CheckCircle } from 'lucide-react';
+import { Volume2, VolumeX, Headphones, CheckCircle2 } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 
 interface ListeningModuleProps {
@@ -21,7 +21,6 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
   const [userAnswers, setUserAnswers] = useState<Record<string, any>>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-
   useEffect(() => {
     if (onAnswerChange) onAnswerChange(userAnswers);
   }, [userAnswers, onAnswerChange]);
@@ -31,7 +30,6 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
       audioRef.current.volume = volume;
     }
   }, [volume]);
-
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -84,7 +82,7 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
       placeholder={placeholder}
       value={userAnswers[qId] || ''}
       onChange={(e) => handleAnswerChange(qId, e.target.value)}
-      className="px-4 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#005C53] min-w-[120px] max-w-[240px] w-full"
+      className="px-3 py-1.5 rounded-[2px] border border-slate-300 text-xs font-medium text-slate-900 bg-white focus:outline-none focus:border-slate-800 min-w-[120px] max-w-[240px] w-full"
     />
   );
 
@@ -95,7 +93,7 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
       <select
         value={userAnswers[qId] || ''}
         onChange={(e) => handleAnswerChange(qId, e.target.value)}
-        className="px-4 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#005C53] min-w-[120px]"
+        className="px-3 py-1.5 rounded-[2px] border border-slate-300 text-xs font-medium text-slate-900 bg-white focus:outline-none focus:border-slate-800 min-w-[120px]"
       >
         <option value="" disabled>Select option...</option>
         {options.map((opt: any) => {
@@ -112,44 +110,45 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
 
   const renderQuestionSection = (qSec: QuestionSection) => {
     return (
-      <div key={qSec.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6 hover:border-[#005C53]/40 transition-colors">
+      <div key={qSec.id} className="bg-white p-5 rounded-[2px] border border-slate-300 space-y-5">
         {qSec.instructions && (
-          <div className="text-xs font-medium text-[#005C53] bg-emerald-50 p-3 rounded-lg overflow-hidden prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2">
+          <div className="text-xs font-semibold text-slate-700 bg-slate-50 p-3 rounded-[2px] border border-slate-200 overflow-hidden prose prose-sm max-w-none prose-p:my-1">
             <MDEditor.Markdown source={qSec.instructions} style={{ backgroundColor: 'transparent', color: 'inherit', fontSize: 'inherit', fontFamily: 'inherit' }} />
           </div>
         )}
 
-        {/* Generic Image Uploader (Top) */}
+        {/* Diagram Image (Top) */}
         {qSec.diagramUrl && qSec.type !== 'diagram_labeling' && (!qSec.imagePosition || qSec.imagePosition === 'top') && (
-          <div className="w-full flex justify-center bg-slate-50 border border-slate-200 rounded-xl p-4 overflow-hidden mt-4 mb-6">
-            <img src={qSec.diagramUrl} alt="Reference" className="max-w-full max-h-[500px] object-contain rounded-lg shadow-sm" />
+          <div className="w-full flex justify-center bg-slate-50 border border-slate-300 rounded-[2px] p-3 overflow-hidden mt-3 mb-4">
+            <img src={qSec.diagramUrl} alt="Reference" className="max-w-full max-h-[450px] object-contain rounded-[2px]" />
           </div>
         )}
         
         {/* 1. Multiple Choice */}
         {(qSec.type === 'multiple_choice_single' || qSec.type === 'multiple-choice') && (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {qSec.questions.map(q => {
               const isMulti = qSec.type === 'multiple_choice_multi' || qSec.isMultiSelect;
               return (
-                <div key={q.id} className="space-y-3">
-                  <p className="font-bold text-slate-900 text-base">{q.prompt}</p>
-                  <div className="space-y-2">
-                    {q.options?.map((opt) => {
+                <div key={q.id} className="space-y-2.5">
+                  <p className="font-semibold text-slate-900 text-sm leading-snug">{q.prompt}</p>
+                  <div className="space-y-1.5">
+                    {q.options?.map((opt, oIdx) => {
                       const isSelected = isMulti 
                         ? ((userAnswers[q.id] || []) as string[]).includes(opt)
                         : userAnswers[q.id] === opt;
                       
                       const maxLimit = qSec.requiredSelectionCount;
                       const disableUnselected = isMulti && maxLimit && !isSelected && ((userAnswers[q.id] || []).length >= maxLimit);
+                      const letter = String.fromCharCode(65 + oIdx);
 
                       return (
                         <label
                           key={opt}
-                          className={`w-full text-left p-3.5 rounded-xl border text-sm font-medium transition-all flex items-center justify-start space-x-3 cursor-pointer ${
+                          className={`w-full text-left p-2.5 rounded-[2px] border text-xs font-medium transition-colors flex items-center justify-start space-x-2.5 cursor-pointer ${
                             isSelected
-                              ? 'bg-[#005C53] text-white border-[#005C53]'
-                              : disableUnselected ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                              ? 'bg-blue-50/70 text-blue-950 border-blue-600'
+                              : disableUnselected ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
                           }`}
                         >
                           <input
@@ -163,10 +162,13 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
                             }}
                             className="hidden"
                           />
-                          <div className={`w-4 h-4 border rounded flex items-center justify-center ${isMulti ? 'rounded-sm' : 'rounded-full'} ${isSelected ? 'border-white bg-[#005C53]' : 'border-slate-300'}`}>
-                            {isSelected && <CheckCircle className="w-3 h-3 text-white" />}
-                          </div>
-                          <span>{opt}</span>
+                          <span className={`w-5 h-5 rounded-[2px] flex items-center justify-center font-mono font-bold text-xs shrink-0 border ${
+                            isSelected ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-100 text-slate-600 border-slate-300'
+                          }`}>
+                            {letter}
+                          </span>
+                          <span className="flex-1">{opt}</span>
+                          {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />}
                         </label>
                       );
                     })}
@@ -177,40 +179,34 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
           </div>
         )}
 
-
-        {/* Multiple Choice Multi (List Selection) Section-Level Card */}
+        {/* Multiple Choice Multi Section Card */}
         {qSec.type === 'multiple_choice_multi' && qSec.questions.length > 0 && (
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2">
-                <span className="bg-slate-900 text-white font-extrabold text-xs px-3 py-1 rounded-xl flex items-center justify-center">
-                  Questions {qSec.questions[0].questionNumber} - {qSec.questions[qSec.questions.length - 1].questionNumber}
-                </span>
-              </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <span className="bg-slate-800 text-white font-bold text-xs px-2 py-0.5 rounded-[2px] font-mono">
+                Questions {qSec.questions[0].questionNumber} – {qSec.questions[qSec.questions.length - 1].questionNumber}
+              </span>
+              <span className="text-xs text-slate-600 italic">
+                Choose {qSec.requiredSelectionCount || 2} letters
+              </span>
             </div>
 
             {qSec.questions[0]?.prompt ? (
-              <p className="font-bold text-slate-900 text-base leading-snug">
+              <p className="font-semibold text-slate-900 text-sm leading-snug">
                 {qSec.questions[0].prompt}
               </p>
             ) : qSec.instructions ? (
-              <p className="font-bold text-slate-900 text-base leading-snug">
+              <p className="font-semibold text-slate-900 text-sm leading-snug">
                 {qSec.instructions}
               </p>
             ) : null}
-            
-            <div className="text-xs font-bold text-amber-700 bg-amber-50 inline-block px-2.5 py-1 rounded-lg border border-amber-200 mb-2">
-              Instruction: Choose {qSec.requiredSelectionCount || 2} letters
-            </div>
 
-            <div className="space-y-2 pt-1">
+            <div className="space-y-1.5 pt-1">
               {(qSec.wordBankOptions || []).map((opt, idx) => {
                 const selectedQuestions = qSec.questions.filter(q => userAnswers[q.id] === opt);
                 const isChecked = selectedQuestions.length > 0;
-                
                 const totalSelected = qSec.questions.filter(q => userAnswers[q.id]).length;
                 const isMaxReached = totalSelected >= (qSec.requiredSelectionCount || 2) && !isChecked;
-                
                 const letter = String.fromCharCode(65 + idx);
 
                 return (
@@ -227,23 +223,23 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
                         }
                       }
                     }}
-                    className={`w-full text-left p-3.5 rounded-2xl border text-sm font-medium transition-all flex items-center justify-between ${
+                    className={`w-full text-left p-2.5 rounded-[2px] border text-xs font-medium transition-colors flex items-center justify-between ${
                       isChecked
-                        ? 'bg-[#005C53] text-white border-[#005C53]'
+                        ? 'bg-blue-50/70 border-blue-600 text-blue-950'
                         : isMaxReached
                         ? 'bg-slate-50 text-slate-400 border-slate-200 opacity-60 cursor-not-allowed'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                        : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shrink-0 transition-colors ${
-                        isChecked ? 'bg-white text-[#005C53] shadow-sm' : isMaxReached ? 'bg-slate-200 text-slate-400' : 'bg-slate-100 text-slate-500'
+                    <div className="flex items-center space-x-2.5">
+                      <span className={`w-5 h-5 rounded-[2px] flex items-center justify-center font-mono font-bold text-xs shrink-0 border ${
+                        isChecked ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-100 text-slate-600 border-slate-300'
                       }`}>
                         {letter}
                       </span>
                       <span>{opt}</span>
                     </div>
-                    {isChecked && <CheckCircle className="w-5 h-5 text-emerald-300" />}
+                    {isChecked && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
                   </button>
                 );
               })}
@@ -253,34 +249,32 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
 
         {/* 2. Matching */}
         {qSec.type === 'matching' && (
-          <div className="space-y-6">
-            {/* Word Bank Box */}
+          <div className="space-y-4">
             {qSec.wordBankOptions && qSec.wordBankOptions.length > 0 && (
-              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
+              <div className="bg-slate-50 border border-slate-300 p-3 rounded-[2px]">
                 {qSec.wordBankTitle && (
-                  <div className="mb-3 text-sm font-bold text-slate-800 prose prose-sm max-w-none">
+                  <div className="mb-2 text-xs font-bold text-slate-800 prose prose-sm max-w-none">
                     <MDEditor.Markdown source={qSec.wordBankTitle} style={{ backgroundColor: 'transparent', color: 'inherit', fontSize: 'inherit', fontFamily: 'inherit' }} />
                   </div>
                 )}
-                <div className="space-y-1">
+                <div className="space-y-1 text-xs">
                   {qSec.wordBankOptions.map((opt, idx) => (
-                    <div key={idx} className="text-sm text-slate-700">{opt}</div>
+                    <div key={idx} className="text-slate-700">{opt}</div>
                   ))}
                 </div>
               </div>
             )}
             
-            {/* Questions List */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               {qSec.questionsTitle && (
-                <div className="mb-2 text-sm font-bold text-slate-800 prose prose-sm max-w-none">
+                <div className="mb-1 text-xs font-bold text-slate-800 prose prose-sm max-w-none">
                   <MDEditor.Markdown source={qSec.questionsTitle} style={{ backgroundColor: 'transparent', color: 'inherit', fontSize: 'inherit', fontFamily: 'inherit' }} />
                 </div>
               )}
               {qSec.questions.map(q => (
-                <div key={q.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 last:border-0 space-y-2 sm:space-y-0">
-                  <span className="text-sm font-medium text-slate-800">
-                    <span className="font-bold mr-2 text-slate-400">{q.questionNumber}.</span>
+                <div key={q.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-2.5 last:border-0 space-y-1 sm:space-y-0 text-xs">
+                  <span className="font-medium text-slate-800">
+                    <span className="font-bold mr-2 text-slate-500 font-mono">{q.questionNumber}.</span>
                     {q.prompt}
                   </span>
                   {renderDropdown(q.id, qSec.wordBankOptions || [], qSec.usedOnceOnly)}
@@ -292,23 +286,23 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
 
         {/* 3. Diagram Labeling */}
         {qSec.type === 'diagram_labeling' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {qSec.diagramUrl && (
-              <div className="relative border border-slate-200 rounded-xl overflow-hidden p-4 bg-slate-50 flex justify-center">
+              <div className="relative border border-slate-300 rounded-[2px] overflow-hidden p-3 bg-slate-900 flex justify-center">
                 <img src={qSec.diagramUrl} alt="Diagram" className="max-w-full h-auto" />
                 {qSec.diagramPins?.map(pin => (
                   <div key={pin.id} style={{ left: `${pin.xPercent}%`, top: `${pin.yPercent}%` }} className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1">
-                    <span className="bg-red-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md">
+                    <span className="bg-slate-900 text-white font-mono text-xs font-bold px-1.5 py-0.5 rounded-[2px] border border-white">
                       {pin.pinNumber}
                     </span>
                   </div>
                 ))}
               </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               {qSec.questions.map(q => (
-                <div key={q.id} className="flex items-center space-x-3">
-                  <span className="font-bold text-slate-700 min-w-[1.5rem]">{q.questionNumber || q.pinNumber}.</span>
+                <div key={q.id} className="flex items-center space-x-2">
+                  <span className="font-bold text-slate-700 min-w-[1.5rem] font-mono">{q.questionNumber || q.pinNumber}.</span>
                   {qSec.wordBankOptions ? renderDropdown(q.id, qSec.wordBankOptions) : renderTextInput(q.id)}
                 </div>
               ))}
@@ -318,16 +312,16 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
 
         {/* 4. Form Completion */}
         {qSec.type === 'form_completion' && (
-          <div className="bg-amber-50 p-6 rounded-xl border border-amber-200">
-            <h4 className="font-serif text-lg font-bold text-slate-800 mb-4 border-b border-amber-200 pb-2">
+          <div className="bg-slate-50 p-5 rounded-[2px] border border-slate-300">
+            <h4 className="font-serif text-base font-bold text-slate-900 mb-3 border-b border-slate-300 pb-2">
               {qSec.title || "Form"}
             </h4>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {qSec.questions.map(q => (
-                <div key={q.id} className="flex items-start md:items-center flex-col md:flex-row space-y-2 md:space-y-0">
-                  <span className="md:w-1/3 text-sm font-semibold text-slate-700">{q.prompt}</span>
+                <div key={q.id} className="flex items-start md:items-center flex-col md:flex-row space-y-1 md:space-y-0 text-xs">
+                  <span className="md:w-1/3 font-semibold text-slate-700">{q.prompt}</span>
                   <div className="md:w-2/3 flex items-center space-x-2">
-                    <span className="font-bold text-slate-400">{q.questionNumber}.</span>
+                    <span className="font-bold text-slate-500 font-mono">{q.questionNumber}.</span>
                     {renderTextInput(q.id)}
                   </div>
                 </div>
@@ -338,15 +332,15 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
 
         {/* 5. Note Completion & 8. Summary Completion */}
         {(qSec.type === 'note_completion' || qSec.type === 'summary_completion') && (
-          <div className="bg-white p-6 rounded-xl border border-slate-200 leading-8 text-slate-800 font-serif whitespace-pre-wrap">
-            {qSec.summaryTitle && <h4 className="font-bold text-lg mb-4 text-center">{qSec.summaryTitle}</h4>}
+          <div className="bg-white p-5 rounded-[2px] border border-slate-300 leading-7 text-slate-800 font-serif whitespace-pre-wrap text-sm">
+            {qSec.summaryTitle && <h4 className="font-bold text-base mb-3 text-center text-slate-900 font-sans">{qSec.summaryTitle}</h4>}
             {qSec.summaryText ? (
               qSec.summaryText.split('[[GAP]]').map((part, pIdx, arr) => (
                 <React.Fragment key={pIdx}>
                   {part}
                   {pIdx < arr.length - 1 && qSec.questions[pIdx] && (
-                    <span className="inline-flex items-center mx-2">
-                      <span className="text-xs font-bold text-slate-400 mr-1">{qSec.questions[pIdx].questionNumber}</span>
+                    <span className="inline-flex items-center mx-1 font-sans">
+                      <span className="text-xs font-bold text-slate-500 mr-1 font-mono">({qSec.questions[pIdx].questionNumber})</span>
                       {qSec.provideWordBank
                         ? renderDropdown(qSec.questions[pIdx].id, qSec.wordBankOptions || [])
                         : renderTextInput(qSec.questions[pIdx].id)}
@@ -362,14 +356,14 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
 
         {/* 6. Table Completion */}
         {qSec.type === 'table_completion' && qSec.tableGrid && (
-          <div className="space-y-6">
+          <div className="space-y-4 font-sans">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse border border-slate-300">
+              <table className="w-full text-left border-collapse border border-slate-300 text-xs">
                 {qSec.tableGrid.headers && (
                   <thead className="bg-slate-100">
                     <tr>
                       {qSec.tableGrid.headers.map((h, i) => (
-                        <th key={i} className="p-3 border border-slate-300 font-bold text-sm text-slate-800">{h}</th>
+                        <th key={i} className="p-2.5 border border-slate-300 font-bold text-slate-800">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -378,7 +372,7 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
                   {qSec.tableGrid.rows.map((row, rIdx) => (
                     <tr key={rIdx} className="hover:bg-slate-50">
                       {row.map((cell, cIdx) => (
-                        <td key={cIdx} className="p-3 border border-slate-300 text-sm">
+                        <td key={cIdx} className="p-2.5 border border-slate-300">
                           {cell.isGap ? (
                             <span className="text-slate-800">
                               {(cell.text || '___').split('___').map((part, pIdx, arr) => (
@@ -399,12 +393,11 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
               </table>
             </div>
             
-            {/* Answer Grid Below Table */}
             {qSec.questions && qSec.questions.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-3 border-t border-slate-200">
                 {qSec.questions.map(q => (
-                  <div key={q.id} className="flex items-center space-x-3">
-                    <span className="font-bold text-slate-800">({q.questionNumber})</span>
+                  <div key={q.id} className="flex items-center space-x-2 text-xs">
+                    <span className="font-bold text-slate-700 font-mono">({q.questionNumber})</span>
                     {renderTextInput(q.id)}
                   </div>
                 ))}
@@ -415,11 +408,11 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
 
         {/* 7. Flow-chart Completion */}
         {qSec.type === 'flow_chart_completion' && qSec.flowSteps && (
-          <div className="space-y-6">
-            <div className="flex flex-col items-center space-y-4">
+          <div className="space-y-4">
+            <div className="flex flex-col items-center space-y-3">
               {qSec.flowSteps.map((step, idx) => (
                 <React.Fragment key={step.id}>
-                  <div className="bg-white border-2 border-emerald-600 p-4 rounded-lg shadow-sm text-center min-w-[250px] max-w-sm">
+                  <div className="bg-white border border-slate-400 p-3 rounded-[2px] text-center min-w-[240px] max-w-sm text-xs">
                     {step.isGap ? (
                       <span className="text-slate-800">
                         {(step.text || '___').split('___').map((part, pIdx, arr) => (
@@ -430,22 +423,21 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
                         ))}
                       </span>
                     ) : (
-                      <span className="text-sm font-medium">{step.text}</span>
+                      <span className="font-medium text-slate-800">{step.text}</span>
                     )}
                   </div>
                   {idx < (qSec.flowSteps?.length || 0) - 1 && (
-                    <div className="w-0.5 h-6 bg-emerald-600"></div>
+                    <div className="w-0.5 h-4 bg-slate-400"></div>
                   )}
                 </React.Fragment>
               ))}
             </div>
             
-            {/* Answer Grid Below Flow Chart */}
             {qSec.questions && qSec.questions.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-3 border-t border-slate-200 text-xs">
                 {qSec.questions.map(q => (
-                  <div key={q.id} className="flex items-center space-x-3">
-                    <span className="font-bold text-slate-800">({q.questionNumber})</span>
+                  <div key={q.id} className="flex items-center space-x-2">
+                    <span className="font-bold text-slate-700 font-mono">({q.questionNumber})</span>
                     {renderTextInput(q.id)}
                   </div>
                 ))}
@@ -456,15 +448,15 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
 
         {/* 9. Sentence Completion */}
         {qSec.type === 'sentence_completion' && (
-          <div className="space-y-4">
+          <div className="space-y-3 text-xs leading-relaxed">
             {qSec.questions.map(q => {
               const parts = q.prompt.split('___');
               return (
-                <div key={q.id} className="text-slate-800 leading-8">
-                  <span className="font-bold mr-2">{q.questionNumber}.</span>
+                <div key={q.id} className="text-slate-800">
+                  <span className="font-bold mr-1.5 font-mono">{q.questionNumber}.</span>
                   {parts[0]}
                   {parts.length > 1 && (
-                    <span className="inline-flex items-center mx-2">
+                    <span className="inline-flex items-center mx-1.5">
                       {qSec.wordBankOptions 
                         ? renderDropdown(q.id, qSec.wordBankOptions)
                         : renderTextInput(q.id)}
@@ -479,14 +471,14 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
 
         {/* 10. Short Answer */}
         {qSec.type === 'short_answer' && (
-          <div className="space-y-6">
+          <div className="space-y-4 text-xs">
             {qSec.questions.map(q => (
-              <div key={q.id} className="space-y-2">
-                <p className="font-medium text-slate-800">
-                  <span className="font-bold mr-2">{q.questionNumber}.</span>
+              <div key={q.id} className="space-y-1.5">
+                <p className="font-medium text-slate-900">
+                  <span className="font-bold mr-1.5 font-mono">{q.questionNumber}.</span>
                   {q.prompt}
                 </p>
-                <div className="pl-6">
+                <div className="pl-4">
                   {renderTextInput(q.id)}
                 </div>
               </div>
@@ -496,20 +488,20 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
 
         {/* Fallback for simple text-input (legacy) */}
         {qSec.type === 'text-input' && (
-          <div className="space-y-4">
+          <div className="space-y-3 text-xs">
             {qSec.questions.map(q => (
-              <div key={q.id} className="space-y-2">
-                <p className="font-bold text-slate-900 text-base">{q.prompt}</p>
+              <div key={q.id} className="space-y-1.5">
+                <p className="font-semibold text-slate-900">{q.prompt}</p>
                 {renderTextInput(q.id)}
               </div>
             ))}
           </div>
         )}
 
-        {/* Generic Image Uploader (Bottom) */}
+        {/* Diagram Image (Bottom) */}
         {qSec.diagramUrl && qSec.type !== 'diagram_labeling' && qSec.imagePosition === 'bottom' && (
-          <div className="w-full flex justify-center bg-slate-50 border border-slate-200 rounded-xl p-4 overflow-hidden mt-6 mb-2">
-            <img src={qSec.diagramUrl} alt="Reference" className="max-w-full max-h-[500px] object-contain rounded-lg shadow-sm" />
+          <div className="w-full flex justify-center bg-slate-50 border border-slate-300 rounded-[2px] p-3 overflow-hidden mt-4 mb-2">
+            <img src={qSec.diagramUrl} alt="Reference" className="max-w-full max-h-[450px] object-contain rounded-[2px]" />
           </div>
         )}
       </div>
@@ -519,23 +511,18 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
   return (
     <div className="h-[calc(100vh-64px)] flex flex-col bg-slate-100 font-sans overflow-hidden">
       {/* LOCKED AUDIO PLAYER AT TOP */}
-      <div className="sticky top-0 z-30 bg-[#002A25] text-white p-4 shadow-lg border-b border-emerald-800">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-6">
+      <div className="sticky top-0 z-30 bg-[#0F172A] text-white px-4 py-2 border-b border-slate-800">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <button
               onClick={togglePlay}
-              className="w-12 h-12 rounded-2xl bg-red-600 hover:bg-red-700 text-white flex items-center justify-center font-bold shadow-md transition-transform active:scale-95 shrink-0"
+              className="px-3 py-1 rounded-[2px] bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-600 transition-colors flex items-center space-x-1"
             >
-              {isPlaying ? '⏸' : '▶'}
+              <span>{isPlaying ? '⏸ Pause' : '▶ Play Audio'}</span>
             </button>
-            <div>
-              <div className="flex items-center space-x-2">
-                <Headphones className="w-4 h-4 text-emerald-400" />
-                <h3 className="font-bold text-sm text-white">Listening Module Audio</h3>
-              </div>
-              <div className="text-xs text-emerald-300 font-mono mt-0.5">
-                {formatTime(currentTime)}
-              </div>
+            <div className="flex items-center space-x-2 text-xs">
+              <Headphones className="w-3.5 h-3.5 text-slate-400" />
+              <span className="font-mono text-slate-300">{formatTime(currentTime)}</span>
             </div>
           </div>
 
@@ -547,7 +534,7 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
               max={audioRef.current?.duration || 100}
               value={currentTime}
               onChange={handleSeek}
-              className="w-full h-2 bg-emerald-950 rounded-lg appearance-none cursor-pointer accent-red-500"
+              className="w-full h-1.5 bg-slate-800 rounded-sm appearance-none cursor-pointer accent-blue-500"
             />
           </div>
 
@@ -559,9 +546,9 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
                 setIsMuted(!isMuted);
               }
             }}
-            className="p-2 text-emerald-300 hover:text-white transition-colors"
+            className="p-1 text-slate-400 hover:text-white transition-colors"
           >
-            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </button>
         </div>
 
@@ -573,27 +560,25 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
         />
       </div>
 
-      {/* SCROLLABLE QUESTIONS BELOW */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-10 max-w-7xl mx-auto w-full space-y-8">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-red-600 bg-red-50 px-2.5 py-1 rounded-md">
-            Listening Module Instructions
+      {/* SCROLLABLE QUESTIONS */}
+      <div className="flex-1 overflow-y-auto p-5 md:p-8 max-w-5xl mx-auto w-full space-y-6">
+        <div className="bg-white p-4 rounded-[2px] border border-slate-300 space-y-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 font-mono">
+            Listening Section Instructions
           </span>
           <p className="text-xs text-slate-600 leading-relaxed">
-            Listen to the audio track carefully. Answer the questions as you listen. You will not be able to replay the track in an official IELTS exam session.
+            Answer the questions as you listen. The audio track is played once only in an official IELTS examination.
           </p>
         </div>
 
         {!section ? (
-          <div className="p-10 text-center text-slate-500 font-medium bg-white rounded-2xl border border-slate-200">
+          <div className="p-8 text-center text-slate-500 font-medium bg-white rounded-[2px] border border-slate-300">
             No listening sections available in this test.
           </div>
         ) : (
-          /* Render Question Sections or fallback to questions directly if no sections array */
           section.sections ? (
             section.sections.map(qSec => renderQuestionSection(qSec))
           ) : (
-            /* Fallback for direct section.questions if it's treated as a single QuestionSection */
             renderQuestionSection({
               id: section.id,
               type: section.questions?.[0]?.type || 'text-input',
@@ -604,63 +589,54 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
           )
         )}
         
-        {/* Extra space at bottom to account for footer */}
         <div className="h-16"></div>
       </div>
 
-      {/* BOTTOM NAVIGATION BARS */}
-      <div className="bg-slate-900 text-white p-3 border-t border-slate-800 flex flex-col space-y-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        
-        {/* Part Selector */}
-        <div className="max-w-7xl mx-auto w-full flex items-center justify-center space-x-2">
-          {allSections.map((sec, idx) => (
-            <button
-              key={sec.id}
-              onClick={() => setActiveSectionIdx(idx)}
-              className={`px-6 py-1.5 rounded-xl font-bold text-xs transition-all shadow-sm ${
-                activeSectionIdx === idx
-                  ? 'bg-white text-slate-900'
-                  : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
-              }`}
-            >
-              Part {idx + 1}
-            </button>
-          ))}
-        </div>
-
-        {/* Question Navigator */}
-        <div className="max-w-7xl mx-auto w-full flex items-center space-x-2 overflow-x-auto py-1 px-2">
-          {allSections.flatMap((s, sIdx) => 
-            (s?.sections || [{ questions: s?.questions || [] }]).flatMap(qSec => 
-              (qSec?.questions || []).map(q => ({ ...q, partIdx: sIdx }))
-            )
-          ).map((q) => {
-            const isAnswered = Boolean(userAnswers[q.id]);
+      {/* BOTTOM NAVIGATION DOCK */}
+      <div className="bg-[#0F172A] text-white px-4 py-2 border-t border-slate-800 flex items-center justify-between shrink-0 select-none z-30">
+        <div className="flex items-center space-x-3 overflow-x-auto py-1">
+          {allSections.map((s, sIdx) => {
+            const partQuestions = (s.sections || [{ questions: s.questions || [] }]).flatMap(qSec => qSec.questions || []);
             return (
-              <button
-                key={q.id}
-                onClick={() => {
-                  if (activeSectionIdx !== q.partIdx) {
-                    setActiveSectionIdx(q.partIdx);
-                  }
-                  setTimeout(() => {
-                    const el = document.getElementById(`question-card-${q.id}`);
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }, 150);
-                }}
-                className={`relative min-w-[32px] h-8 rounded-xl font-extrabold text-xs flex items-center justify-center transition-all px-2 ${
-                  isAnswered
-                    ? 'bg-[#005C53] text-white shadow-sm'
-                    : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
-                }`}
-              >
-                {q.questionNumber || '-'}
-              </button>
+              <div key={s.id} className="flex items-center space-x-1 border-r border-slate-700 pr-3 last:border-r-0">
+                <button
+                  onClick={() => setActiveSectionIdx(sIdx)}
+                  className={`text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-[2px] font-bold mr-1 transition-colors ${
+                    activeSectionIdx === sIdx ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Part {sIdx + 1}
+                </button>
+                {partQuestions.map((q) => {
+                  const isAnswered = Boolean(userAnswers[q.id]);
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => {
+                        if (activeSectionIdx !== sIdx) {
+                          setActiveSectionIdx(sIdx);
+                        }
+                        setTimeout(() => {
+                          const el = document.getElementById(`question-card-${q.id}`);
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 100);
+                      }}
+                      className={`w-7 h-7 rounded-[2px] font-mono text-xs font-semibold flex items-center justify-center transition-all border ${
+                        isAnswered
+                          ? 'bg-slate-700 text-white border-slate-600 font-bold'
+                          : 'bg-white text-slate-900 border-slate-400 hover:bg-slate-100'
+                      }`}
+                      title={`Question ${q.questionNumber || '-'}${isAnswered ? ' (Answered)' : ''}`}
+                    >
+                      {q.questionNumber || '-'}
+                    </button>
+                  );
+                })}
+              </div>
             );
           })}
         </div>
       </div>
-
     </div>
   );
 }

@@ -57,18 +57,20 @@ export function ExamTimer({ initialSeconds, onTimeUp, onWarning }: ExamTimerProp
 
   return (
     <div
-      className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-[3px] font-mono text-sm font-bold border transition-colors ${
+      className={`flex items-center space-x-1.5 px-3 py-1 rounded-[2px] font-mono text-xs font-semibold border transition-colors ${
         isCritical
-          ? 'bg-[#B23A2A] text-white border-[#8C2C1F] animate-pulse shadow-md'
+          ? 'bg-[#B23A2A] text-white border-[#8C2C1F] animate-pulse'
           : isWarning 
-          ? 'bg-amber-500 text-slate-900 border-amber-600 animate-pulse shadow-md'
-          : 'bg-[#101C2E] text-[var(--paper-alt)] border-[var(--sidebar-line)]'
+          ? 'bg-amber-500 text-slate-950 border-amber-600 animate-pulse'
+          : 'bg-[#16233A] text-slate-200 border-slate-700'
       }`}
+      title="Time Remaining"
     >
-      <Clock className={`w-4 h-4 ${isCritical || isWarning ? 'text-current' : 'text-[var(--paper-alt)]'}`} />
-      <span>
-        {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+      <Clock className={`w-3.5 h-3.5 ${isCritical || isWarning ? 'text-current' : 'text-slate-300'}`} />
+      <span className="tracking-wide">
+        {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')} remaining
       </span>
     </div>
   );
 }
+

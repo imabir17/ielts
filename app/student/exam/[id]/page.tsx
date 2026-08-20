@@ -39,8 +39,10 @@ export default function ExamPage() {
 
   const [toast, setToast] = useState<{ msg: string; color: 'amber' | 'red' } | null>(null);
   const [globalVolume, setGlobalVolume] = useState<number>(1);
+  const [showReviewModal, setShowReviewModal] = useState<boolean>(false);
 
   const existingLog = examLogs.find(l => l.studentId === currentUser?.id && l.testId === testId);
+
 
 
   useEffect(() => {
@@ -378,19 +380,132 @@ export default function ExamPage() {
         </div>
 
         {/* Right side: Accessibility + Submit */}
-        <div className="flex flex-1 items-center justify-end space-x-4">
-          <div className="hidden md:flex items-center gap-2 bg-[var(--ink)] px-4 py-1.5 rounded-[3px] border border-[var(--sidebar-line)]">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-[var(--sidebar-text-dim)]">Module</span>
-            <span className="font-bold text-white capitalize">{activeModule}</span>
+        <div className="flex flex-1 items-center justify-end space-x-3">
+          <div className="hidden md:flex items-center gap-2 bg-[#16233A] px-3 py-1 rounded-[2px] border border-slate-700">
+            <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Module</span>
+            <span className="font-semibold text-white capitalize text-xs">{activeModule}</span>
           </div>
 
           <AccessibilityBar onVolumeChange={setGlobalVolume} />
 
-          <button onClick={handleModuleComplete} className="btn btn-fill bg-[var(--brick)] border-[var(--brick)] text-[12px] px-4 py-1.5">
+          <button
+            onClick={() => {
+              if (activeModule === 'reading' || activeModule === 'listening') {
+                setShowReviewModal(true);
+              } else {
+                handleModuleComplete();
+              }
+            }}
+            className="px-3.5 py-1.5 bg-[#B23A2A] hover:bg-[#8C2C1F] text-white font-semibold text-xs rounded-[2px] border border-[#8C2C1F] transition-colors"
+          >
             Submit {activeModule}
           </button>
         </div>
       </header>
+
+      {/* 📋 OFFICIAL CBT PRE-SUBMISSION REVIEW MODAL */}
+      {showReviewModal && (() => {
+        const moduleQuestions: any[] = activeModule === 'reading'
+          ? readingPassages.flatMap((p: any) => (p.sections || [{ questions: p.questions || [] }]).flatMap((s: any) => s.questions || []))
+          : activeModule === 'listening'
+          ? listeningSections.flatMap((s: any) => (s.sections || [{ questions: s.questions || [] }]).flatMap((qSec: any) => qSec.questions || []))
+          : [];
+
+
+        const currentAns = answers[activeModule as 'reading' | 'listening'] || {};
+        const answeredCount = moduleQuestions.filter(q => {
+          const val = currentAns[q.id];
+          return val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0);
+        }).length;
+        const unansweredCount = Math.max(0, moduleQuestions.length - answeredCount);
+
+        return (
+          <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-[2px] max-w-2xl w-full border border-slate-400 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden font-sans">
+              {/* Modal Header */}
+              <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-700 shrink-0">
+                <div>
+                  <h3 className="font-bold text-sm tracking-wide uppercase">
+                    Review {activeModule} Questions
+                  </h3>
+                  <p className="text-xs text-slate-300 font-mono mt-0.5">
+                    Total: {moduleQuestions.length} Questions | Answered: {answeredCount} | Incomplete: {unansweredCount}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="text-slate-400 hover:text-white text-xs font-mono px-2 py-1 border border-slate-700 rounded-[2px]"
+                >
+                  ✕ Close
+                </button>
+              </div>
+
+              {/* Status Summary & Question Grid */}
+              <div className="p-6 overflow-y-auto space-y-5">
+                <div className="flex items-center space-x-4 text-xs font-mono">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="w-4 h-4 rounded-[2px] bg-slate-800 border border-slate-700 inline-block" />
+                    <span className="text-slate-700">Answered ({answeredCount})</span>
+                  </div>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="w-4 h-4 rounded-[2px] bg-white border border-slate-400 inline-block" />
+                    <span className="text-slate-700">Not Answered ({unansweredCount})</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                  {moduleQuestions.map((q) => {
+                    const val = currentAns[q.id];
+                    const isAnswered = val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0);
+                    return (
+                      <div
+                        key={q.id}
+                        onClick={() => {
+                          setShowReviewModal(false);
+                          setTimeout(() => {
+                            const el = document.getElementById(`question-card-${q.id}`);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }, 150);
+                        }}
+                        className={`p-2 text-center rounded-[2px] border text-xs font-mono font-semibold cursor-pointer transition-colors ${
+                          isAnswered
+                            ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700'
+                            : 'bg-white text-slate-900 border-slate-300 hover:bg-slate-100'
+                        }`}
+                        title={`Click to go to Question ${q.questionNumber || '-'}`}
+                      >
+                        <div className="text-[11px]">{q.questionNumber || '-'}</div>
+                        <div className="text-[9px] uppercase tracking-tighter opacity-80 mt-0.5">
+                          {isAnswered ? 'Saved' : 'Empty'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Modal Footer Buttons */}
+              <div className="bg-slate-50 px-6 py-3.5 border-t border-slate-300 flex items-center justify-between shrink-0">
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="px-4 py-1.5 bg-white hover:bg-slate-100 text-slate-800 text-xs font-semibold rounded-[2px] border border-slate-300 transition-colors"
+                >
+                  ← Return to Questions
+                </button>
+                <button
+                  onClick={() => {
+                    setShowReviewModal(false);
+                    handleModuleComplete();
+                  }}
+                  className="px-5 py-1.5 bg-[#B23A2A] hover:bg-[#8C2C1F] text-white text-xs font-semibold rounded-[2px] border border-[#8C2C1F] transition-colors"
+                >
+                  Confirm & Submit {activeModule} →
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="flex-1 overflow-hidden relative">
         {activeModule === 'reading' && (
@@ -424,4 +539,5 @@ export default function ExamPage() {
     </div>
   );
 }
+
 

@@ -2,9 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Passage, QuestionSection, Question, QuestionType } from '@/lib/mock-data';
-import { calculateTestScore, ScoreResult } from '@/lib/scoring-engine';
 import {
-  BookOpen, Flag, HelpCircle, EyeOff, CheckCircle2, Copy, Highlighter, StickyNote, X, RefreshCw, MapPin, ListPlus
+  Flag, HelpCircle, EyeOff, CheckCircle2, Highlighter, StickyNote, X, ZoomIn, ZoomOut, Type
 } from 'lucide-react';
 
 interface ReadingModuleProps {
@@ -24,7 +23,7 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
   const [flaggedQuestions, setFlaggedQuestions] = useState<Record<string, boolean>>({});
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
 
-  // Tools State
+  // Tools & Passage View Settings
   const [highlights, setHighlights] = useState<HighlightItem[]>([]);
   const [selectedText, setSelectedText] = useState<string>('');
   const [selectionRange, setSelectionRange] = useState<Range | null>(null);
@@ -32,6 +31,11 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
   const [textMenuPos, setTextMenuPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isAddingNote, setIsAddingNote] = useState<boolean>(false);
   const [noteInput, setNoteInput] = useState<string>('');
+  const [passageFontSize, setPassageFontSize] = useState<number>(15); // 14, 15, 17, 19
+
+  // Split-Screen Drag State
+  const [splitPercent, setSplitPercent] = useState<number>(50);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
 
   // Modals & Overlays
   const [isScreenHidden, setIsScreenHidden] = useState<boolean>(false);
@@ -43,7 +47,7 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
   const passagesToRender = allPassages && allPassages.length > 0 ? allPassages : (passage ? [passage] : []);
   const currentPassage = passagesToRender[activePassageIdx] || passagesToRender[0];
 
-  // 1. Debounced Local Autosave
+  // Autosave
   const storageKey = `ielts_answers_${passagesToRender[0]?.id || 'default'}`;
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
@@ -54,11 +58,33 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
     }
   }, [storageKey]);
 
-
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(userAnswers));
     if (onAnswerChange) onAnswerChange(userAnswers);
   }, [userAnswers, storageKey, onAnswerChange]);
+
+  // Dragging Listener for Resizable Split Pane
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const totalWidth = window.innerWidth;
+      const newPercent = Math.min(Math.max((e.clientX / totalWidth) * 100, 25), 75);
+      setSplitPercent(newPercent);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   // Passage Text Selection Toolbar Handler
   const handlePassageTextSelection = (e: React.MouseEvent) => {
@@ -94,17 +120,9 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
     setShowTextMenu(false);
   };
 
-  const copyToActiveInput = (text: string) => {
-    if (activeQuestionId) {
-      setUserAnswers({ ...userAnswers, [activeQuestionId]: text });
-    }
-  };
-
   const toggleFlag = (qId: string) => {
     setFlaggedQuestions({ ...flaggedQuestions, [qId]: !flaggedQuestions[qId] });
   };
-
-  // Submit handled by parent now
 
   if (!currentPassage) {
     return (
@@ -125,78 +143,71 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
     },
   ];
 
-  // Extract all 40 questions across ALL passages for the bottom navigation dock
-  const allGlobalQuestions = passagesToRender.flatMap((p) => {
+  // Extract all questions across ALL passages for the bottom navigation dock
+  const allGlobalQuestions = passagesToRender.flatMap((p, pIdx) => {
     const secs = p?.sections || [{ questions: p?.questions || [] }];
-    return secs.flatMap(s => s?.questions || []);
+    return secs.flatMap(s => (s?.questions || []).map(q => ({ ...q, passageIdx: pIdx })));
   });
-
 
   return (
     <div className="relative h-full flex flex-col font-sans select-none bg-slate-100 overflow-hidden">
       {/* 🙈 SCREEN HIDE OVERLAY */}
       {isScreenHidden && (
         <div className="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center text-white space-y-4">
-          <EyeOff className="w-16 h-16 text-emerald-400 animate-pulse" />
-          <h2 className="text-2xl font-extrabold tracking-tight">Exam Screen Hidden</h2>
-          <p className="text-sm text-slate-400">Click below to resume your IELTS exam session.</p>
+          <EyeOff className="w-12 h-12 text-slate-300 animate-pulse" />
+          <h2 className="text-xl font-bold tracking-tight">Test Screen Hidden</h2>
+          <p className="text-xs text-slate-400">Click below to resume your IELTS exam session.</p>
           <button
             onClick={() => setIsScreenHidden(false)}
-            className="px-6 py-3 bg-[#005C53] hover:bg-emerald-600 font-bold rounded-2xl transition-all shadow-lg text-sm"
+            className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-[2px] border border-slate-600 transition-all text-xs"
           >
-            Resume Exam
+            Resume Test
           </button>
         </div>
       )}
 
       {/* ❓ HELP GUIDE MODAL */}
       {showHelpModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-xl w-full space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-extrabold text-slate-900 text-lg flex items-center space-x-2">
-                <HelpCircle className="w-5 h-5 text-[#005C53]" />
-                <span>Computer-Delivered IELTS Instructions</span>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2px] p-6 max-w-lg w-full space-y-4 border border-slate-400 shadow-lg">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+              <h3 className="font-semibold text-slate-900 text-sm flex items-center space-x-2">
+                <HelpCircle className="w-4 h-4 text-slate-700" />
+                <span>Reading Test Instructions & Shortcuts</span>
               </h3>
-              <button onClick={() => setShowHelpModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowHelpModal(false)} className="text-slate-400 hover:text-slate-700">
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="text-xs text-slate-700 leading-relaxed space-y-2">
-              <p>• <strong>Highlighting:</strong> Select text in the reading passage to highlight or add sticky notes.</p>
-              <p>• <strong>Copying Text:</strong> Click "Copy to Answer" on selected text to paste directly into completion boxes.</p>
-              <p>• <strong>Navigation Dock:</strong> Click any question number 1–40 in the bottom dock to scroll to that question.</p>
-              <p>• <strong>Flagging:</strong> Click "Mark for Review" on any question to return to it before final submission.</p>
+            <div className="text-xs text-slate-700 leading-relaxed space-y-2 font-sans">
+              <p>• <strong>Navigation:</strong> Use the buttons 1–40 in the bottom toolbar to navigate directly to any question.</p>
+              <p>• <strong>Review Flag:</strong> Click "Review" on a question to mark it so you can return to it later.</p>
+              <p>• <strong>Highlighting:</strong> Highlight text by selecting passage text with your mouse.</p>
+              <p>• <strong>Divider:</strong> Click and drag the vertical bar between the passage and questions to resize the view.</p>
             </div>
             <div className="pt-2 flex justify-end">
-              <button onClick={() => setShowHelpModal(false)} className="px-5 py-2 bg-[#005C53] text-white font-bold rounded-xl text-xs">
-                Got it
+              <button onClick={() => setShowHelpModal(false)} className="px-4 py-1.5 bg-slate-800 text-white font-semibold rounded-[2px] text-xs">
+                Close
               </button>
             </div>
           </div>
         </div>
       )}
 
-
-
       {/* TOP HEADER CONTROLS */}
-      <div className="bg-white px-6 py-2.5 border-b border-slate-200 flex items-center justify-between shadow-sm shrink-0 select-none">
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-3 hidden md:flex">
-            <span className="font-extrabold text-slate-900 text-sm">{currentPassage.title}</span>
-          </div>
-
+      <div className="bg-white px-4 py-2 border-b border-slate-300 flex items-center justify-between shrink-0 select-none text-xs">
+        <div className="flex items-center space-x-4">
           {/* Passage Switcher Tabs */}
           {passagesToRender.length > 1 && (
-            <div className="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-full border border-slate-200">
+            <div className="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-[2px] border border-slate-300">
               {passagesToRender.map((p, idx) => (
                 <button
                   key={p.id}
                   onClick={() => setActivePassageIdx(idx)}
-                  className={`px-4 py-1.5 text-xs font-extrabold rounded-full transition-all ${
+                  className={`px-3 py-1 text-xs font-semibold rounded-[2px] transition-colors ${
                     activePassageIdx === idx
-                      ? 'bg-[#005C53] text-white shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                      ? 'bg-slate-800 text-white'
+                      : 'text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   Passage {idx + 1}
@@ -204,112 +215,145 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
               ))}
             </div>
           )}
+          <span className="font-semibold text-slate-800 hidden md:inline truncate max-w-md">{currentPassage.title}</span>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
+          {/* Passage Zoom Controls */}
+          <div className="flex items-center space-x-1 border border-slate-300 rounded-[2px] bg-slate-50 px-1 py-0.5">
+            <button
+              onClick={() => setPassageFontSize(prev => Math.max(13, prev - 1))}
+              className="px-1.5 py-0.5 hover:bg-slate-200 rounded-[2px] font-bold text-slate-700 text-xs"
+              title="Decrease Font Size"
+            >
+              A−
+            </button>
+            <span className="text-[11px] text-slate-500 font-mono px-1">Text</span>
+            <button
+              onClick={() => setPassageFontSize(prev => Math.min(20, prev + 1))}
+              className="px-1.5 py-0.5 hover:bg-slate-200 rounded-[2px] font-bold text-slate-700 text-xs"
+              title="Increase Font Size"
+            >
+              A+
+            </button>
+          </div>
+
           <button
             onClick={() => setIsScreenHidden(true)}
-            className="flex items-center space-x-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-colors"
+            className="flex items-center space-x-1 px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-300 rounded-[2px] text-xs font-medium text-slate-700 transition-colors"
           >
-            <EyeOff className="w-4 h-4 text-slate-600" />
-            <span>Hide Screen</span>
+            <EyeOff className="w-3.5 h-3.5 text-slate-600" />
+            <span>Hide</span>
           </button>
 
           <button
             onClick={() => setShowHelpModal(true)}
-            className="flex items-center space-x-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-colors"
+            className="flex items-center space-x-1 px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-300 rounded-[2px] text-xs font-medium text-slate-700 transition-colors"
           >
-            <HelpCircle className="w-4 h-4 text-[#005C53]" />
+            <HelpCircle className="w-3.5 h-3.5 text-slate-600" />
             <span>Help</span>
           </button>
-
-
         </div>
       </div>
 
-      {/* MAIN SPLIT-SCREEN VIEWPORT */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
-        {/* LEFT COLUMN: PASSAGE (Independently Scrollable + Selection Tools) */}
+      {/* MAIN RESIZABLE SPLIT-SCREEN VIEWPORT */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* LEFT COLUMN: PASSAGE (Independently Scrollable) */}
         <div
           ref={passageContainerRef}
           onMouseUp={handlePassageTextSelection}
-          className="lg:col-span-6 bg-white p-6 md:p-8 overflow-y-auto border-r border-slate-200 leading-relaxed font-serif text-slate-900 text-base select-text relative"
+          style={{ width: `${splitPercent}%` }}
+          className="bg-white p-6 md:p-8 overflow-y-auto font-serif text-slate-900 select-text relative h-full border-r border-slate-300"
         >
           {/* FLOATING TEXT SELECTION TOOLBAR */}
           {showTextMenu && (
             <div
               style={{ left: `${textMenuPos.x}px`, top: `${textMenuPos.y}px` }}
-              className="fixed z-40 bg-slate-900 text-white p-1.5 rounded-2xl shadow-xl flex items-center space-x-1 text-xs font-sans animate-in fade-in zoom-in-95 duration-150"
+              className="fixed z-40 bg-slate-900 text-white p-1 rounded-[2px] shadow-lg flex items-center space-x-1 text-xs font-sans"
             >
               <button
                 onClick={addHighlight}
-                className="flex items-center space-x-1 bg-yellow-400 text-slate-900 px-2.5 py-1 rounded-xl hover:bg-yellow-300 transition-colors font-bold"
+                className="flex items-center space-x-1 bg-yellow-400 text-slate-950 px-2 py-0.5 rounded-[2px] font-semibold text-xs"
               >
-                <Highlighter className="w-3.5 h-3.5" />
+                <Highlighter className="w-3 h-3" />
                 <span>Highlight</span>
               </button>
 
               <button
                 onClick={() => setIsAddingNote(true)}
-                className="flex items-center space-x-1 bg-emerald-700 text-white px-2.5 py-1 rounded-xl hover:bg-emerald-600 transition-colors font-bold"
+                className="flex items-center space-x-1 bg-slate-800 text-white px-2 py-0.5 rounded-[2px] font-semibold text-xs border border-slate-700"
               >
-                <StickyNote className="w-3.5 h-3.5" />
+                <StickyNote className="w-3 h-3" />
                 <span>Note</span>
               </button>
-
             </div>
           )}
 
-          {/* Sticky Note Modal */}
+          {/* Sticky Note Input */}
           {isAddingNote && (
-            <div className="p-4 bg-yellow-50 rounded-2xl border border-yellow-300 shadow-md space-y-2 text-xs font-sans mb-4">
-              <div className="font-bold text-yellow-900">Add Sticky Note:</div>
+            <div className="p-3 bg-yellow-50 rounded-[2px] border border-yellow-400 space-y-2 text-xs font-sans mb-4">
+              <div className="font-semibold text-yellow-950">Add Sticky Note:</div>
               <input
                 type="text"
                 value={noteInput}
                 onChange={(e) => setNoteInput(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-xl border border-yellow-400 text-xs bg-white text-slate-900 focus:outline-none"
+                className="w-full px-2.5 py-1 rounded-[2px] border border-yellow-400 text-xs bg-white text-slate-900 focus:outline-none"
               />
               <div className="flex justify-end space-x-2">
-                <button onClick={() => setIsAddingNote(false)} className="px-3 py-1 text-slate-600">Cancel</button>
-                <button onClick={addNoteWithText} className="px-3 py-1 bg-yellow-500 text-slate-900 font-bold rounded-lg">Save Note</button>
+                <button onClick={() => setIsAddingNote(false)} className="px-2.5 py-0.5 text-slate-600">Cancel</button>
+                <button onClick={addNoteWithText} className="px-2.5 py-0.5 bg-yellow-500 text-slate-950 font-semibold rounded-[2px]">Save</button>
               </div>
             </div>
           )}
 
-          {/* Optional Passage Diagram Image (TOP) */}
+          {/* Optional Passage Diagram (TOP) */}
           {currentPassage.diagramUrl && (!currentPassage.imagePosition || currentPassage.imagePosition === 'top') && (
-            <div className="mb-6 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 p-3 text-center">
-              <img src={currentPassage.diagramUrl} alt="Passage Diagram" className="w-full h-auto mx-auto object-contain rounded-xl" />
+            <div className="mb-6 rounded-[2px] overflow-hidden border border-slate-300 bg-slate-50 p-2 text-center">
+              <img src={currentPassage.diagramUrl} alt="Passage Diagram" className="w-full h-auto mx-auto object-contain" />
             </div>
           )}
 
           {/* Passage Paragraphs */}
-          {currentPassage.content.split('\n\n').map((paragraph, idx) => (
-            <p key={idx} className="mb-4 tracking-normal text-slate-800 leading-relaxed">
-              {paragraph}
-            </p>
-          ))}
+          <div style={{ fontSize: `${passageFontSize}px`, lineHeight: 1.7 }} className="text-slate-850">
+            {currentPassage.content.split('\n\n').map((paragraph, idx) => (
+              <p key={idx} className="mb-4">
+                {paragraph}
+              </p>
+            ))}
+          </div>
 
-          {/* Optional Passage Diagram Image (BOTTOM) */}
+
+          {/* Optional Passage Diagram (BOTTOM) */}
           {currentPassage.diagramUrl && currentPassage.imagePosition === 'bottom' && (
-            <div className="mt-6 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 p-3 text-center">
-              <img src={currentPassage.diagramUrl} alt="Passage Diagram" className="w-full h-auto mx-auto object-contain rounded-xl" />
+            <div className="mt-6 rounded-[2px] overflow-hidden border border-slate-300 bg-slate-50 p-2 text-center">
+              <img src={currentPassage.diagramUrl} alt="Passage Diagram" className="w-full h-auto mx-auto object-contain" />
             </div>
           )}
         </div>
 
-        {/* RIGHT COLUMN: QUESTIONS FOR ALL 14 SECTIONS */}
-        <div className="lg:col-span-6 bg-slate-50 p-6 md:p-8 overflow-y-auto space-y-6 pb-28">
+        {/* DRAGGABLE RESIZER HANDLE */}
+        <div
+          onMouseDown={() => setIsDragging(true)}
+          className="w-2 bg-slate-200 hover:bg-blue-600 active:bg-blue-700 cursor-col-resize flex items-center justify-center transition-colors z-20 shrink-0 select-none border-x border-slate-300"
+          title="Click and drag to resize panes"
+        >
+          <div className="h-8 w-0.5 bg-slate-400 rounded-full" />
+        </div>
+
+        {/* RIGHT COLUMN: QUESTIONS */}
+        <div
+          style={{ width: `${100 - splitPercent}%` }}
+          className="bg-slate-100 p-5 md:p-6 overflow-y-auto space-y-5 pb-28 h-full"
+        >
           {sectionsList.map((sec, secIdx) => (
-            <div key={sec.id} className="space-y-4">
+            <div key={sec.id} className="space-y-3">
               {/* Section Header */}
               {sec.instructions && (
-                <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-1">
-                  <div className="text-xs font-extrabold text-[#005C53] uppercase tracking-wider">
+                <div className="p-3.5 bg-white rounded-[2px] border border-slate-300 space-y-1">
+                  <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                     {sec.title || `Section ${secIdx + 1}`}
                   </div>
-                  <div className="text-xs font-semibold text-slate-700 italic">
+                  <div className="text-xs text-slate-600 italic">
                     {sec.instructions}
                   </div>
                 </div>
@@ -317,58 +361,56 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
 
               {/* Official YES / NO / NOT GIVEN Instructions Box */}
               {sec.type === 'yes_no_ng' && (
-                <div className="p-4 bg-white rounded-2xl border border-slate-300 shadow-sm font-sans space-y-2 text-xs border-l-4 border-l-[#005C53]">
-                  <div className="grid grid-cols-12 gap-2 items-center py-0.5">
-                    <span className="col-span-3 font-black text-slate-900">YES</span>
-                    <span className="col-span-9 text-slate-700 font-medium">if the statement agrees with the claims of the writer</span>
+                <div className="p-3 bg-white rounded-[2px] border border-slate-300 font-sans space-y-1.5 text-xs">
+                  <div className="grid grid-cols-12 gap-2 items-center">
+                    <span className="col-span-3 font-bold text-slate-900">YES</span>
+                    <span className="col-span-9 text-slate-700">if the statement agrees with the claims of the writer</span>
                   </div>
-                  <div className="grid grid-cols-12 gap-2 items-center py-0.5 border-t border-slate-100 pt-1.5">
-                    <span className="col-span-3 font-black text-slate-900">NO</span>
-                    <span className="col-span-9 text-slate-700 font-medium">if the statement contradicts the claims of the writer</span>
+                  <div className="grid grid-cols-12 gap-2 items-center border-t border-slate-100 pt-1">
+                    <span className="col-span-3 font-bold text-slate-900">NO</span>
+                    <span className="col-span-9 text-slate-700">if the statement contradicts the claims of the writer</span>
                   </div>
-                  <div className="grid grid-cols-12 gap-2 items-center py-0.5 border-t border-slate-100 pt-1.5">
-                    <span className="col-span-3 font-black text-slate-900">NOT GIVEN</span>
-                    <span className="col-span-9 text-slate-700 font-medium">if it is impossible to say what the writer thinks about this</span>
+                  <div className="grid grid-cols-12 gap-2 items-center border-t border-slate-100 pt-1">
+                    <span className="col-span-3 font-bold text-slate-900">NOT GIVEN</span>
+                    <span className="col-span-9 text-slate-700">if it is impossible to say what the writer thinks about this</span>
                   </div>
                 </div>
               )}
 
               {/* Official TRUE / FALSE / NOT GIVEN Instructions Box */}
               {sec.type === 'true_false_ng' && (
-                <div className="p-4 bg-white rounded-2xl border border-slate-300 shadow-sm font-sans space-y-2 text-xs border-l-4 border-l-[#005C53]">
-                  <div className="grid grid-cols-12 gap-2 items-center py-0.5">
-                    <span className="col-span-3 font-black text-slate-900">TRUE</span>
-                    <span className="col-span-9 text-slate-700 font-medium">if the statement agrees with the information</span>
+                <div className="p-3 bg-white rounded-[2px] border border-slate-300 font-sans space-y-1.5 text-xs">
+                  <div className="grid grid-cols-12 gap-2 items-center">
+                    <span className="col-span-3 font-bold text-slate-900">TRUE</span>
+                    <span className="col-span-9 text-slate-700">if the statement agrees with the information</span>
                   </div>
-                  <div className="grid grid-cols-12 gap-2 items-center py-0.5 border-t border-slate-100 pt-1.5">
-                    <span className="col-span-3 font-black text-slate-900">FALSE</span>
-                    <span className="col-span-9 text-slate-700 font-medium">if the statement contradicts the information</span>
+                  <div className="grid grid-cols-12 gap-2 items-center border-t border-slate-100 pt-1">
+                    <span className="col-span-3 font-bold text-slate-900">FALSE</span>
+                    <span className="col-span-9 text-slate-700">if the statement contradicts the information</span>
                   </div>
-                  <div className="grid grid-cols-12 gap-2 items-center py-0.5 border-t border-slate-100 pt-1.5">
-                    <span className="col-span-3 font-black text-slate-900">NOT GIVEN</span>
-                    <span className="col-span-9 text-slate-700 font-medium">if there is no information on this</span>
+                  <div className="grid grid-cols-12 gap-2 items-center border-t border-slate-100 pt-1">
+                    <span className="col-span-3 font-bold text-slate-900">NOT GIVEN</span>
+                    <span className="col-span-9 text-slate-700">if there is no information on this</span>
                   </div>
                 </div>
               )}
 
-              {/* SUMMARY COMPLETION & NOTE COMPLETION OFFICIAL IELTS CARD */}
+              {/* SUMMARY COMPLETION & NOTE COMPLETION CARD */}
               {(sec.type === 'summary_completion' || sec.type === 'note_completion') && (
-                <div className="p-6 bg-white rounded-3xl border border-slate-300 shadow-sm space-y-5 font-sans">
-                  {/* Summary Title */}
+                <div className="p-4 bg-white rounded-[2px] border border-slate-300 space-y-4 font-sans">
                   {sec.summaryTitle && (
-                    <h3 className="font-black text-slate-900 text-base leading-snug">
+                    <h3 className="font-bold text-slate-900 text-sm">
                       {sec.summaryTitle}
                     </h3>
                   )}
 
-                  {/* Flowing Paragraph Text with Inline Inputs/Dropdowns */}
                   {sec.summaryText && (() => {
                     const parts = sec.summaryText.split(/(\[\[GAP(?::\d+)?\]\])/g);
                     let autoIndex = 0;
                     const gapCounts: Record<string, number> = {};
 
                     return (
-                      <div className="text-slate-900 font-serif leading-relaxed text-sm md:text-base bg-slate-50/80 p-5 rounded-2xl border border-slate-200">
+                      <div className="text-slate-900 font-serif leading-relaxed text-sm bg-slate-50 p-4 rounded-[2px] border border-slate-200">
                         {parts.map((part, idx) => {
                           if (part.startsWith('[[GAP')) {
                             const match = part.match(/\[\[GAP(?::(\d+))?\]\]/);
@@ -403,30 +445,30 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                                   <span className="font-bold text-xs text-slate-700 font-mono">({matchingQ.questionNumber})</span>
                                 )}
                                 {sec.wordBankOptions && sec.wordBankOptions.length > 0 ? (
-                                    <select
-                                      value={currentVal}
-                                      onChange={(e) => handleUpdate(e.target.value)}
-                                      className="px-2.5 py-1 bg-white rounded-lg border-2 border-[#005C53] text-xs font-extrabold text-[#005C53] focus:outline-none shadow-2xs cursor-pointer inline-block"
-                                    >
-                                      <option value="">-- Select --</option>
-                                      {sec.wordBankOptions.map((opt, oIdx) => {
-                                        const useLetters = sec.wordBankLabelStyle !== 'none';
-                                        const letterLabel = String.fromCharCode(65 + oIdx);
-                                        const val = useLetters ? `${letterLabel} ${opt}` : opt;
-                                        return (
-                                          <option key={oIdx} value={val}>
-                                            {val}
-                                          </option>
-                                        );
-                                      })}
-                                    </select>
+                                  <select
+                                    value={currentVal}
+                                    onChange={(e) => handleUpdate(e.target.value)}
+                                    className="px-2 py-0.5 bg-white rounded-[2px] border border-slate-400 text-xs font-semibold text-slate-900 focus:outline-none focus:border-slate-800 inline-block"
+                                  >
+                                    <option value="">-- Select --</option>
+                                    {sec.wordBankOptions.map((opt, oIdx) => {
+                                      const useLetters = sec.wordBankLabelStyle !== 'none';
+                                      const letterLabel = String.fromCharCode(65 + oIdx);
+                                      const val = useLetters ? `${letterLabel} ${opt}` : opt;
+                                      return (
+                                        <option key={oIdx} value={val}>
+                                          {val}
+                                        </option>
+                                      );
+                                    })}
+                                  </select>
                                 ) : (
                                   <input
                                     type="text"
                                     value={currentVal}
                                     onChange={(e) => handleUpdate(e.target.value)}
                                     placeholder="..."
-                                    className="w-28 px-2.5 py-1 bg-white rounded-lg border-2 border-[#005C53] text-xs font-bold text-slate-900 focus:outline-none shadow-2xs inline-block"
+                                    className="w-24 px-2 py-0.5 bg-white rounded-[2px] border border-slate-400 text-xs font-medium text-slate-900 focus:outline-none focus:border-slate-800 inline-block"
                                   />
                                 )}
                               </span>
@@ -438,20 +480,20 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                     );
                   })()}
 
-                  {/* Options / Word Bank Box (A-I) Matching Official IELTS Format */}
+                  {/* Options / Word Bank Box (A-I) */}
                   {sec.wordBankOptions && sec.wordBankOptions.length > 0 && (
-                    <div className="pt-4 border-t border-slate-200 space-y-3">
+                    <div className="pt-3 border-t border-slate-200 space-y-2">
                       <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                        List of Words / Options {sec.wordBankLabelStyle !== 'none' && `(A–${String.fromCharCode(64 + sec.wordBankOptions.length)})`}
+                        List of Options {sec.wordBankLabelStyle !== 'none' && `(A–${String.fromCharCode(64 + sec.wordBankOptions.length)})`}
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 font-sans text-xs">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5 font-sans text-xs">
                         {sec.wordBankOptions.map((opt, oIdx) => {
                           const useLetters = sec.wordBankLabelStyle !== 'none';
                           const letterLabel = String.fromCharCode(65 + oIdx);
                           return (
-                            <div key={oIdx} className="flex items-center space-x-2 py-0.5">
-                              {useLetters && <span className="font-black text-slate-900 w-4 text-left">{letterLabel}</span>}
-                              <span className="text-slate-800 font-medium">{opt}</span>
+                            <div key={oIdx} className="flex items-center space-x-1.5 py-0.5">
+                              {useLetters && <span className="font-bold text-slate-900 w-4 text-left font-mono">{letterLabel}</span>}
+                              <span className="text-slate-800">{opt}</span>
                             </div>
                           );
                         })}
@@ -461,13 +503,13 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                 </div>
               )}
 
-              {/* Paragraphs Pool Box (new matching_headings) */}
+              {/* Paragraphs Pool Box */}
               {sec.type === 'matching_headings' && sec.paragraphsPool && sec.paragraphsPool.filter(Boolean).length > 0 && (
-                <div className="p-4 bg-slate-900 text-white rounded-2xl space-y-2 text-xs">
-                  <div className="font-bold text-emerald-400">List of Paragraphs</div>
-                  <div className="flex flex-wrap gap-2 font-sans">
+                <div className="p-3 bg-slate-900 text-white rounded-[2px] space-y-1.5 text-xs">
+                  <div className="font-bold text-slate-200">List of Paragraphs</div>
+                  <div className="flex flex-wrap gap-1.5 font-sans">
                     {sec.paragraphsPool.filter(Boolean).map((p, idx) => (
-                      <span key={idx} className="bg-slate-800 text-emerald-300 px-3 py-1 rounded-xl font-bold border border-slate-700">
+                      <span key={idx} className="bg-slate-800 text-slate-200 px-2.5 py-0.5 rounded-[2px] font-semibold border border-slate-700">
                         {p}
                       </span>
                     ))}
@@ -477,11 +519,11 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
 
               {/* Shared Features Pool Box */}
               {sec.type === 'matching_features' && sec.featuresPool && (
-                <div className="p-4 bg-slate-900 text-white rounded-2xl space-y-2 text-xs">
-                  <div className="font-bold text-emerald-400">List of Features (Researchers / Dates)</div>
-                  <div className="flex flex-wrap gap-2 font-sans">
+                <div className="p-3 bg-slate-900 text-white rounded-[2px] space-y-1.5 text-xs">
+                  <div className="font-bold text-slate-200">List of Features (Researchers / Dates)</div>
+                  <div className="flex flex-wrap gap-1.5 font-sans">
                     {sec.featuresPool.map((f, idx) => (
-                      <span key={f.id} className="bg-slate-800 text-emerald-300 px-3 py-1 rounded-xl font-bold border border-slate-700">
+                      <span key={f.id} className="bg-slate-800 text-slate-200 px-2.5 py-0.5 rounded-[2px] font-semibold border border-slate-700">
                         {String.fromCharCode(65 + idx)}. {f.text}
                       </span>
                     ))}
@@ -489,18 +531,18 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                 </div>
               )}
 
-              {/* TYPE 11: DIAGRAM LABELING ANNOTATED CANVAS + QUESTION LIST */}
+              {/* Diagram Labeling Canvas */}
               {sec.type === 'diagram_labeling' && sec.diagramUrl && (
-                <div className="space-y-4">
-                  <div className="relative rounded-2xl overflow-hidden border border-slate-300 bg-slate-900 p-2 text-center">
-                    <img src={sec.diagramUrl} alt="Diagram" className="max-h-80 mx-auto object-contain block" />
+                <div className="space-y-3">
+                  <div className="relative rounded-[2px] overflow-hidden border border-slate-300 bg-slate-900 p-2 text-center">
+                    <img src={sec.diagramUrl} alt="Diagram" className="max-h-72 mx-auto object-contain block" />
                     {(sec.diagramPins || []).map((pin) => (
                       <div
                         key={pin.id}
                         style={{ left: `${pin.xPercent}%`, top: `${pin.yPercent}%` }}
                         className="absolute -translate-x-1/2 -translate-y-full z-10"
                       >
-                        <span className="bg-red-600 text-white font-black text-xs px-2 py-0.5 rounded-full shadow-lg border-2 border-white">
+                        <span className="bg-slate-900 text-white font-bold text-xs px-1.5 py-0.5 rounded-[2px] border border-white">
                           {pin.pinNumber}
                         </span>
                       </div>
@@ -509,42 +551,37 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                 </div>
               )}
 
-              {/* Multiple Choice Multi (List Selection) Section-Level Card */}
+              {/* Multiple Choice Multi (List Selection) Section Card */}
               {sec.type === 'multiple_choice_multi' && sec.questions.length > 0 && (
                 <div
                   id={`question-card-${sec.questions[0].id}`}
-                  className={`bg-white p-6 rounded-3xl border shadow-sm space-y-4 transition-all ${
+                  className={`bg-white p-5 rounded-[2px] border space-y-3 transition-colors ${
                     sec.questions.some(q => q.id === activeQuestionId)
-                      ? 'border-[#005C53] ring-2 ring-[#005C53]/20 shadow-md'
-                      : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-blue-600 ring-1 ring-blue-600'
+                      : 'border-slate-300'
                   }`}
                 >
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex items-center space-x-2">
-                      <span className="bg-slate-900 text-white font-extrabold text-xs px-3 py-1 rounded-xl flex items-center justify-center">
-                        Questions {sec.questions[0].questionNumber} - {sec.questions[sec.questions.length - 1].questionNumber}
-                      </span>
-                    </div>
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span className="bg-slate-800 text-white font-bold text-xs px-2 py-0.5 rounded-[2px] font-mono">
+                      Questions {sec.questions[0].questionNumber} – {sec.questions[sec.questions.length - 1].questionNumber}
+                    </span>
+                    <span className="text-xs text-slate-600 italic">
+                      Choose {sec.requiredSelectionCount || 2} letters
+                    </span>
                   </div>
 
                   {sec.questions[0]?.prompt && (
-                    <p className="font-bold text-slate-900 text-base leading-snug">
+                    <p className="font-semibold text-slate-900 text-sm leading-snug">
                       {sec.questions[0].prompt}
                     </p>
                   )}
-                  
-                  <div className="text-xs font-bold text-amber-700 bg-amber-50 inline-block px-2.5 py-1 rounded-lg border border-amber-200 mb-2">
-                    Instruction: Choose {sec.requiredSelectionCount || 2} letters
-                  </div>
 
-                  <div className="space-y-2 pt-1">
+                  <div className="space-y-1.5 pt-1">
                     {(sec.wordBankOptions || []).map((opt, idx) => {
                       const selectedQuestions = sec.questions.filter(q => userAnswers[q.id] === opt);
                       const isChecked = selectedQuestions.length > 0;
-                      
                       const totalSelected = sec.questions.filter(q => userAnswers[q.id]).length;
                       const isMaxReached = totalSelected >= (sec.requiredSelectionCount || 2) && !isChecked;
-                      
                       const letter = String.fromCharCode(65 + idx);
 
                       return (
@@ -565,37 +602,35 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                             }
                             setUserAnswers(newAnswers);
                           }}
-                          className={`w-full text-left p-3.5 rounded-2xl border text-sm font-medium transition-all flex items-center justify-between ${
+                          className={`w-full text-left p-2.5 rounded-[2px] border text-xs font-medium transition-colors flex items-center justify-between ${
                             isChecked
-                              ? 'bg-[#005C53] text-white border-[#005C53]'
+                              ? 'bg-blue-50/70 border-blue-600 text-blue-950'
                               : isMaxReached
                               ? 'bg-slate-50 text-slate-400 border-slate-200 opacity-60 cursor-not-allowed'
-                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                              : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
                           }`}
                         >
-                          <div className="flex items-center space-x-3">
-                            <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shrink-0 transition-colors ${
-                              isChecked ? 'bg-white text-[#005C53] shadow-sm' : isMaxReached ? 'bg-slate-200 text-slate-400' : 'bg-slate-100 text-slate-500'
+                          <div className="flex items-center space-x-2.5">
+                            <span className={`w-5 h-5 rounded-[2px] flex items-center justify-center font-mono font-bold text-xs shrink-0 border ${
+                              isChecked ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-100 text-slate-600 border-slate-300'
                             }`}>
                               {letter}
                             </span>
                             <span>{opt}</span>
                           </div>
-                          {isChecked && <CheckCircle2 className="w-5 h-5 text-emerald-300" />}
+                          {isChecked && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
                         </button>
                       );
                     })}
                   </div>
                   
-                  {/* Invisible scroll anchors for remaining questions */}
                   {sec.questions.slice(1).map(q => (
                     <div key={q.id} id={`question-card-${q.id}`} className="hidden" />
                   ))}
                 </div>
               )}
 
-
-              {/* Questions List */}
+              {/* Individual Question Cards */}
               {sec.questions.map((q) => {
                 if (sec.type === 'multiple_choice_multi') return null;
                 if (sec.type === 'note_completion' || sec.type === 'summary_completion') {
@@ -610,38 +645,37 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                     key={q.id}
                     id={`question-card-${q.id}`}
                     onClick={() => setActiveQuestionId(q.id)}
-                    className={`bg-white p-6 rounded-3xl border shadow-sm space-y-4 transition-all ${
+                    className={`bg-white p-4 md:p-5 rounded-[2px] border space-y-3 transition-colors ${
                       activeQuestionId === q.id
-                        ? 'border-[#005C53] ring-2 ring-[#005C53]/20 shadow-md'
-                        : 'border-slate-200 hover:border-slate-300'
+                        ? 'border-blue-600 ring-1 ring-blue-600'
+                        : 'border-slate-300'
                     }`}
                   >
                     {/* Card Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                       <div className="flex items-center space-x-2">
-                        <span className="w-7 h-7 rounded-xl bg-slate-900 text-white font-extrabold text-xs flex items-center justify-center">
+                        <span className="w-6 h-6 rounded-[2px] bg-slate-800 text-white font-mono text-xs font-semibold flex items-center justify-center">
                           {q.questionNumber}
                         </span>
                       </div>
 
                       <button
                         onClick={() => toggleFlag(q.id)}
-                        className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                          isFlagged ? 'bg-amber-400 text-slate-900 shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                        className={`flex items-center space-x-1 px-2 py-0.5 rounded-[2px] text-xs font-medium border transition-colors ${
+                          isFlagged ? 'bg-amber-400 text-slate-950 border-amber-500' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'
                         }`}
                       >
-                        <Flag className={`w-3.5 h-3.5 ${isFlagged ? 'fill-slate-900' : ''}`} />
-                        <span>{isFlagged ? 'Flagged' : 'Mark for Review'}</span>
+                        <Flag className={`w-3 h-3 ${isFlagged ? 'fill-slate-950' : ''}`} />
+                        <span>{isFlagged ? 'Review Marked' : 'Review'}</span>
                       </button>
                     </div>
 
-                    <p className="font-bold text-slate-900 text-base leading-snug">{q.prompt}</p>
+                    <p className="font-semibold text-slate-900 text-sm leading-snug">{q.prompt}</p>
 
                     {/* Question Renderers */}
-
                     {/* 1. Multiple Choice Single */}
                     {sec.type === 'multiple_choice_single' && q.options && (
-                      <div className="space-y-2 pt-1">
+                      <div className="space-y-1.5 pt-1">
                         {q.options.map((opt, idx) => {
                           const isSelected = studentAns === opt;
                           const letter = String.fromCharCode(65 + idx);
@@ -649,36 +683,36 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                             <button
                               key={opt}
                               onClick={() => setUserAnswers({ ...userAnswers, [q.id]: opt })}
-                              className={`w-full text-left p-3.5 rounded-2xl border text-sm font-medium transition-all flex items-center justify-between ${
-                                isSelected ? 'bg-[#005C53] text-white border-[#005C53]' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                              className={`w-full text-left p-2.5 rounded-[2px] border text-xs font-medium transition-colors flex items-center justify-between ${
+                                isSelected ? 'bg-blue-50/70 border-blue-600 text-blue-950' : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
                               }`}
                             >
-                              <div className="flex items-center space-x-3">
-                                <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shrink-0 transition-colors ${
-                                  isSelected ? 'bg-white text-[#005C53] shadow-sm' : 'bg-slate-100 text-slate-500'
+                              <div className="flex items-center space-x-2.5">
+                                <span className={`w-5 h-5 rounded-[2px] flex items-center justify-center font-mono font-bold text-xs shrink-0 border ${
+                                  isSelected ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-100 text-slate-600 border-slate-300'
                                 }`}>
                                   {letter}
                                 </span>
                                 <span>{opt}</span>
                               </div>
-                              {isSelected && <CheckCircle2 className="w-5 h-5 text-emerald-300" />}
+                              {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
                             </button>
                           );
                         })}
                       </div>
                     )}
-                    {/* (Multiple Choice Multi is handled at the section level above) */}
+
                     {/* 3. True/False/Not Given & Yes/No/Not Given */}
                     {(sec.type === 'true_false_ng' || sec.type === 'yes_no_ng') && (
-                      <div className="flex space-x-3 pt-2">
+                      <div className="flex space-x-2 pt-1">
                         {(q.options || (sec.type === 'true_false_ng' ? ['TRUE', 'FALSE', 'NOT GIVEN'] : ['YES', 'NO', 'NOT GIVEN'])).map((val) => {
                           const isSelected = studentAns === val;
                           return (
                             <button
                               key={val}
                               onClick={() => setUserAnswers({ ...userAnswers, [q.id]: val })}
-                              className={`flex-1 py-3 rounded-2xl text-xs font-extrabold transition-all border ${
-                                isSelected ? 'bg-[#005C53] text-white border-[#005C53] shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                              className={`flex-1 py-2 rounded-[2px] text-xs font-semibold transition-colors border ${
+                                isSelected ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
                               }`}
                             >
                               {val}
@@ -697,7 +731,7 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                       sec.type === 'short_answer') && (
                       <div className="space-y-2 pt-1">
                         {sec.provideWordBank && sec.wordBankOptions ? (
-                          <div className="space-y-2">
+                          <div className="space-y-1.5">
                             {Array.from({ length: Array.isArray(q.correctAnswer) ? q.correctAnswer.length : 1 }).map((_, gIdx, arr) => {
                               const currentVal = Array.isArray(userAnswers[q.id])
                                 ? (userAnswers[q.id][gIdx] || '')
@@ -716,7 +750,7 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                                       setUserAnswers({ ...userAnswers, [q.id]: e.target.value });
                                     }
                                   }}
-                                  className="w-full p-3 rounded-2xl border border-slate-300 text-xs font-bold text-[#005C53] bg-white focus:outline-none focus:ring-2 focus:ring-[#005C53]"
+                                  className="w-full px-3 py-1.5 rounded-[2px] border border-slate-300 text-xs font-medium text-slate-900 bg-white focus:outline-none focus:border-slate-800"
                                 >
                                   <option value="">-- Select from Word Bank {arr.length > 1 ? `(Gap ${gIdx + 1})` : ''} --</option>
                                   {sec.wordBankOptions?.map((wOpt, wIdx) => (
@@ -729,7 +763,7 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                             })}
                           </div>
                         ) : (
-                          <div className="space-y-2">
+                          <div className="space-y-1.5">
                             {Array.from({ length: Array.isArray(q.correctAnswer) ? q.correctAnswer.length : 1 }).map((_, gIdx, arr) => {
                               const currentVal = Array.isArray(userAnswers[q.id])
                                 ? (userAnswers[q.id][gIdx] || '')
@@ -750,12 +784,12 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                                     }
                                   }}
                                   placeholder={arr.length > 1 ? `Type answer for gap ${gIdx + 1}...` : "Type your answer..."}
-                                  className="w-full p-3.5 rounded-2xl border border-slate-300 text-sm font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#005C53]"
+                                  className="w-full px-3 py-1.5 rounded-[2px] border border-slate-300 text-xs font-medium text-slate-900 bg-white focus:outline-none focus:border-slate-800"
                                 />
                               );
                             })}
                             {sec.wordLimit && (
-                              <span className="block text-[10px] text-slate-400 mt-1 font-semibold">
+                              <span className="block text-[10px] text-slate-500 font-mono">
                                 Word Limit: {sec.wordLimit}
                               </span>
                             )}
@@ -764,12 +798,12 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                       </div>
                     )}
 
-                    {/* 5. Matching Headings — pick a paragraph for each heading */}
+                    {/* 5. Matching Headings */}
                     {sec.type === 'matching_headings' && sec.paragraphsPool && (
                       <select
                         value={studentAns || ''}
                         onChange={(e) => setUserAnswers({ ...userAnswers, [q.id]: e.target.value })}
-                        className="w-full p-3 rounded-2xl border border-slate-300 text-xs font-bold text-[#005C53] bg-white focus:outline-none focus:ring-2 focus:ring-[#005C53]"
+                        className="w-full px-3 py-1.5 rounded-[2px] border border-slate-300 text-xs font-medium text-slate-900 bg-white focus:outline-none focus:border-slate-800"
                       >
                         <option value="">-- Select Paragraph --</option>
                         {sec.paragraphsPool.filter(Boolean).map((p, pIdx) => {
@@ -789,7 +823,7 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                       <select
                         value={studentAns || ''}
                         onChange={(e) => setUserAnswers({ ...userAnswers, [q.id]: e.target.value })}
-                        className="w-full p-3 rounded-2xl border border-slate-300 text-xs font-bold text-[#005C53] bg-white focus:outline-none focus:ring-2 focus:ring-[#005C53]"
+                        className="w-full px-3 py-1.5 rounded-[2px] border border-slate-300 text-xs font-medium text-slate-900 bg-white focus:outline-none focus:border-slate-800"
                       >
                         <option value="">-- Select Matching Feature --</option>
                         {sec.featuresPool.map((f, fIdx) => {
@@ -809,7 +843,7 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
                       <select
                         value={studentAns || ''}
                         onChange={(e) => setUserAnswers({ ...userAnswers, [q.id]: e.target.value })}
-                        className="w-full p-3 rounded-2xl border border-slate-300 text-xs font-bold text-[#005C53] bg-white focus:outline-none focus:ring-2 focus:ring-[#005C53]"
+                        className="w-full px-3 py-1.5 rounded-[2px] border border-slate-300 text-xs font-medium text-slate-900 bg-white focus:outline-none focus:border-slate-800"
                       >
                         <option value="">-- Select Matching Ending --</option>
                         {sec.sentenceEndingsPool.map((e, eIdx) => {
@@ -831,49 +865,54 @@ export function ReadingModule({ passage, allPassages, onAnswerChange }: ReadingM
       </div>
 
       {/* BOTTOM 1-40 QUESTION NAVIGATION DOCK */}
-      <div className="bg-slate-900 text-white p-3 border-t border-slate-800 flex items-center justify-between shadow-2xl shrink-0 select-none">
-        <div className="flex items-center space-x-2 overflow-x-auto py-1 px-2">
-          {allGlobalQuestions.map((q) => {
-            const qId = q.id;
-            const qNum = q.questionNumber || 1;
-            const isFlagged = flaggedQuestions[qId];
-            const isAnswered = Boolean(userAnswers[qId]);
-
+      <div className="bg-[#0F172A] text-white px-4 py-2 border-t border-slate-800 flex items-center justify-between shrink-0 select-none z-30">
+        <div className="flex items-center space-x-3 overflow-x-auto py-1">
+          {passagesToRender.map((p, pIdx) => {
+            const pQuestions = allGlobalQuestions.filter(q => q.passageIdx === pIdx);
             return (
-              <button
-                key={qId}
-                onClick={() => {
-                  const targetPassageIdx = passagesToRender.findIndex(p => {
-                    const secs = p.sections || [{ questions: p.questions || [] }];
-                    return secs.some(s => s.questions.some(qq => qq.id === qId));
-                  });
-                  
-                  if (targetPassageIdx !== -1 && targetPassageIdx !== activePassageIdx) {
-                    setActivePassageIdx(targetPassageIdx);
-                    setTimeout(() => {
-                      setActiveQuestionId(qId);
-                      const el = document.getElementById(`question-card-${qId}`);
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 150);
-                  } else {
-                    setActiveQuestionId(qId);
-                    const el = document.getElementById(`question-card-${qId}`);
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }
-                }}
-                className={`relative min-w-[32px] h-8 rounded-xl font-extrabold text-xs flex items-center justify-center transition-all px-2 ${
-                  isAnswered
-                    ? 'bg-[#005C53] text-white shadow-sm'
-                    : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
-                }`}
-              >
-                <span>{qNum}</span>
-                {isFlagged && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border border-slate-900 flex items-center justify-center">
-                    <Flag className="w-2 h-2 text-slate-900 fill-slate-900" />
-                  </span>
-                )}
-              </button>
+              <div key={p.id} className="flex items-center space-x-1 border-r border-slate-700 pr-3 last:border-r-0">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold mr-1">
+                  Passage {pIdx + 1}
+                </span>
+                {pQuestions.map((q) => {
+                  const qId = q.id;
+                  const qNum = q.questionNumber || 1;
+                  const isFlagged = flaggedQuestions[qId];
+                  const isAnswered = Boolean(userAnswers[qId]);
+                  const isActive = activeQuestionId === qId;
+
+                  return (
+                    <button
+                      key={qId}
+                      onClick={() => {
+                        if (activePassageIdx !== pIdx) {
+                          setActivePassageIdx(pIdx);
+                        }
+                        setTimeout(() => {
+                          setActiveQuestionId(qId);
+                          const el = document.getElementById(`question-card-${qId}`);
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 100);
+                      }}
+                      className={`relative w-7 h-7 rounded-[2px] font-mono text-xs font-semibold flex items-center justify-center transition-all border ${
+                        isActive
+                          ? 'outline outline-2 outline-blue-400 outline-offset-1 z-10'
+                          : ''
+                      } ${
+                        isAnswered
+                          ? 'bg-slate-700 text-white border-slate-600 font-bold'
+                          : 'bg-white text-slate-900 border-slate-400 hover:bg-slate-100'
+                      }`}
+                      title={`Question ${qNum}${isAnswered ? ' (Answered)' : ''}${isFlagged ? ' (Flagged for Review)' : ''}`}
+                    >
+                      <span>{qNum}</span>
+                      {isFlagged && (
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full border border-slate-900" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             );
           })}
         </div>
