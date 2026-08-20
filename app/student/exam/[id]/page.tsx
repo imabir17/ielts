@@ -37,7 +37,11 @@ export default function ExamPage() {
     speaking: {} as Record<string, any>
   });
 
+  const [toast, setToast] = useState<{ msg: string; color: 'amber' | 'red' } | null>(null);
+  const [globalVolume, setGlobalVolume] = useState<number>(1);
+
   const existingLog = examLogs.find(l => l.studentId === currentUser?.id && l.testId === testId);
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -209,10 +213,8 @@ export default function ExamPage() {
     return 0; // Speaking has no strict timer in this practice mode
   };
 
-  const [toast, setToast] = useState<{ msg: string; color: 'amber' | 'red' } | null>(null);
-  const [globalVolume, setGlobalVolume] = useState<number>(1);
-
   const handleTimerWarning = (type: 'warning' | 'critical', mins: number) => {
+
     setToast({
       msg: `${mins} minutes remaining!`,
       color: type === 'warning' ? 'amber' : 'red'
