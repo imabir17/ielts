@@ -86,12 +86,13 @@ export default function ExamPage() {
 
   const handleStartExam = () => {
     if (selectedModules.length === 0) return;
-    // Sort to enforce order: Reading -> Writing -> Listening -> Speaking
-    const order: ModuleType[] = ['reading', 'writing', 'listening', 'speaking'];
+    // Sort to enforce order: Listening -> Reading -> Writing -> Speaking
+    const order: ModuleType[] = ['listening', 'reading', 'writing', 'speaking'];
     const sorted = [...selectedModules].sort((a, b) => order.indexOf(a) - order.indexOf(b));
     setSelectedModules(sorted);
     setCurrentModuleIdx(0);
     setExamState('warning');
+
   };
 
   const activeModule = selectedModules[currentModuleIdx];
@@ -243,11 +244,12 @@ export default function ExamPage() {
             
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10 text-left">
               {[
-                { id: 'reading', label: 'Reading', icon: BookOpen, desc: '60 Minutes' },
                 { id: 'listening', label: 'Listening', icon: Headphones, desc: 'Audio + 10 Mins' },
+                { id: 'reading', label: 'Reading', icon: BookOpen, desc: '60 Minutes' },
                 { id: 'writing', label: 'Writing', icon: Edit3, desc: '60 Minutes' },
                 { id: 'speaking', label: 'Speaking', icon: Mic, desc: 'Practice Mode' }
               ].map(mod => {
+
                 const isSel = selectedModules.includes(mod.id as ModuleType);
                 const isPreviouslyTaken = existingLog?.modulesTaken?.includes(mod.id as ModuleType);
                 

@@ -77,11 +77,12 @@ export default function TestDetailsPage() {
           <h3 className="font-medium text-[16px] text-[var(--ink)] mb-4">Test Modules</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
-              { id: 'reading', label: 'Reading', icon: BookOpen, time: '60 mins' },
               { id: 'listening', label: 'Listening', icon: Headphones, time: 'Audio + 10 mins' },
+              { id: 'reading', label: 'Reading', icon: BookOpen, time: '60 mins' },
               { id: 'writing', label: 'Writing', icon: Edit3, time: '60 mins' },
               { id: 'speaking', label: 'Speaking', icon: Mic, time: '11-14 mins' },
             ].map(mod => {
+
               const isTaken = modulesTaken.includes(mod.id as any);
               const score = log?.scores?.[mod.id as keyof typeof log.scores];
 
