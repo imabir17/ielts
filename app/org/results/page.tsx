@@ -3,33 +3,41 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/components/providers/StoreProvider';
-import { Award, Calendar } from 'lucide-react';
+import { Award, Calendar, UserCheck, GraduationCap, Clock } from 'lucide-react';
 
 export default function OrgResultsPage() {
   const router = useRouter();
   const { students, examLogs, currentUser } = useStore();
 
-  // Get all students for this org
-  const orgStudents = students.filter(s => !currentUser || s.orgId === currentUser.id || currentUser.role === 'tenant' || currentUser.role === 'superadmin');
+  const isTeacher = currentUser?.role === 'teacher';
+  const targetOrgId = isTeacher ? currentUser?.orgId : currentUser?.id;
 
+  // Get all students for this org
+  const orgStudents = students.filter(s => !targetOrgId || s.orgId === targetOrgId || currentUser?.role === 'superadmin');
   const orgStudentIds = orgStudents.map(s => s.id);
 
   // Get all exam logs for these students
   const orgLogs = examLogs
-    .filter(log => orgStudentIds.includes(log.studentId))
+    .filter(log => orgStudentIds.includes(log.studentId) || (targetOrgId && log.orgId === targetOrgId))
     .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
 
   return (
     <>
       <div className="topbar mb-6">
         <div>
-          <h1>Exam Results</h1>
+          <div className="eyebrow"><span className="dot"></span>{isTeacher ? 'Faculty Evaluation Console' : 'Official Results'}</div>
+          <h1>{isTeacher ? 'Student Exam Submissions & Evaluation' : 'Exam Results'}</h1>
+          <p className="page-sub">
+            {isTeacher 
+              ? 'Review candidate answers, manually override score keys, grade writing tasks, and release official results.'
+              : 'Audit candidate mock exam submissions, monitor band averages, and see which faculty examiner evaluated each test.'}
+          </p>
         </div>
       </div>
 
       <div className="panel p-0 overflow-hidden">
-        <div className="p-5 border-b border-[var(--line)] bg-[var(--paper-card)]">
-          <h3 className="font-medium text-[16px] text-[var(--ink)]">All Student Submissions</h3>
+        <div className="p-5 border-b border-[var(--line)] bg-[var(--paper-card)] flex items-center justify-between">
+          <h3 className="font-medium text-[16px] text-[var(--ink)]">All Student Submissions ({orgLogs.length})</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="audit-table w-full">
@@ -40,15 +48,15 @@ export default function OrgResultsPage() {
                 <th>Modules</th>
                 <th>R / L / W Scores</th>
                 <th>Status</th>
+                <th>Evaluator / Nametag</th>
                 <th>Date</th>
                 <th className="text-right">Action</th>
               </tr>
-
             </thead>
             <tbody>
               {orgLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-[var(--ink-faint)]">
+                  <td colSpan={8} className="text-center py-10 text-[var(--ink-faint)] italic">
                     No exam submissions yet.
                   </td>
                 </tr>
@@ -59,8 +67,8 @@ export default function OrgResultsPage() {
                   return (
                     <tr key={log.id} onClick={() => router.push(`/org/results/${log.id}`)} className="cursor-pointer hover:bg-slate-50 transition-colors">
                       <td>
-                        <div className="font-medium text-[var(--ink)]">{student?.name || 'Unknown'}</div>
-                        <div className="text-[11px] text-[var(--ink-faint)] mt-0.5">{student?.studentId}</div>
+                        <div className="font-medium text-[var(--ink)]">{student?.name || log.studentName || 'Unknown'}</div>
+                        <div className="text-[11px] text-[var(--ink-faint)] mt-0.5">{student?.studentId || log.studentId}</div>
                       </td>
                       <td className="text-[14px] text-[var(--ink-soft)]">{log.testTitle}</td>
                       <td>
@@ -78,8 +86,8 @@ export default function OrgResultsPage() {
                           <span className="text-[var(--line)]">|</span>
                           <span title="Listening">L: {log.scores?.listening || '-'}</span>
                           <span className="text-[var(--line)]">|</span>
-                          <span title="Writing" className={log.scores?.writing === undefined && log.modulesTaken.includes('writing') ? 'text-[var(--brick)] font-bold' : ''}>
-                            W: {log.scores?.writing !== undefined ? log.scores.writing : (log.modulesTaken.includes('writing') ? 'Pending' : '-')}
+                          <span title="Writing" className={log.scores?.writing === undefined && log.modulesTaken?.includes('writing') ? 'text-[var(--brick)] font-bold' : ''}>
+                            W: {log.scores?.writing !== undefined ? log.scores.writing : (log.modulesTaken?.includes('writing') ? 'Pending' : '-')}
                           </span>
                         </div>
                       </td>
@@ -91,6 +99,20 @@ export default function OrgResultsPage() {
                         }`}>
                           {log.isPublished || log.status === 'Graded' ? '✓ Released' : '⏳ Needs Evaluation'}
                         </span>
+                      </td>
+                      <td>
+                        {log.evaluatedBy ? (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] text-[11px] font-semibold bg-blue-50 text-blue-900 border border-blue-200">
+                            <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                            <span className="truncate max-w-[140px]" title={log.evaluatedBy}>
+                              {log.evaluatedBy}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 font-mono italic">
+                            Auto-graded
+                          </span>
+                        )}
                       </td>
                       <td className="text-[12px] text-[var(--ink-soft)] font-mono">
                         {new Date(log.completedAt).toLocaleDateString()}
@@ -115,10 +137,10 @@ export default function OrgResultsPage() {
                 })
               )}
             </tbody>
-
           </table>
         </div>
       </div>
     </>
   );
 }
+

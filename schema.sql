@@ -93,6 +93,18 @@ CREATE TABLE speaking_requests (
   requested_at text
 );
 
+CREATE TABLE teachers (
+  id text PRIMARY KEY,
+  name text,
+  email text,
+  password text,
+  org_id text REFERENCES organizations(id),
+  specialization text,
+  active boolean,
+  joined_date text
+);
+
+
 -- 2. Insert Seed Data
 INSERT INTO packages (id, name, price, id_limit, exam_limit, description)
 VALUES 

@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { tenants, students, managers, setCurrentUser } = useStore();
+  const { tenants, students, managers, teachers, setCurrentUser } = useStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,7 +31,7 @@ export default function LoginPage() {
         return;
       }
 
-      // 2. Tenant Auth
+      // 2. Tenant Auth (Coaching Center Admin)
       const tenant = tenants.find(t => t.contactEmail?.toLowerCase() === cleanEmail && t.password === password);
       if (tenant) {
         setCurrentUser({ id: tenant.id, role: 'tenant', name: tenant.name });
@@ -39,7 +39,22 @@ export default function LoginPage() {
         return;
       }
 
-      // 3. Student Auth
+      // 3. Teacher / Examiner Auth
+      const teacher = teachers.find(t => t.email?.toLowerCase() === cleanEmail && (t.password === password || (!t.password && password === 'teacher123')));
+      if (teacher) {
+        setCurrentUser({
+          id: teacher.id,
+          role: 'teacher',
+          name: teacher.name,
+          email: teacher.email,
+          orgId: teacher.orgId,
+          specialization: teacher.specialization
+        });
+        router.push('/org/results');
+        return;
+      }
+
+      // 4. Student Auth
       const student = students.find(s => 
         ( (s.email && s.email.toLowerCase() === cleanEmail) || 
           (s.studentId && s.studentId.toLowerCase() === cleanEmail) ) && 
@@ -59,11 +74,11 @@ export default function LoginPage() {
         return;
       }
 
-
       setError('Invalid email/ID or password. Please try again.');
       setIsLoading(false);
     }, 600);
   };
+
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[var(--paper)] text-[var(--ink)] font-sans selection:bg-[var(--brick)] selection:text-white">
@@ -172,10 +187,54 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Quick Demo Personas */}
+          <div className="mt-8 pt-6 border-t border-[var(--line-soft)]">
+            <div className="text-xs font-mono uppercase tracking-[0.05em] text-[var(--ink-faint)] mb-3 text-center">
+              Quick Demo Accounts
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => { setEmail('rashid@apex.com'); setPassword('password123'); }}
+                className="p-2 bg-[var(--paper-card)] hover:bg-slate-100 border border-[var(--line)] rounded text-left transition-colors"
+              >
+                <div className="font-bold text-[var(--ink)]">Center Admin</div>
+                <div className="text-[10px] text-slate-500 font-mono">rashid@apex.com</div>
+              </button>
 
+              <button
+                type="button"
+                onClick={() => { setEmail('sarah.ielts@apex.edu'); setPassword('password123'); }}
+                className="p-2 bg-blue-50/50 hover:bg-blue-100/60 border border-blue-200 rounded text-left transition-colors"
+              >
+                <div className="font-bold text-blue-950 flex items-center gap-1">
+                  <span>Teacher / Examiner</span>
+                </div>
+                <div className="text-[10px] text-blue-800 font-mono">sarah.ielts@apex.edu</div>
+              </button>
 
+              <button
+                type="button"
+                onClick={() => { setEmail('STU-8821'); setPassword('student123'); }}
+                className="p-2 bg-[var(--paper-card)] hover:bg-slate-100 border border-[var(--line)] rounded text-left transition-colors"
+              >
+                <div className="font-bold text-[var(--ink)]">Student Candidate</div>
+                <div className="text-[10px] text-slate-500 font-mono">STU-8821</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setEmail('admin@mockielts.com'); setPassword('admin123'); }}
+                className="p-2 bg-[var(--paper-card)] hover:bg-slate-100 border border-[var(--line)] rounded text-left transition-colors"
+              >
+                <div className="font-bold text-[var(--ink)]">Super Admin HQ</div>
+                <div className="text-[10px] text-slate-500 font-mono">admin@mockielts.com</div>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
+
 }

@@ -67,6 +67,8 @@ export interface ExamLog {
     speaking?: number;
   };
   overallBand?: number;
+  evaluatedBy?: string;
+  evaluatedAt?: string;
   writingFeedback?: string;
   task1Feedback?: string;
   task2Feedback?: string;
@@ -115,6 +117,17 @@ export interface PlatformManager {
   role: 'superadmin' | 'manager';
 }
 
+export interface Teacher {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  orgId: string;
+  specialization?: string;
+  active?: boolean;
+  joinedDate?: string;
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -127,6 +140,7 @@ export interface Student {
   completedTests: number;
   averageBand: number;
 }
+
 
 export type QuestionType =
   | 'multiple_choice_single'
@@ -415,3 +429,27 @@ export const MOCK_IELTS_TEST: Test = {
 };
 
 export const MOCK_TESTS_CATALOG: Test[] = [MOCK_IELTS_TEST];
+
+export const DEFAULT_TEACHERS: Teacher[] = [
+  {
+    id: 'tch-1',
+    name: 'Sarah Jenkins',
+    email: 'sarah.ielts@apex.edu',
+    password: 'password123',
+    orgId: 'org-1',
+    specialization: 'Senior Writing & Speaking Evaluator',
+    active: true,
+    joinedDate: '2025-11-15'
+  },
+  {
+    id: 'tch-2',
+    name: 'David Miller',
+    email: 'david.examiner@apex.edu',
+    password: 'password123',
+    orgId: 'org-1786892616975',
+    specialization: 'IELTS Band 8.5 Certified Examiner',
+    active: true,
+    joinedDate: '2025-12-01'
+  }
+];
+

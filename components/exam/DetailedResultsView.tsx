@@ -4,11 +4,13 @@ import React, { useState, useMemo } from 'react';
 import { ExamLog, Test, Question } from '@/lib/mock-data';
 import { rawToBandScore, calculateOverallBand, evaluateAnswerCorrectness } from '@/lib/ielts-grading';
 import { extractResolvedQuestions, formatCorrectAnswerDisplay } from '@/lib/test-normalizer';
+import { useStore } from '@/components/providers/StoreProvider';
 import { 
   CheckCircle2, XCircle, AlertCircle, Award, Check, RotateCcw, 
   Send, FileText, Edit3, MessageSquare, Clock, ShieldCheck, Image as ImageIcon,
-  Loader2, AlertTriangle 
+  Loader2, AlertTriangle, UserCheck, GraduationCap 
 } from 'lucide-react';
+
 
 
 
@@ -21,6 +23,8 @@ interface DetailedResultsViewProps {
 }
 
 export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpdateWriting }: DetailedResultsViewProps) {
+  const { currentUser } = useStore();
+
   // Overrides state for Reading and Listening: { [qId]: boolean }
   const [manualOverrides, setManualOverrides] = useState<{
     reading: Record<string, boolean>;
@@ -29,6 +33,7 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
     reading: log.manualOverrides?.reading || {},
     listening: log.manualOverrides?.listening || {}
   }));
+
 
   // Modal confirmation state
   const [showPublishModal, setShowPublishModal] = useState(false);
@@ -153,10 +158,16 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
         [module]: modOverrides
       };
 
+      const currentEvaluator = currentUser?.name
+        ? `${currentUser.name} (${currentUser.role === 'teacher' ? 'Teacher' : currentUser.role === 'tenant' ? 'Center Admin' : 'Examiner'})`
+        : (log.evaluatedBy || 'Center Examiner');
+
       // Auto-save override to store immediately
       if (onSaveEvaluation) {
         onSaveEvaluation({ 
           manualOverrides: updated,
+          evaluatedBy: currentEvaluator,
+          evaluatedAt: new Date().toISOString(),
           rawScores: {
             reading: module === 'reading' ? (markCorrect ? liveReading.raw + 1 : Math.max(0, liveReading.raw - 1)) : liveReading.raw,
             listening: module === 'listening' ? (markCorrect ? liveListening.raw + 1 : Math.max(0, liveListening.raw - 1)) : liveListening.raw
@@ -198,6 +209,10 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
       writingFeedback ? `[General Examiner Comments]\n${writingFeedback}` : ''
     ].filter(Boolean).join('\n\n');
 
+    const evaluatorName = currentUser?.name || log.evaluatedBy || 'Center Examiner';
+    const evaluatorRole = currentUser?.role === 'teacher' ? 'Teacher' : currentUser?.role === 'tenant' ? 'Center Admin' : 'Examiner';
+    const evaluatedTag = `${evaluatorName} (${evaluatorRole})`;
+
     const updatePayload: Partial<ExamLog> = {
       scores: updatedScores,
       rawScores: {
@@ -212,6 +227,9 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
       speakingFeedback,
       status: publishToStudent ? 'Graded' : (log.status === 'Graded' ? 'Graded' : 'Completed'),
       isPublished: publishToStudent ? true : log.isPublished,
+      evaluatedBy: evaluatedTag,
+      evaluatedAt: new Date().toISOString(),
+      gradedBy: evaluatedTag,
       gradedAt: new Date().toISOString()
     };
 
@@ -225,6 +243,7 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
     setSaveSuccess(publishToStudent ? 'Official Results Successfully Released to Student Portal!' : 'Evaluation Draft & Overrides Saved Successfully!');
     setTimeout(() => setSaveSuccess(null), 5000);
   };
+
 
   const isPublished = log.isPublished || log.status === 'Graded';
 
@@ -269,8 +288,14 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
                   {isPublished ? 'Status: Released to Candidate' : 'Status: Under Center Review'}
                 </span>
               </div>
-              <h2 className="text-lg font-bold mt-1 text-white">
-                Candidate: {log.studentName} ({log.studentId})
+              <h2 className="text-lg font-bold mt-1 text-white flex flex-wrap items-center gap-2">
+                <span>Candidate: {log.studentName} ({log.studentId})</span>
+                {log.evaluatedBy && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/20 text-emerald-100 border border-emerald-400/40">
+                    <GraduationCap className="w-3.5 h-3.5 text-emerald-300" />
+                    <span>Evaluated by: {log.evaluatedBy}</span>
+                  </span>
+                )}
               </h2>
               <p className="text-xs text-emerald-200">
                 You can review student answers, override automated Reading/Listening marks, grade Writing tasks with full prompts, and release the official result.
@@ -316,12 +341,21 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
               {isOrg ? 'Live computed band scores reflecting all examiner overrides & writing evaluation.' : 'Official released scores verified by your test center.'}
             </p>
           </div>
-          {isPublished && (
-            <span className="px-2.5 py-1 bg-[var(--forest)]/10 text-[var(--forest)] text-xs font-bold rounded-[2px] flex items-center gap-1">
-              <ShieldCheck className="w-4 h-4" /> Verified & Released
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {log.evaluatedBy && (
+              <span className="px-3 py-1 bg-blue-50 border border-blue-200 text-blue-900 text-xs font-semibold rounded-full flex items-center gap-1.5 shadow-sm">
+                <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                <span>Evaluated by: <strong>{log.evaluatedBy}</strong></span>
+              </span>
+            )}
+            {isPublished && (
+              <span className="px-2.5 py-1 bg-[var(--forest)]/10 text-[var(--forest)] text-xs font-bold rounded-[2px] flex items-center gap-1">
+                <ShieldCheck className="w-4 h-4" /> Verified &amp; Released
+              </span>
+            )}
+          </div>
         </div>
+
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {/* Reading */}

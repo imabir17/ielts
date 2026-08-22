@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Organization, Package, Student, PlatformManager, ExamLog, SpeakingRequest, MOCK_TESTS_CATALOG } from '@/lib/mock-data';
+import { Organization, Package, Student, PlatformManager, Teacher, ExamLog, SpeakingRequest, MOCK_TESTS_CATALOG, DEFAULT_TEACHERS } from '@/lib/mock-data';
 import { getStoredTests, saveTestToStorage, deleteTestFromStorage } from '@/lib/test-store';
 import { normalizeTest } from '@/lib/test-normalizer';
 import { supabase } from '@/lib/supabase';
@@ -79,6 +79,7 @@ interface StoreContextType {
   tenants: Organization[];
   packages: Package[];
   students: Student[];
+  teachers: Teacher[];
   managers: PlatformManager[];
   tests: any[];
   currentUser: any | null;
@@ -88,6 +89,7 @@ interface StoreContextType {
   setTenants: React.Dispatch<React.SetStateAction<Organization[]>>;
   setPackages: React.Dispatch<React.SetStateAction<Package[]>>;
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+  setTeachers: React.Dispatch<React.SetStateAction<Teacher[]>>;
   setManagers: React.Dispatch<React.SetStateAction<PlatformManager[]>>;
   setTests: React.Dispatch<React.SetStateAction<any[]>>;
   setCurrentUser: React.Dispatch<React.SetStateAction<any | null>>;
@@ -101,6 +103,9 @@ interface StoreContextType {
   deletePackage: (id: string) => void;
   addStudent: (student: Student) => void;
   updateStudent: (id: string, updates: Partial<Student>) => void;
+  addTeacher: (teacher: Teacher) => void;
+  updateTeacher: (id: string, updates: Partial<Teacher>) => void;
+  deleteTeacher: (id: string) => void;
   addManager: (manager: PlatformManager) => void;
   deleteManager: (id: string) => void;
   addExamLog: (log: ExamLog) => void;
@@ -118,12 +123,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [tenants, setTenants] = useState<Organization[]>(DEFAULT_TENANTS);
   const [packages, setPackages] = useState<Package[]>(DEFAULT_PACKAGES);
   const [students, setStudents] = useState<Student[]>(DEFAULT_STUDENTS);
+  const [teachers, setTeachers] = useState<Teacher[]>(DEFAULT_TEACHERS);
   const [managers, setManagers] = useState<PlatformManager[]>(DEFAULT_MANAGERS);
   const [examLogs, setExamLogs] = useState<ExamLog[]>([]);
   const [speakingRequests, setSpeakingRequests] = useState<SpeakingRequest[]>([]);
   const [tests, setTests] = useState<any[]>(MOCK_TESTS_CATALOG);
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+
 
   useEffect(() => {
     async function fetchData() {
@@ -141,6 +148,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
           const cachedStudents = localStorage.getItem('ielts_cached_students');
           if (cachedStudents) setStudents(JSON.parse(cachedStudents));
+
+          const cachedTeachers = localStorage.getItem('ielts_cached_teachers');
+          if (cachedTeachers) setTeachers(JSON.parse(cachedTeachers));
 
           const cachedManagers = localStorage.getItem('ielts_cached_managers');
           if (cachedManagers) setManagers(JSON.parse(cachedManagers));
@@ -172,6 +182,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           supabase.from('tests').select('*')
         ]);
 
+        try {
+          const { data: tchs } = await supabase.from('teachers').select('*');
+          if (tchs && tchs.length > 0) {
+            const mappedTchs = tchs.map((t: any) => ({
+              ...t,
+              orgId: t.org_id,
+              specialization: t.specialization,
+              joinedDate: t.joined_date || t.created_date
+            }));
+            setTeachers(mappedTchs);
+            try { localStorage.setItem('ielts_cached_teachers', JSON.stringify(mappedTchs)); } catch {}
+          }
+        } catch (e) {
+          console.warn('Teachers fetch notice:', e);
+        }
+
         if (orgs && orgs.length > 0) {
           const mappedOrgs = orgs.map((o: any) => ({
             ...o,
@@ -200,7 +226,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           setPackages(mappedPkgs);
           try { localStorage.setItem('ielts_cached_packages', JSON.stringify(mappedPkgs)); } catch {}
         }
-
 
         if (stds && stds.length > 0) {
           const mappedStds = stds.map((s: any) => ({
@@ -241,6 +266,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               writingFeedback: l.writing_feedback,
               status: l.status,
               isPublished: isPub,
+              evaluatedBy: parsedScores?.evaluatedBy || l.evaluated_by || l.graded_by || undefined,
+              evaluatedAt: parsedScores?.evaluatedAt || l.evaluated_at || l.graded_at || undefined,
               manualOverrides: parsedScores?.manualOverrides || l.manual_overrides || {},
               rawScores: parsedScores?.rawScores || {},
               task1Feedback: parsedScores?.task1Feedback || '',
@@ -251,6 +278,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           setExamLogs(mappedLogs);
           try { localStorage.setItem('ielts_cached_exam_logs', JSON.stringify(mappedLogs)); } catch {}
         }
+
 
 
         if (reqs) {
@@ -489,6 +517,51 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } catch (e) { console.error('Supabase updateStudent exception:', e); }
   };
 
+  const addTeacher = async (teacher: Teacher) => {
+    const updated = [...teachers, teacher];
+    setTeachers(updated);
+    try { localStorage.setItem('ielts_cached_teachers', JSON.stringify(updated)); } catch {}
+
+    const dbInsert: any = {
+      id: teacher.id,
+      name: teacher.name,
+      email: teacher.email,
+      password: teacher.password || 'password123',
+      org_id: teacher.orgId,
+      specialization: teacher.specialization || 'IELTS Evaluator',
+      active: teacher.active !== false
+    };
+    try {
+      const { error } = await supabase.from('teachers').insert(dbInsert);
+      if (error) console.warn('Supabase addTeacher notice:', error);
+    } catch (e) { console.warn('Supabase addTeacher exception:', e); }
+  };
+
+  const updateTeacher = async (id: string, updates: Partial<Teacher>) => {
+    const updated = teachers.map(t => t.id === id ? { ...t, ...updates } : t);
+    setTeachers(updated);
+    try { localStorage.setItem('ielts_cached_teachers', JSON.stringify(updated)); } catch {}
+
+    const dbUpdates: any = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.email !== undefined) dbUpdates.email = updates.email;
+    if (updates.password !== undefined) dbUpdates.password = updates.password;
+    if (updates.specialization !== undefined) dbUpdates.specialization = updates.specialization;
+    if (updates.active !== undefined) dbUpdates.active = updates.active;
+
+    try {
+      const { error } = await supabase.from('teachers').update(dbUpdates).eq('id', id);
+      if (error) console.warn('Supabase updateTeacher notice:', error);
+    } catch (e) { console.warn('Supabase updateTeacher exception:', e); }
+  };
+
+  const deleteTeacher = async (id: string) => {
+    const updated = teachers.filter(t => t.id !== id);
+    setTeachers(updated);
+    try { localStorage.setItem('ielts_cached_teachers', JSON.stringify(updated)); } catch {}
+    try { await supabase.from('teachers').delete().eq('id', id); } catch (e) { console.warn(e); }
+  };
+
   const addManager = async (manager: PlatformManager) => {
     const updated = [...managers, manager];
     setManagers(updated);
@@ -571,7 +644,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (updates.overallBand !== undefined) dbUpdates.overall_band = updates.overallBand;
     if (updates.writingFeedback !== undefined) dbUpdates.writing_feedback = updates.writingFeedback;
 
-    // Bundle scores + overrides + feedback into the scores json object for DB persistence
+    // Bundle scores + overrides + feedback + evaluatedBy into the scores json object for DB persistence
     const existingScores = typeof existing?.scores === 'object' && existing?.scores !== null ? existing.scores : {};
     const newScores = typeof updates.scores === 'object' && updates.scores !== null ? updates.scores : {};
     const combinedScores = {
@@ -582,6 +655,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       task1Feedback: updates.task1Feedback !== undefined ? updates.task1Feedback : existing?.task1Feedback,
       task2Feedback: updates.task2Feedback !== undefined ? updates.task2Feedback : existing?.task2Feedback,
       speakingFeedback: updates.speakingFeedback !== undefined ? updates.speakingFeedback : existing?.speakingFeedback,
+      evaluatedBy: updates.evaluatedBy !== undefined ? updates.evaluatedBy : existing?.evaluatedBy,
+      evaluatedAt: updates.evaluatedAt !== undefined ? updates.evaluatedAt : existing?.evaluatedAt,
       isPublished: isNowPublished,
     };
     dbUpdates.scores = combinedScores;
@@ -591,6 +666,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (error) console.error('Supabase updateExamLog error:', error);
     } catch (e) { console.error('Supabase updateExamLog exception:', e); }
   };
+
 
 
   const addSpeakingRequest = async (req: SpeakingRequest) => {
@@ -713,12 +789,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreContext.Provider value={{
-      tenants, packages, students, managers, tests, currentUser, examLogs, speakingRequests, isInitialized,
-      setTenants, setPackages, setStudents, setManagers, setTests, setCurrentUser, setExamLogs, setSpeakingRequests,
+      tenants, packages, students, teachers, managers, tests, currentUser, examLogs, speakingRequests, isInitialized,
+      setTenants, setPackages, setStudents, setTeachers, setManagers, setTests, setCurrentUser, setExamLogs, setSpeakingRequests,
 
       addTenant, updateTenant, deleteTenant,
       addPackage, updatePackage, deletePackage,
       addStudent, updateStudent,
+      addTeacher, updateTeacher, deleteTeacher,
       addManager, deleteManager,
       addExamLog, updateExamLog,
       addSpeakingRequest, updateSpeakingRequest,
@@ -727,6 +804,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       {children}
     </StoreContext.Provider>
   );
+
 }
 
 export function useStore() {
