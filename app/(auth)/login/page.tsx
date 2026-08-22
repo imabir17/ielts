@@ -103,9 +103,10 @@ export default function LoginPage() {
               Enter the test environment.
             </h1>
             <p className="text-[16px] text-[#B9C4D2] leading-[1.65]">
-              Log in with your provided student ID to begin your timed mock exam, or access your coaching center dashboard.
+              Please sign in with your credentials.
             </p>
           </div>
+
         </div>
 
         <div className="z-10 text-[13px] text-[#7C8FA6] font-mono flex items-center justify-between mt-12">
