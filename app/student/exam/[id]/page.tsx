@@ -10,8 +10,10 @@ import { ListeningModule } from '@/components/exam/ListeningModule';
 import { WritingModule } from '@/components/exam/WritingModule';
 import { SpeakingModule } from '@/components/exam/SpeakingModule';
 import { AccessibilityBar } from '@/components/exam/AccessibilityBar';
-import { BookOpen, Headphones, Edit3, Mic, LogOut, CheckCircle2, ChevronRight, AlertCircle, Clock } from 'lucide-react';
+import { FloatingNotepad } from '@/components/exam/FloatingNotepad';
+import { BookOpen, Headphones, Edit3, Mic, LogOut, CheckCircle2, ChevronRight, AlertCircle, Clock, StickyNote } from 'lucide-react';
 import { useStore } from '@/components/providers/StoreProvider';
+
 import { ExamLog, SpeakingRequest, MOCK_IELTS_TEST } from '@/lib/mock-data';
 
 type ModuleType = 'reading' | 'listening' | 'writing' | 'speaking';
@@ -40,8 +42,11 @@ export default function ExamPage() {
   const [toast, setToast] = useState<{ msg: string; color: 'amber' | 'red' } | null>(null);
   const [globalVolume, setGlobalVolume] = useState<number>(1);
   const [showReviewModal, setShowReviewModal] = useState<boolean>(false);
+  const [isNotepadOpen, setIsNotepadOpen] = useState<boolean>(false);
+  const [listeningDuration, setListeningDuration] = useState<number>(0);
 
   const existingLog = examLogs.find(l => l.studentId === currentUser?.id && l.testId === testId);
+
 
 
 
@@ -210,11 +215,11 @@ export default function ExamPage() {
     if (mod === 'reading') return 60 * 60; // 60 mins
     if (mod === 'writing') return 60 * 60; // 60 mins
     if (mod === 'listening') {
-      const audioDuration = activeTest?.listening?.[0]?.duration || 180;
-      return audioDuration + (10 * 60); // Audio + 10 mins transfer time
+      return listeningDuration || activeTest?.listening?.[0]?.duration || 1800; // Same as audio duration
     }
     return 0; // Speaking has no strict timer in this practice mode
   };
+
 
   const handleTimerWarning = (type: 'warning' | 'critical', mins: number) => {
 
@@ -374,6 +379,7 @@ export default function ExamPage() {
         <div className="flex-1 flex justify-center">
           {activeModule !== 'speaking' && (
             <ExamTimer 
+              key={`${activeModule}-${currentModuleIdx}-${activeModule === 'listening' ? listeningDuration : 0}`}
               initialSeconds={getModuleTimer(activeModule)} 
               onTimeUp={handleModuleComplete}
               onWarning={handleTimerWarning} 
@@ -381,7 +387,7 @@ export default function ExamPage() {
           )}
         </div>
 
-        {/* Right side: Accessibility + Submit */}
+        {/* Right side: Accessibility + Notepad + Submit */}
         <div className="flex flex-1 items-center justify-end space-x-3">
           <div className="hidden md:flex items-center gap-2 bg-[#16233A] px-3 py-1 rounded-[2px] border border-slate-700">
             <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Module</span>
@@ -389,6 +395,20 @@ export default function ExamPage() {
           </div>
 
           <AccessibilityBar onVolumeChange={setGlobalVolume} />
+
+          {/* Floating Notepad Toggle Button */}
+          <button
+            onClick={() => setIsNotepadOpen(!isNotepadOpen)}
+            className={`flex items-center space-x-1 px-2.5 py-1 rounded-[2px] text-xs font-mono font-semibold border transition-colors ${
+              isNotepadOpen
+                ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-xs'
+                : 'bg-[#16233A] text-slate-200 border-slate-700 hover:bg-slate-700'
+            }`}
+            title="Candidate Notepad for rough notes"
+          >
+            <StickyNote className={`w-3.5 h-3.5 ${isNotepadOpen ? 'text-slate-950' : 'text-amber-400'}`} />
+            <span>Notepad</span>
+          </button>
 
           <button
             onClick={() => {
@@ -404,6 +424,7 @@ export default function ExamPage() {
           </button>
         </div>
       </header>
+
 
       {/* 📋 OFFICIAL CBT PRE-SUBMISSION REVIEW MODAL */}
       {showReviewModal && (() => {
@@ -522,6 +543,12 @@ export default function ExamPage() {
             allSections={listeningSections} 
             audioUrl={activeTest.listeningAudioUrl || MOCK_IELTS_TEST.listeningAudioUrl}
             volume={globalVolume}
+            onAudioDurationLoaded={(dur) => {
+              if (dur > 0 && dur !== listeningDuration) {
+                setListeningDuration(dur);
+              }
+            }}
+            onAudioEnded={handleModuleComplete}
             onAnswerChange={(ans) => setAnswers(prev => ({ ...prev, listening: { ...prev.listening, ...ans } }))}
           />
         )}
@@ -538,8 +565,16 @@ export default function ExamPage() {
           />
         )}
       </div>
+
+      {/* Floating Candidate Notepad */}
+      <FloatingNotepad
+        testId={testId}
+        isOpen={isNotepadOpen}
+        onClose={() => setIsNotepadOpen(false)}
+      />
     </div>
   );
 }
+
 
 

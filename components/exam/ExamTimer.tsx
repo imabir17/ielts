@@ -11,43 +11,56 @@ interface ExamTimerProps {
 
 export function ExamTimer({ initialSeconds, onTimeUp, onWarning }: ExamTimerProps) {
   const [secondsLeft, setSecondsLeft] = useState(initialSeconds);
-  const prevSeconds = useRef(initialSeconds);
+  const onTimeUpRef = useRef(onTimeUp);
+  const onWarningRef = useRef(onWarning);
+  const hasEndedRef = useRef(false);
+  const warned10Ref = useRef(false);
+  const warned5Ref = useRef(false);
 
   useEffect(() => {
-    // Reset if initialSeconds changes
+    onTimeUpRef.current = onTimeUp;
+    onWarningRef.current = onWarning;
+  });
+
+  useEffect(() => {
+    hasEndedRef.current = false;
+    warned10Ref.current = false;
+    warned5Ref.current = false;
     setSecondsLeft(initialSeconds);
-    prevSeconds.current = initialSeconds;
-  }, [initialSeconds]);
 
-  useEffect(() => {
-    if (secondsLeft <= 0) {
-      if (onTimeUp) onTimeUp();
-      return;
-    }
-    
-    // Check for warnings on boundary crossing
-    if (onWarning) {
-      if (prevSeconds.current > 600 && secondsLeft <= 600) {
-        onWarning('warning', 10);
-      }
-      if (prevSeconds.current > 300 && secondsLeft <= 300) {
-        onWarning('critical', 5);
-      }
-    }
-    prevSeconds.current = secondsLeft;
-    
+    if (initialSeconds <= 0) return;
+
+    const startTime = Date.now();
+    const totalMs = initialSeconds * 1000;
+    const endTime = startTime + totalMs;
+
     const interval = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          if (onTimeUp) onTimeUp();
-          return 0;
+      const remainingMs = endTime - Date.now();
+      const remainingSecs = Math.max(0, Math.ceil(remainingMs / 1000));
+      
+      setSecondsLeft(remainingSecs);
+
+      // Warning thresholds
+      if (remainingSecs <= 600 && remainingSecs > 300 && !warned10Ref.current) {
+        warned10Ref.current = true;
+        if (onWarningRef.current) onWarningRef.current('warning', 10);
+      }
+      if (remainingSecs <= 300 && remainingSecs > 0 && !warned5Ref.current) {
+        warned5Ref.current = true;
+        if (onWarningRef.current) onWarningRef.current('critical', 5);
+      }
+
+      if (remainingSecs <= 0) {
+        clearInterval(interval);
+        if (!hasEndedRef.current) {
+          hasEndedRef.current = true;
+          if (onTimeUpRef.current) onTimeUpRef.current();
         }
-        return prev - 1;
-      });
-    }, 1000);
+      }
+    }, 250); // 250ms interval for precision without drift
+
     return () => clearInterval(interval);
-  }, [secondsLeft, onTimeUp, onWarning]);
+  }, [initialSeconds]);
 
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
@@ -73,4 +86,3 @@ export function ExamTimer({ initialSeconds, onTimeUp, onWarning }: ExamTimerProp
     </div>
   );
 }
-

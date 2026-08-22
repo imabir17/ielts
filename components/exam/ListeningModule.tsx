@@ -10,16 +10,30 @@ interface ListeningModuleProps {
   audioUrl?: string;
   volume?: number;
   onAnswerChange?: (answers: Record<string, any>) => void;
+  onAudioDurationLoaded?: (duration: number) => void;
+  onAudioEnded?: () => void;
 }
 
-export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnswerChange }: ListeningModuleProps) {
+export function ListeningModule({
+  allSections = [],
+  audioUrl,
+  volume = 1,
+  onAnswerChange,
+  onAudioDurationLoaded,
+  onAudioEnded
+}: ListeningModuleProps) {
   const [activeSectionIdx, setActiveSectionIdx] = useState(0);
   const section = allSections && allSections.length > 0 ? allSections[activeSectionIdx] || allSections[0] : null;
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [userAnswers, setUserAnswers] = useState<Record<string, any>>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Reliable fallback audio if not provided
+  const fallbackAudio = 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c2680a424e.mp3?filename=ambient-piano-amp-strings-10711.mp3';
+  const effectiveAudioUrl = audioUrl && audioUrl.trim().length > 0 ? audioUrl : fallbackAudio;
 
   useEffect(() => {
     if (onAnswerChange) onAnswerChange(userAnswers);
@@ -31,30 +45,39 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
     }
   }, [volume]);
 
-  const togglePlay = () => {
-    if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play().catch(() => {});
-      setIsPlaying(true);
+  // Autoplay on mount when candidate enters Listening module
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => setIsPlaying(true))
+          .catch((err) => {
+            console.log('Autoplay waiting for user gesture or audio load', err);
+          });
+      }
+    }
+  }, [effectiveAudioUrl, volume]);
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current && audioRef.current.duration) {
+      const dur = Math.ceil(audioRef.current.duration);
+      setAudioDuration(dur);
+      if (onAudioDurationLoaded) onAudioDurationLoaded(dur);
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
     }
   };
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
+      if (!isPlaying && !audioRef.current.paused) {
+        setIsPlaying(true);
+      }
     }
   };
 
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = Number(e.target.value);
-    if (audioRef.current) {
-      audioRef.current.currentTime = val;
-      setCurrentTime(val);
-    }
-  };
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -511,31 +534,29 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
   return (
     <div className="h-[calc(100vh-64px)] flex flex-col bg-slate-100 font-sans overflow-hidden">
       {/* LOCKED AUDIO PLAYER AT TOP */}
-      <div className="sticky top-0 z-30 bg-[#0F172A] text-white px-4 py-2 border-b border-slate-800">
+      <div className="sticky top-0 z-30 bg-[#0F172A] text-white px-4 py-2.5 border-b border-slate-800">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <button
-              onClick={togglePlay}
-              className="px-3 py-1 rounded-[2px] bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-600 transition-colors flex items-center space-x-1"
-            >
-              <span>{isPlaying ? '⏸ Pause' : '▶ Play Audio'}</span>
-            </button>
-            <div className="flex items-center space-x-2 text-xs">
+            <div className="flex items-center space-x-2 bg-slate-800 text-white px-3 py-1 rounded-[2px] border border-slate-700 font-mono text-xs">
+              <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+              <span className="font-semibold text-slate-200">Listening Audio</span>
+              <span className="text-slate-400 font-normal">({isPlaying ? 'Playing' : 'Starting...'})</span>
+            </div>
+
+            <div className="flex items-center space-x-1.5 text-xs text-slate-300 font-mono">
               <Headphones className="w-3.5 h-3.5 text-slate-400" />
-              <span className="font-mono text-slate-300">{formatTime(currentTime)}</span>
+              <span>{formatTime(currentTime)} / {formatTime(audioDuration || 180)}</span>
             </div>
           </div>
 
-          {/* Audio Scrubber */}
-          <div className="flex-1 max-w-md hidden sm:block">
-            <input
-              type="range"
-              min={0}
-              max={audioRef.current?.duration || 100}
-              value={currentTime}
-              onChange={handleSeek}
-              className="w-full h-1.5 bg-slate-800 rounded-sm appearance-none cursor-pointer accent-blue-500"
-            />
+          {/* Audio Progress Track (Read-Only - Seeking Disabled in Exam) */}
+          <div className="flex-1 max-w-md hidden sm:flex items-center space-x-2">
+            <div className="flex-1 h-2 bg-slate-800 rounded-sm overflow-hidden border border-slate-700 relative" title="Audio progress (seeking disabled during examination)">
+              <div 
+                className="h-full bg-blue-500 transition-all duration-200" 
+                style={{ width: `${audioDuration > 0 ? Math.min(100, (currentTime / audioDuration) * 100) : 0}%` }} 
+              />
+            </div>
           </div>
 
           {/* Volume Button */}
@@ -546,19 +567,27 @@ export function ListeningModule({ allSections = [], audioUrl, volume = 1, onAnsw
                 setIsMuted(!isMuted);
               }
             }}
-            className="p-1 text-slate-400 hover:text-white transition-colors"
+            className="p-1 text-slate-400 hover:text-white transition-colors flex items-center space-x-1 text-xs"
+            title="Adjust volume"
           >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4" />}
+            <span className="hidden md:inline font-mono text-[10px] text-slate-400">{isMuted ? 'Muted' : 'Volume'}</span>
           </button>
         </div>
 
         <audio
           ref={audioRef}
-          src={audioUrl || ''}
+          src={effectiveAudioUrl}
+          autoPlay
+          onLoadedMetadata={handleLoadedMetadata}
           onTimeUpdate={handleTimeUpdate}
-          onEnded={() => setIsPlaying(false)}
+          onEnded={() => {
+            setIsPlaying(false);
+            if (onAudioEnded) onAudioEnded();
+          }}
         />
       </div>
+
 
       {/* SCROLLABLE QUESTIONS */}
       <div className="flex-1 overflow-y-auto p-5 md:p-8 max-w-5xl mx-auto w-full space-y-6">
