@@ -432,6 +432,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setStudents(updated);
     try { localStorage.setItem('ielts_cached_students', JSON.stringify(updated)); } catch {}
 
+    if (student.orgId) {
+      const tenant = tenants.find(t => t.id === student.orgId);
+      if (tenant) {
+        const orgStudents = updated.filter(s => s.orgId === student.orgId);
+        updateTenant(tenant.id, { studentCount: orgStudents.length });
+      }
+    }
+
     const dbInsert: any = {
       id: student.id,
       name: student.name,
@@ -492,6 +500,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setExamLogs(updated);
     try { localStorage.setItem('ielts_cached_exam_logs', JSON.stringify(updated)); } catch {}
 
+    if (log.orgId) {
+      const tenant = tenants.find(t => t.id === log.orgId);
+      if (tenant) {
+        const newExamsUsed = (tenant.examsUsedThisMonth || 0) + 1;
+        updateTenant(tenant.id, { examsUsedThisMonth: newExamsUsed });
+      }
+    }
+
     const dbInsert: any = {
       id: log.id,
       student_name: log.studentName,
@@ -513,6 +529,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (error) console.error('Supabase addExamLog error:', error);
     } catch (e) { console.error('Supabase addExamLog exception:', e); }
   };
+
 
   const updateExamLog = async (id: string, updates: Partial<ExamLog>) => {
     const existing = examLogs.find(l => l.id === id);

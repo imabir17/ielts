@@ -14,8 +14,7 @@ import { FloatingNotepad } from '@/components/exam/FloatingNotepad';
 import { BookOpen, Headphones, Edit3, Mic, LogOut, CheckCircle2, ChevronRight, AlertCircle, Clock, StickyNote } from 'lucide-react';
 import { useStore } from '@/components/providers/StoreProvider';
 import { rawToBandScore } from '@/lib/ielts-grading';
-
-
+import { getOrgQuota } from '@/lib/quota-manager';
 import { ExamLog, SpeakingRequest, MOCK_IELTS_TEST } from '@/lib/mock-data';
 
 type ModuleType = 'reading' | 'listening' | 'writing' | 'speaking';
@@ -25,7 +24,8 @@ export default function ExamPage() {
   const params = useParams();
   const router = useRouter();
   const testId = typeof params?.id === 'string' ? params.id : '';
-  const { currentUser, setCurrentUser, examLogs, updateExamLog, addExamLog, addSpeakingRequest, updateStudent, students, tests } = useStore();
+  const { currentUser, setCurrentUser, examLogs, updateExamLog, addExamLog, addSpeakingRequest, updateStudent, students, tests, tenants, packages } = useStore();
+
 
   const [isMounted, setIsMounted] = useState(false);
   const [test, setTest] = useState<any>(null);
@@ -253,6 +253,10 @@ export default function ExamPage() {
   const writingTasks = activeTest?.writing && activeTest.writing.length > 0 ? activeTest.writing : MOCK_IELTS_TEST.writing;
   const speakingParts = activeTest?.speaking && activeTest.speaking.length > 0 ? activeTest.speaking : MOCK_IELTS_TEST.speaking;
 
+  const studentInfo = students.find(s => s.id === currentUser?.id);
+  const studentOrg = tenants.find(t => t.id === studentInfo?.orgId) || tenants[0];
+  const studentQuota = getOrgQuota(studentOrg, packages, students, examLogs);
+
   if (examState === 'setup') {
     return (
       <div className="min-h-screen bg-[var(--paper)] flex flex-col font-sans">
@@ -263,6 +267,24 @@ export default function ExamPage() {
           <div className="panel p-10 text-center">
             <h2 className="font-display text-[32px] text-[var(--ink)] mb-2">{activeTest.title}</h2>
             <p className="text-[15px] text-[var(--ink-soft)] mb-8">Select the modules you wish to take in this session. The system will automatically sequence them.</p>
+
+            {/* QUOTA WARNING FOR CANDIDATE */}
+            {studentQuota.isExamQuotaFull && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-900 text-xs text-left flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block text-red-950 font-bold mb-0.5">Mock Exam Allocation Reached</strong>
+                  Your coaching center has reached its monthly exam quota ({studentQuota.usedExams} / {studentQuota.totalExamLimit}). Please contact your center administrator to renew the mock test allocation.
+                </div>
+              </div>
+            )}
+
+            {studentQuota.isNearExamLimit && (
+              <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs text-left flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>Center Notice: Your coaching center has <strong>{studentQuota.remainingExams} mock exam(s)</strong> remaining in this cycle.</span>
+              </div>
+            )}
             
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10 text-left">
               {[
@@ -271,12 +293,11 @@ export default function ExamPage() {
                 { id: 'writing', label: 'Writing', icon: Edit3, desc: '60 Minutes' },
                 { id: 'speaking', label: 'Speaking', icon: Mic, desc: 'Practice Mode' }
               ].map(mod => {
-
                 const isSel = selectedModules.includes(mod.id as ModuleType);
                 const isPreviouslyTaken = existingLog?.modulesTaken?.includes(mod.id as ModuleType);
                 
                 return (
-                  <div key={mod.id} onClick={() => handleModuleSelection(mod.id as ModuleType)} className={`panel p-5 cursor-pointer transition-all border-2 ${isSel ? 'border-[var(--ink)] bg-[var(--paper)] ring-4 ring-[var(--ink)]/10' : 'border-[var(--line)] bg-[var(--paper-card)] hover:border-[var(--ink-faint)]'}`}>
+                  <div key={mod.id} onClick={() => !studentQuota.isExamQuotaFull && handleModuleSelection(mod.id as ModuleType)} className={`panel p-5 transition-all border-2 ${studentQuota.isExamQuotaFull ? 'opacity-60 cursor-not-allowed border-slate-200 bg-slate-50' : 'cursor-pointer'} ${isSel ? 'border-[var(--ink)] bg-[var(--paper)] ring-4 ring-[var(--ink)]/10' : 'border-[var(--line)] bg-[var(--paper-card)] hover:border-[var(--ink-faint)]'}`}>
                     <div className="flex justify-between items-start mb-3">
                       <mod.icon className={`w-6 h-6 ${isSel ? 'text-[var(--brick)]' : 'text-[var(--ink-faint)]'}`} />
                       <div className={`w-5 h-5 rounded-[4px] border-2 flex items-center justify-center ${isSel ? 'bg-[var(--ink)] border-[var(--ink)]' : 'border-[var(--line-soft)]'}`}>
@@ -293,7 +314,7 @@ export default function ExamPage() {
               })}
             </div>
 
-            <button onClick={handleStartExam} disabled={selectedModules.length === 0} className="btn btn-fill px-12 py-4 text-[16px] disabled:opacity-50">
+            <button onClick={handleStartExam} disabled={selectedModules.length === 0 || studentQuota.isExamQuotaFull} className="btn btn-fill px-12 py-4 text-[16px] disabled:opacity-50 disabled:cursor-not-allowed">
               Proceed to Exam <ChevronRight className="w-5 h-5 ml-2" />
             </button>
           </div>
@@ -301,6 +322,7 @@ export default function ExamPage() {
       </div>
     );
   }
+
 
   if (examState === 'warning') {
     return (

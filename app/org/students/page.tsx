@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import { useStore } from '@/components/providers/StoreProvider';
+import { getOrgQuota } from '@/lib/quota-manager';
 import { UserPlus, Sparkles, Copy, Check, AlertCircle } from 'lucide-react';
 
 export default function StudentsManagementPage() {
-  const { students, addStudent, currentUser, tenants, packages, isInitialized } = useStore();
+  const { students, addStudent, currentUser, tenants, packages, isInitialized, examLogs } = useStore();
   
   const [nameInput, setNameInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
@@ -14,25 +15,18 @@ export default function StudentsManagementPage() {
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const currentTenant = tenants.find(t => t.id === currentUser?.id) || (currentUser?.role === 'tenant' ? currentUser : null);
-  const tenantPackages = currentTenant?.packageIds?.map((id: string) => packages.find(p => p.id === id)).filter(Boolean) || [];
+  const currentTenant = tenants.find(t => t.id === currentUser?.id) || (currentUser?.role === 'tenant' ? currentUser : tenants[0]);
+  const quota = getOrgQuota(currentTenant, packages, students, examLogs);
 
-  const hasUnlimitedIds = tenantPackages.some((p: any) => p?.idLimit === 'unlimited') || currentTenant?.subscriptionTier === 'Enterprise';
-  const totalIdLimit = hasUnlimitedIds 
-    ? 'unlimited' 
-    : (tenantPackages.length > 0 
-        ? tenantPackages.reduce((sum: number, p: any) => sum + (typeof p?.idLimit === 'number' ? p.idLimit : 0), 0)
-        : (currentTenant?.maxSeats || (isInitialized ? 0 : 'unlimited')));
-
-  const tenantStudents = students.filter(s => s.orgId === currentUser?.id);
-  const currentUsage = tenantStudents.length;
-
-  const isQuotaFull = isInitialized && totalIdLimit !== 'unlimited' && totalIdLimit > 0 && currentUsage >= (totalIdLimit as number);
-
+  const tenantStudents = students.filter(s => s.orgId === currentTenant?.id);
+  const currentUsage = quota.usedIds;
+  const totalIdLimit = quota.totalIdLimit;
+  const isQuotaFull = quota.isIdQuotaFull;
 
   const handleGenerateStudent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nameInput.trim() || isQuotaFull) return;
+
 
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     addStudent({

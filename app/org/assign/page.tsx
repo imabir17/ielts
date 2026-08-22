@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '@/components/providers/StoreProvider';
 import { Test } from '@/lib/mock-data';
 import { getStoredTests } from '@/lib/test-store';
-import { Send, CheckCircle2, BookOpen, UserCheck, AlertCircle } from 'lucide-react';
+import { getOrgQuota } from '@/lib/quota-manager';
+import { Send, CheckCircle2, BookOpen, UserCheck, AlertCircle, AlertTriangle } from 'lucide-react';
 
 export default function AssignTestsPage() {
-  const { students, tenants, packages, currentUser, updateTenant, updateStudent, tests } = useStore();
+  const { students, tenants, packages, currentUser, updateTenant, updateStudent, tests, examLogs } = useStore();
   
   const [selectedTestId, setSelectedTestId] = useState<string>('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -19,17 +20,12 @@ export default function AssignTestsPage() {
     }
   }, [tests, selectedTestId]);
 
-  const tenantStudents = students.filter(s => s.orgId === currentUser?.id);
-  const currentTenant = tenants.find(t => t.id === currentUser?.id);
-  const tenantPackages = currentTenant?.packageIds?.map(id => packages.find(p => p.id === id)).filter(Boolean) || [];
+  const currentTenant = tenants.find(t => t.id === currentUser?.id) || (currentUser?.role === 'tenant' ? currentUser : tenants[0]);
+  const tenantStudents = students.filter(s => s.orgId === currentTenant?.id);
+  const quota = getOrgQuota(currentTenant, packages, students, examLogs);
 
-  const hasUnlimitedExams = tenantPackages.some(p => p!.examLimit === 'unlimited');
-  const totalExamLimit = hasUnlimitedExams ? 'unlimited' : tenantPackages.reduce((sum, p) => sum + (p!.examLimit as number), 0);
-
-  const examsUsed = currentTenant?.examsUsedThisMonth || 0;
   const assignmentsAttempting = selectedStudentIds.length;
-  
-  const isQuotaFull = totalExamLimit !== 'unlimited' && (examsUsed + assignmentsAttempting) > (totalExamLimit as number);
+  const isQuotaFull = quota.isExamQuotaFull || (quota.totalExamLimit !== 'unlimited' && typeof quota.remainingExams === 'number' && assignmentsAttempting > quota.remainingExams);
 
   const toggleStudent = (id: string) => {
     if (selectedStudentIds.includes(id)) {
@@ -43,7 +39,8 @@ export default function AssignTestsPage() {
     if (isQuotaFull || selectedStudentIds.length === 0 || !selectedTestId) return;
 
     if (currentTenant) {
-      updateTenant(currentTenant.id, { examsUsedThisMonth: examsUsed + selectedStudentIds.length });
+      const newExamsUsed = (currentTenant.examsUsedThisMonth || 0) + selectedStudentIds.length;
+      updateTenant(currentTenant.id, { examsUsedThisMonth: newExamsUsed });
     }
 
     selectedStudentIds.forEach(id => {
@@ -58,6 +55,7 @@ export default function AssignTestsPage() {
     setTimeout(() => setAssignedSuccess(false), 3000);
   };
 
+
   if (!currentUser) return <div>Loading...</div>;
 
   return (
@@ -70,27 +68,49 @@ export default function AssignTestsPage() {
         </div>
       </div>
 
+      {/* 3-EXAMS REMAINING WARNING */}
+      {quota.isNearExamLimit && (
+        <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/40 rounded-xl flex items-center justify-between gap-4 text-amber-950">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-extrabold text-sm text-amber-900">
+                Low Exam Quota: Only {quota.remainingExams} Exam{quota.remainingExams === 1 ? '' : 's'} Remaining
+              </div>
+              <p className="text-xs text-amber-800 mt-0.5">
+                Assigning tests will consume your remaining monthly quota. Ensure you have enough allocations for your target cohort.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <hr className="rule" />
 
       <div className="bg-[var(--paper-card)] p-5 border border-[var(--line)] rounded-[3px] mb-8 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className={`w-11 h-11 rounded-[3px] border flex items-center justify-center ${totalExamLimit !== 'unlimited' && examsUsed >= (totalExamLimit as number) ? 'bg-[#B23A2A]/10 border-[#B23A2A]/20 text-[#B23A2A]' : 'bg-[var(--forest)]/10 border-[var(--forest)]/20 text-[var(--forest)]'}`}>
+          <div className={`w-11 h-11 rounded-[3px] border flex items-center justify-center ${quota.isExamQuotaFull ? 'bg-[#B23A2A]/10 border-[#B23A2A]/20 text-[#B23A2A]' : quota.isNearExamLimit ? 'bg-amber-500/10 border-amber-500/30 text-amber-600' : 'bg-[var(--forest)]/10 border-[var(--forest)]/20 text-[var(--forest)]'}`}>
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
             <div className="font-display text-[19px] text-[var(--ink)]">Monthly Exam Quota</div>
-            <div className="text-[13px] text-[var(--ink-soft)]">Based on your active packages</div>
+            <div className="text-[13px] text-[var(--ink-soft)]">
+              {quota.remainingExams === 'unlimited' ? 'Unlimited Exams Allowed' : `${quota.remainingExams} mock exams remaining`}
+            </div>
           </div>
         </div>
         <div className="text-right">
           <div className="font-mono text-[24px] text-[var(--ink)]">
-            {examsUsed} <span className="text-[var(--ink-faint)] text-[18px]">/ {totalExamLimit === 'unlimited' ? '∞' : totalExamLimit}</span>
+            {quota.usedExams} <span className="text-[var(--ink-faint)] text-[18px]">/ {quota.totalExamLimit === 'unlimited' ? '∞' : quota.totalExamLimit}</span>
           </div>
-          <div className={`font-mono text-[10px] uppercase tracking-[0.05em] mt-1 ${totalExamLimit !== 'unlimited' && examsUsed >= (totalExamLimit as number) ? 'text-[#B23A2A]' : 'text-[var(--forest)]'}`}>
-            Exams Assigned
+          <div className={`font-mono text-[10px] uppercase tracking-[0.05em] mt-1 ${quota.isExamQuotaFull ? 'text-[#B23A2A] font-bold' : quota.isNearExamLimit ? 'text-amber-700 font-bold' : 'text-[var(--forest)]'}`}>
+            {quota.isExamQuotaFull ? 'Quota Exhausted' : quota.isNearExamLimit ? 'Low Quota' : 'Exams Assigned'}
           </div>
         </div>
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-5 space-y-4">
