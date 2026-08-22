@@ -3,11 +3,9 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/components/providers/StoreProvider';
-import { 
-  ArrowLeft, Headphones, BookOpen, Edit3, Mic, 
-  GraduationCap, ShieldCheck, Award, Building2, CheckCircle2 
-} from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -83,78 +81,31 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-[var(--paper)] text-[var(--ink)] font-sans selection:bg-[var(--brick)] selection:text-white">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[var(--paper)] text-[var(--ink)] font-sans selection:bg-[var(--brick)] selection:text-white">
       
-      {/* --- Left Column: Platform Features & Architecture --- */}
-      <div className="hidden lg:flex lg:col-span-7 flex-col justify-between p-12 lg:p-16 bg-[var(--ink)] text-[var(--paper)] border-r border-[var(--ink-soft)] relative overflow-hidden">
+      {/* --- Left Column - Brand & Context --- */}
+      <div className="hidden lg:flex flex-col justify-between p-12 lg:p-16 bg-[var(--ink)] text-[var(--paper)] border-r border-[var(--ink-soft)] relative overflow-hidden">
         
-        {/* Subtle top metadata */}
-        <div className="flex items-center justify-between z-10">
-          <Link href="/" className="font-display text-[26px] flex items-baseline gap-1.5 hover:opacity-85 transition-opacity">
+        <div className="z-10">
+          <Link href="/" className="font-display text-[26px] flex items-baseline gap-1.5 hover:opacity-85 transition-opacity w-fit">
             IELTSSync <span className="font-mono text-[12px] text-[var(--brick)] border border-[var(--brick)] rounded-[3px] px-1.5 py-[1px] tracking-[0.04em]">BD</span>
           </Link>
-          <div className="font-mono text-[11px] text-[#8E9DB2] tracking-wider uppercase flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            Live Testing Engine
+          <div className="mt-20 max-w-md">
+            <div className="font-mono text-[12px] tracking-[0.08em] uppercase text-[var(--gold)] mb-4 flex items-center gap-2">
+              <div className="w-[6px] h-[6px] rounded-full bg-[var(--gold)]"></div>
+              Official Mock Testing Platform
+            </div>
+            <h1 className="font-display text-[46px] leading-[1.1] mb-6 text-white">
+              Enter the test environment.
+            </h1>
+            <p className="text-[16px] text-[#B9C4D2] leading-[1.65]">
+              Please sign in with your credentials.
+            </p>
           </div>
         </div>
 
-        {/* Center Content: Headline & Feature Highlights */}
-        <div className="z-10 my-10 max-w-xl">
-          <div className="font-mono text-[12px] tracking-[0.08em] uppercase text-[var(--gold)] mb-3 flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-[var(--gold)]" />
-            Standardized IELTS Assessment System
-          </div>
-          <h1 className="font-display text-[42px] xl:text-[46px] leading-[1.12] mb-5 text-white">
-            Computer-Delivered Testing &amp; Faculty Evaluation.
-          </h1>
-          <p className="text-[15.5px] text-[#B9C4D2] leading-[1.65] mb-8">
-            Complete institutional testing infrastructure designed for students, certified IELTS faculties, and coaching center administrators.
-          </p>
-
-          {/* Feature Grid */}
-          <div className="space-y-4 pt-2">
-            <div className="flex items-start gap-3.5 p-3.5 bg-white/5 border border-white/10 rounded-[4px]">
-              <div className="w-8 h-8 rounded bg-[var(--forest)]/20 text-emerald-300 flex items-center justify-center shrink-0 mt-0.5">
-                <Headphones className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="font-semibold text-white text-[14px]">Full 4-Module Examination Suite</div>
-                <div className="text-[12.5px] text-[#A2B1C6] mt-0.5 leading-snug">
-                  Official computer-delivered format with synchronized audio listening, split-screen reading passages, timed writing, and speaking mock interviews.
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5 p-3.5 bg-white/5 border border-white/10 rounded-[4px]">
-              <div className="w-8 h-8 rounded bg-[var(--brick)]/20 text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
-                <GraduationCap className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="font-semibold text-white text-[14px]">Faculty Examiner Evaluation &amp; Moderation</div>
-                <div className="text-[12.5px] text-[#A2B1C6] mt-0.5 leading-snug">
-                  Certified teachers grade writing tasks with criterion-based bands, override automated answers, and stamp official evaluator nametags.
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5 p-3.5 bg-white/5 border border-white/10 rounded-[4px]">
-              <div className="w-8 h-8 rounded bg-blue-500/20 text-blue-300 flex items-center justify-center shrink-0 mt-0.5">
-                <Building2 className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="font-semibold text-white text-[14px]">Coaching Center Management &amp; Dispatch</div>
-                <div className="text-[12.5px] text-[#A2B1C6] mt-0.5 leading-snug">
-                  Generate student candidate IDs, dispatch assigned mock test batches, track monthly quotas, and publish verified result sheets.
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer info */}
-        <div className="z-10 text-[12.5px] text-[#7C8FA6] font-mono flex items-center justify-between pt-6 border-t border-white/10">
-          <span>© 2026 IELTSSync BD · Examination Suite</span>
+        <div className="z-10 text-[13px] text-[#7C8FA6] font-mono flex items-center justify-between mt-12">
+          <span>© 2026 IELTSSync BD</span>
           <Link href="/" className="flex items-center gap-1.5 hover:text-white transition-colors">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to site
           </Link>
@@ -162,7 +113,8 @@ export default function LoginPage() {
       </div>
 
       {/* --- Right Column: Sign In Form --- */}
-      <div className="lg:col-span-5 flex flex-col justify-center px-8 py-14 sm:px-14 xl:px-20 bg-[var(--paper)]">
+      <div className="flex flex-col justify-center px-8 py-16 sm:px-16 lg:px-20 bg-[var(--paper)]">
+
         
         {/* Mobile Header (Hidden on Desktop) */}
         <div className="lg:hidden mb-8">
