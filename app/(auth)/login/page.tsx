@@ -218,7 +218,7 @@ export default function LoginPage() {
             <button
               disabled={isLoading}
               type="submit"
-              className="w-full bg-[var(--brick)] hover:bg-[var(--brick-dark)] text-white py-3.5 rounded-[3px] text-[14.5px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center h-[48px] shadow-sm"
+              className="w-full bg-[var(--brick)] hover:bg-[var(--brick-dark)] text-white py-3.5 rounded-[3px] text-[14.5px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center h-[48px] shadow-sm cursor-pointer"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -228,52 +228,9 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Personas */}
-          <div className="mt-8 pt-6 border-t border-[var(--line-soft)]">
-            <div className="text-[11px] font-mono uppercase tracking-[0.06em] text-[var(--ink-faint)] mb-3 text-center">
-              Quick Test Accounts
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => { setEmail('STU-8821'); setPassword('student123'); }}
-                className="p-2.5 bg-[var(--paper-card)] hover:bg-slate-100 border border-[var(--line)] rounded text-left transition-colors"
-              >
-                <div className="font-bold text-[var(--ink)]">Student Candidate</div>
-                <div className="text-[10px] text-slate-500 font-mono mt-0.5">STU-8821</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setEmail('sarah.ielts@apex.edu'); setPassword('password123'); }}
-                className="p-2.5 bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200 rounded text-left transition-colors"
-              >
-                <div className="font-bold text-blue-950">Teacher / Examiner</div>
-                <div className="text-[10px] text-blue-700 font-mono mt-0.5">sarah.ielts@apex.edu</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setEmail('rashid@apex.com'); setPassword('password123'); }}
-                className="p-2.5 bg-[var(--paper-card)] hover:bg-slate-100 border border-[var(--line)] rounded text-left transition-colors"
-              >
-                <div className="font-bold text-[var(--ink)]">Center Admin</div>
-                <div className="text-[10px] text-slate-500 font-mono mt-0.5">rashid@apex.com</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setEmail('admin@mockielts.com'); setPassword('admin123'); }}
-                className="p-2.5 bg-[var(--paper-card)] hover:bg-slate-100 border border-[var(--line)] rounded text-left transition-colors"
-              >
-                <div className="font-bold text-[var(--ink)]">Super Admin HQ</div>
-                <div className="text-[10px] text-slate-500 font-mono mt-0.5">admin@mockielts.com</div>
-              </button>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
   );
 }
+
