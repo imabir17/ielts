@@ -263,8 +263,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           })));
         }
 
-        if (tsts && tsts.length > 0) {
-          setTests(tsts.map((t: any) => normalizeTest({
+        if (tsts) {
+          const mappedTests = tsts.map((t: any) => normalizeTest({
             ...t,
             totalDurationMinutes: t.total_duration_minutes,
             tierAccess: t.tier_access,
@@ -275,8 +275,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             listening: safeJsonParse(t.listening, []),
             writing: safeJsonParse(t.writing, []),
             speaking: safeJsonParse(t.speaking, []),
-          })));
+          }));
+          setTests(mappedTests);
+          try {
+            localStorage.setItem('ielts_custom_tests_catalog_v1', JSON.stringify(mappedTests));
+            localStorage.setItem('ielts_cached_tests', JSON.stringify(mappedTests));
+          } catch {}
         }
+
 
       } catch (err) {
         console.error('StoreProvider: error during Supabase sync:', err);
@@ -661,8 +667,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
 
   const deleteTest = async (id: string) => {
-    setTests(tests.filter(t => t.id !== id));
+    const remaining = tests.filter(t => t.id !== id);
+    setTests(remaining);
     deleteTestFromStorage(id);
+    try {
+      localStorage.setItem('ielts_custom_tests_catalog_v1', JSON.stringify(remaining));
+      localStorage.setItem('ielts_cached_tests', JSON.stringify(remaining));
+    } catch {}
     try {
       const { error } = await supabase.from('tests').delete().eq('id', id);
       if (error) console.error('Supabase test delete error:', error);
@@ -670,6 +681,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       console.error('Supabase test delete exception:', e);
     }
   };
+
 
   return (
     <StoreContext.Provider value={{

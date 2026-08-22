@@ -1,18 +1,17 @@
 import { Test, MOCK_TESTS_CATALOG, MOCK_IELTS_TEST } from './mock-data';
 
-
 const STORAGE_KEY = 'ielts_custom_tests_catalog_v1';
 
 /**
- * Get all tests saved in localStorage + default catalog
+ * Get all tests saved in localStorage
  */
 export function getStoredTests(): Test[] {
   if (typeof window === 'undefined') return MOCK_TESTS_CATALOG;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
     }
@@ -75,6 +74,7 @@ export function getTestById(testId: string): Test | undefined {
     return MOCK_IELTS_TEST;
   }
   
-  return tests[0] || MOCK_IELTS_TEST;
+  return undefined;
 }
+
 
