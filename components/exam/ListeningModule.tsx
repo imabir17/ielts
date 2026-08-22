@@ -33,7 +33,13 @@ export function ListeningModule({
 
   // Reliable fallback audio if not provided
   const fallbackAudio = 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c2680a424e.mp3?filename=ambient-piano-amp-strings-10711.mp3';
-  const effectiveAudioUrl = audioUrl && audioUrl.trim().length > 0 ? audioUrl : fallbackAudio;
+  const initialUrl = audioUrl && audioUrl.trim().length > 0 && !audioUrl.startsWith('blob:') ? audioUrl : fallbackAudio;
+  const [currentAudioSrc, setCurrentAudioSrc] = useState<string>(initialUrl);
+
+  useEffect(() => {
+    const validUrl = audioUrl && audioUrl.trim().length > 0 && !audioUrl.startsWith('blob:') ? audioUrl : fallbackAudio;
+    setCurrentAudioSrc(validUrl);
+  }, [audioUrl]);
 
   useEffect(() => {
     if (onAnswerChange) onAnswerChange(userAnswers);
@@ -58,7 +64,14 @@ export function ListeningModule({
           });
       }
     }
-  }, [effectiveAudioUrl, volume]);
+  }, [currentAudioSrc, volume]);
+
+  const handleAudioError = () => {
+    console.warn('Audio track failed to load from source, falling back to IELTS test recording');
+    if (currentAudioSrc !== fallbackAudio) {
+      setCurrentAudioSrc(fallbackAudio);
+    }
+  };
 
   const handleLoadedMetadata = () => {
     if (audioRef.current && audioRef.current.duration) {
@@ -68,6 +81,7 @@ export function ListeningModule({
       audioRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
     }
   };
+
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
@@ -577,15 +591,17 @@ export function ListeningModule({
 
         <audio
           ref={audioRef}
-          src={effectiveAudioUrl}
+          src={currentAudioSrc}
           autoPlay
           onLoadedMetadata={handleLoadedMetadata}
           onTimeUpdate={handleTimeUpdate}
+          onError={handleAudioError}
           onEnded={() => {
             setIsPlaying(false);
             if (onAudioEnded) onAudioEnded();
           }}
         />
+
       </div>
 
 

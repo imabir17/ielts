@@ -98,10 +98,17 @@ export function ListeningBuilder({ listening, onChange, globalAudioUrl, onGlobal
   const handleGlobalAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const url = URL.createObjectURL(file);
-      onGlobalAudioUrlChange(url);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const base64Url = ev.target?.result as string;
+        if (base64Url) {
+          onGlobalAudioUrlChange(base64Url);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
+
 
   const togglePlayAudio = () => {
     if (!audioRef.current || !globalAudioUrl) return;

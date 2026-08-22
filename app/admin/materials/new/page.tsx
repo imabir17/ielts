@@ -38,6 +38,7 @@ export default function TestIngestionPage() {
   const [testCategory, setTestCategory] = useState<'Academic' | 'General Training'>('Academic');
   const [ingestionResult, setIngestionResult] = useState<IngestionResult | null>(null);
   const [audioFileName, setAudioFileName] = useState<string | null>(null);
+  const [audioDataUrl, setAudioDataUrl] = useState<string | null>(null);
   const [diagramUrl, setDiagramUrl] = useState<string | undefined>();
   const [createdSuccess, setCreatedSuccess] = useState(false);
 
@@ -52,12 +53,20 @@ export default function TestIngestionPage() {
       category: testCategory,
     });
 
+    if (result.success && result.test && audioDataUrl) {
+      result.test.listeningAudioUrl = audioDataUrl;
+    }
+
     setIngestionResult(result);
   };
 
   const handleCreateTest = () => {
     if (ingestionResult?.success && ingestionResult.test) {
-      saveTestToStorage(ingestionResult.test);
+      const finalTest = {
+        ...ingestionResult.test,
+        listeningAudioUrl: audioDataUrl || ingestionResult.test.listeningAudioUrl,
+      };
+      saveTestToStorage(finalTest);
       setCreatedSuccess(true);
       setTimeout(() => {
         router.push('/admin/materials');
@@ -65,11 +74,24 @@ export default function TestIngestionPage() {
     }
   };
 
-  const handleSimulateAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setAudioFileName(e.target.files[0].name);
+      const file = e.target.files[0];
+      setAudioFileName(file.name);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const base64 = ev.target?.result as string;
+        if (base64) {
+          setAudioDataUrl(base64);
+          if (ingestionResult?.test) {
+            ingestionResult.test.listeningAudioUrl = base64;
+          }
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
+
 
   return (
     <div className="space-y-8 font-sans">
@@ -137,8 +159,9 @@ export default function TestIngestionPage() {
               <input
                 type="file"
                 accept="audio/*"
-                onChange={handleSimulateAudioUpload}
+                onChange={handleAudioUpload}
                 className="absolute inset-0 opacity-0 cursor-pointer"
+
               />
               <Upload className="w-8 h-8 text-[#005C53] mx-auto mb-2" />
               <div className="text-xs font-bold text-slate-700">
