@@ -50,59 +50,75 @@ export function getOrgQuota(
     };
   }
 
-  // Find active packages assigned to this org
-  const orgPackages = (org.packageIds || [])
+  // Helper to check for explicit unlimited setting
+  const isUnlimited = (val: any) =>
+    val === 'unlimited' || val === -1 || (typeof val === 'number' && val >= 99999);
+
+  // Normalize assigned package IDs
+  const rawPkgIds: string[] = Array.isArray(org.packageIds)
+    ? org.packageIds
+    : (typeof org.packageIds === 'string' && org.packageIds.trim().startsWith('[')
+        ? (() => { try { return JSON.parse(org.packageIds); } catch { return []; } })()
+        : (typeof org.packageIds === 'string' && org.packageIds.trim() ? [org.packageIds.trim()] : []));
+
+  // Find active packages assigned to this organization
+  const orgPackages = rawPkgIds
     .map((pkgId: string) => packages.find((p) => p.id === pkgId))
     .filter(Boolean) as Package[];
 
-  const isEnterprise = org.subscriptionTier === 'Enterprise';
+  // Dynamic Tier Name based on assigned packages
+  let tierName: string;
+  if (orgPackages.length > 0) {
+    tierName = orgPackages.map((p) => p.name).join(', ');
+  } else {
+    tierName = org.subscriptionTier || 'Standard';
+  }
 
-  const isUnlimited = (val: any) =>
-    val === 'unlimited' || val === -1 || val === null || (typeof val === 'number' && val >= 99999);
-
-  // Check unlimited flags
-  const hasUnlimitedIds =
-    isUnlimited(org.maxSeats) ||
-    (isEnterprise && (!org.packageIds || org.packageIds.length === 0)) ||
-    orgPackages.some((p) => isUnlimited(p.idLimit));
-
-  const hasUnlimitedExams =
-    isUnlimited(org.maxExamsPerMonth) ||
-    (isEnterprise && (!org.packageIds || org.packageIds.length === 0)) ||
-    orgPackages.some((p) => isUnlimited(p.examLimit));
-
-  // 1. Compute Total ID Limit
+  // Compute Limits
   let totalIdLimit: number | 'unlimited';
-  if (hasUnlimitedIds) {
-    totalIdLimit = 'unlimited';
-  } else if (orgPackages.length > 0) {
-    const packageIdSum = orgPackages.reduce((acc, p) => {
-      if (isUnlimited(p.idLimit)) return acc;
-      const num = typeof p.idLimit === 'number' ? p.idLimit : parseInt(p.idLimit, 10);
-      return acc + (isNaN(num) || num <= 0 ? 0 : num);
-    }, 0);
-    totalIdLimit = packageIdSum > 0 ? packageIdSum : (org.maxSeats || 50);
-  } else {
-    totalIdLimit = isUnlimited(org.maxSeats) ? 'unlimited' : (org.maxSeats || (isEnterprise ? 300 : org.subscriptionTier === 'Premium' ? 150 : 50));
-  }
-
-  // 2. Compute Total Exam Limit
   let totalExamLimit: number | 'unlimited';
-  if (hasUnlimitedExams) {
-    totalExamLimit = 'unlimited';
-  } else if (orgPackages.length > 0) {
-    const packageExamSum = orgPackages.reduce((acc, p) => {
-      if (isUnlimited(p.examLimit)) return acc;
-      const num = typeof p.examLimit === 'number' ? p.examLimit : parseInt(p.examLimit, 10);
-      return acc + (isNaN(num) || num <= 0 ? 0 : num);
-    }, 0);
-    totalExamLimit = packageExamSum > 0 ? packageExamSum : (org.maxExamsPerMonth || 100);
+  let hasUnlimitedIds = false;
+  let hasUnlimitedExams = false;
+
+  if (orgPackages.length > 0) {
+    // 1. When packages are assigned, the assigned package definitions are authoritative
+    hasUnlimitedIds = orgPackages.some((p) => isUnlimited(p.idLimit));
+    hasUnlimitedExams = orgPackages.some((p) => isUnlimited(p.examLimit));
+
+    if (hasUnlimitedIds) {
+      totalIdLimit = 'unlimited';
+    } else {
+      totalIdLimit = orgPackages.reduce((acc, p) => {
+        const num = typeof p.idLimit === 'number' ? p.idLimit : parseInt(p.idLimit as any, 10);
+        return acc + (isNaN(num) || num <= 0 ? 0 : num);
+      }, 0);
+      if (totalIdLimit === 0) totalIdLimit = 50;
+    }
+
+    if (hasUnlimitedExams) {
+      totalExamLimit = 'unlimited';
+    } else {
+      totalExamLimit = orgPackages.reduce((acc, p) => {
+        const num = typeof p.examLimit === 'number' ? p.examLimit : parseInt(p.examLimit as any, 10);
+        return acc + (isNaN(num) || num <= 0 ? 0 : num);
+      }, 0);
+      if (totalExamLimit === 0) totalExamLimit = 100;
+    }
   } else {
-    totalExamLimit = isUnlimited(org.maxExamsPerMonth) ? 'unlimited' : (org.maxExamsPerMonth || (isEnterprise ? 600 : org.subscriptionTier === 'Premium' ? 300 : 100));
+    // 2. Fallback to organization direct limits when no package is assigned
+    hasUnlimitedIds = isUnlimited(org.maxSeats);
+    hasUnlimitedExams = isUnlimited(org.maxExamsPerMonth);
+
+    totalIdLimit = hasUnlimitedIds
+      ? 'unlimited'
+      : (typeof org.maxSeats === 'number' && org.maxSeats > 0 ? org.maxSeats : 50);
+
+    totalExamLimit = hasUnlimitedExams
+      ? 'unlimited'
+      : (typeof org.maxExamsPerMonth === 'number' && org.maxExamsPerMonth > 0 ? org.maxExamsPerMonth : 100);
   }
 
-
-  // Real-time Student Count (Active IDs issued)
+  // Real-time Student Count (Active candidate IDs issued for this tenant)
   const orgStudents = students.filter((s) => s.orgId === org.id);
   const usedIds = Math.max(orgStudents.length, org.studentCount || 0);
 
@@ -122,7 +138,7 @@ export function getOrgQuota(
   return {
     orgId: org.id,
     orgName: org.name,
-    tierName: org.subscriptionTier || 'Standard',
+    tierName,
     totalIdLimit,
     usedIds,
     remainingIds,

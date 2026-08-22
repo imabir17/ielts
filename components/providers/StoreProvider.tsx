@@ -211,10 +211,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             createdDate: o.created_date,
             orgAdminName: o.org_admin_name,
             orgAdminEmail: o.org_admin_email,
-            packageIds: o.package_ids
+            packageIds: safeJsonParse(o.package_ids, Array.isArray(o.package_ids) ? o.package_ids : (typeof o.package_ids === 'string' && o.package_ids.trim() ? [o.package_ids.trim()] : []))
           }));
           setTenants(mappedOrgs);
           try { localStorage.setItem('ielts_cached_tenants', JSON.stringify(mappedOrgs)); } catch {}
+
         }
 
         if (pkgs && pkgs.length > 0) {

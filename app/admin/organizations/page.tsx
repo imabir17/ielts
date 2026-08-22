@@ -54,10 +54,17 @@ export default function OrganizationsDirectoryPage() {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+
+    const selectedPkgObjs = packages.filter(p => selectedPackages.includes(p.id));
+    const primaryPkg = selectedPkgObjs[0];
+    const tierName = selectedPkgObjs.map(p => p.name).join(', ') || 'Starter';
+
+
     if (editingId) {
       const updatePayload: any = {
         name, location, contactEmail: email, orgAdminEmail: email, orgAdminName: adminName,
-        phone, logoUrl, packageIds: selectedPackages
+        phone, logoUrl, packageIds: selectedPackages,
+        subscriptionTier: tierName
       };
       if (password.trim() !== '') {
         updatePayload.password = password;
@@ -66,9 +73,9 @@ export default function OrganizationsDirectoryPage() {
     } else {
       addTenant({
         id: `org-${Date.now()}`, name, code: `ORG-${Math.floor(100 + Math.random() * 900)}`,
-        location, contactEmail: email || 'contact@coaching.edu', subscriptionTier: tier,
-        maxSeats: tier === 'Enterprise' ? 300 : tier === 'Premium' ? 150 : 75,
-        maxExamsPerMonth: tier === 'Enterprise' ? 600 : tier === 'Premium' ? 300 : 100,
+        location, contactEmail: email || 'contact@coaching.edu', subscriptionTier: tierName,
+        maxSeats: primaryPkg?.idLimit === 'unlimited' ? -1 : (Number(primaryPkg?.idLimit) || 50),
+        maxExamsPerMonth: primaryPkg?.examLimit === 'unlimited' ? -1 : (Number(primaryPkg?.examLimit) || 100),
         examsUsedThisMonth: 0, studentCount: 0, activeTests: 4, status: 'active',
         createdDate: new Date().toISOString().split('T')[0], orgAdminName: adminName || 'Manager',
         orgAdminEmail: email || 'manager@coaching.edu', phone, logoUrl, password, packageIds: selectedPackages
@@ -76,6 +83,7 @@ export default function OrganizationsDirectoryPage() {
     }
     setIsModalOpen(false);
   };
+
 
   const togglePackage = (pkgId: string) => {
     setSelectedPackages(prev => prev.includes(pkgId) ? prev.filter(id => id !== pkgId) : [...prev, pkgId]);

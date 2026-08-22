@@ -4,8 +4,9 @@ export interface Organization {
   code: string;
   location: string;
   contactEmail: string;
-  subscriptionTier: 'Standard' | 'Premium' | 'Enterprise';
+  subscriptionTier: string;
   maxSeats: number;
+
   maxExamsPerMonth: number;
   examsUsedThisMonth: number;
   studentCount: number;
