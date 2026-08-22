@@ -44,8 +44,7 @@ export default function LandingPage() {
           </div>
           <div className={`md:flex items-center gap-9 ${navOpen ? 'absolute top-full left-0 right-0 flex-col bg-[var(--paper)] p-8 border-b border-[var(--line-soft)] items-start' : 'hidden'}`}>
             <Link href="#skills" className="text-[14.5px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors">Test Modules</Link>
-            <Link href="#centers" className="text-[14.5px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors">For Coaching Centers</Link>
-            <Link href="#features" className="text-[14.5px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors">Faculty &amp; Evaluation</Link>
+            <Link href="#features" className="text-[14.5px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors">Evaluation &amp; Band Grading</Link>
             <Link href="/login" className="text-[14.5px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors">Sign in</Link>
           </div>
           <Link href="/login" className="hidden md:inline-block text-[14px] font-medium text-white bg-[var(--brick)] hover:bg-[var(--brick-dark)] px-5 py-2.5 rounded-[3px] transition-colors whitespace-nowrap">
@@ -71,14 +70,14 @@ export default function LandingPage() {
               Know your band <em className="italic text-[var(--brick)]">before</em> test day.
             </h1>
             <p className="mt-6 text-[16px] lg:text-[17.5px] text-[var(--ink-soft)] max-w-[44ch] leading-[1.65]">
-              Full-length IELTS mock exams with timed sections, certified teacher evaluation, and official band calculation — built for candidates preparing in Bangladesh and the coaching centers that teach them.
+              Full-length IELTS mock exams with timed sections, certified teacher evaluation, and official band calculation — built for candidates and institutions in Bangladesh.
             </p>
             <div className="flex items-center gap-5 mt-9 flex-wrap">
               <Link href="/login" className="bg-[var(--ink)] hover:bg-[#25384f] text-[var(--paper)] text-[15px] font-medium px-6 py-3.5 rounded-[3px] transition-colors">
                 Sign in to Portal
               </Link>
-              <Link href="#centers" className="text-[14.5px] text-[var(--ink)] border-b border-[var(--ink)] pb-[2px]">
-                For coaching centers →
+              <Link href="#skills" className="text-[14.5px] text-[var(--ink)] border-b border-[var(--ink)] pb-[2px]">
+                Explore Modules →
               </Link>
             </div>
             <div className="mt-8 flex gap-7 font-mono text-[12px] lg:text-[12.5px] text-[var(--ink-faint)] flex-wrap">
@@ -189,76 +188,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ---------- COACHING CENTERS ---------- */}
-      <section className="py-[100px] bg-[var(--ink)] text-[var(--paper)]" id="centers">
-        <div className="max-w-[1120px] mx-auto px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-start">
-            <div>
-              <div className="font-mono text-[12px] tracking-[0.08em] uppercase text-[#8CA0B8] mb-3">For coaching centers</div>
-              <h2 className="font-display font-normal text-[28px] lg:text-[34px] leading-[1.2] text-[var(--paper)]">Run mock tests for every batch with full control.</h2>
-              <p className="mt-3.5 text-[16px] text-[#B9C4D2] leading-[1.65]">
-                We provision your center&apos;s account, candidate IDs, and teacher evaluator access. Your faculty grades candidate submissions while our platform manages tests and scoring.
-              </p>
-              <ul className="list-none mt-9 flex flex-col gap-5">
-                <li className="flex gap-3.5 text-[15px] text-[#DCE3EA] leading-[1.55]">
-                  <span className="font-mono text-[12px] text-[var(--gold)] shrink-0 pt-[3px]">→</span>
-                  Provision and manage candidate student IDs across batches and test dates.
-                </li>
-                <li className="flex gap-3.5 text-[15px] text-[#DCE3EA] leading-[1.55]">
-                  <span className="font-mono text-[12px] text-[var(--gold)] shrink-0 pt-[3px]">→</span>
-                  Assign dedicated teacher evaluators with role-based evaluation consoles.
-                </li>
-                <li className="flex gap-3.5 text-[15px] text-[#DCE3EA] leading-[1.55]">
-                  <span className="font-mono text-[12px] text-[var(--gold)] shrink-0 pt-[3px]">→</span>
-                  Instantly dispatch mock tests from our curated vault or build custom materials.
-                </li>
-                <li className="flex gap-3.5 text-[15px] text-[#DCE3EA] leading-[1.55]">
-                  <span className="font-mono text-[12px] text-[var(--gold)] shrink-0 pt-[3px]">→</span>
-                  Track candidate band scores and publish verified result summaries.
-                </li>
-              </ul>
-              <Link href="/login" className="mt-9 inline-block bg-[var(--paper)] text-[var(--ink)] px-6 py-3.5 rounded-[3px] text-[15px] font-medium transition-transform hover:scale-105 active:scale-95">
-                Access Center Portal
-              </Link>
-            </div>
-            
-            <div className="dash">
-              <div className="dash-head">
-                <span className="dash-title">Batch 14 — Official Mock</span>
-                <span className="dash-badge">42 students</span>
-              </div>
-              <table className="roster w-full border-collapse font-mono text-[12.5px]">
-                <thead>
-                  <tr>
-                    <th className="text-left font-normal text-[#7C8FA6] px-2.5 py-2 border-b border-[#33455F] text-[11px] uppercase tracking-[0.04em]">Student</th>
-                    <th className="text-left font-normal text-[#7C8FA6] px-2.5 py-2 border-b border-[#33455F] text-[11px] uppercase tracking-[0.04em]">Last mock</th>
-                    <th className="text-left font-normal text-[#7C8FA6] px-2.5 py-2 border-b border-[#33455F] text-[11px] uppercase tracking-[0.04em]">Band</th>
-                    <th className="text-left font-normal text-[#7C8FA6] px-2.5 py-2 border-b border-[#33455F] text-[11px] uppercase tracking-[0.04em]">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]">Rima T.</td><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]">Aug 12</td><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]">7.0</td><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]"><span className="pill pass">Released</span></td></tr>
-                  <tr><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]">Farhan K.</td><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]">Aug 12</td><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]">6.0</td><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]"><span className="pill mid">In Review</span></td></tr>
-                  <tr><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]">Anika S.</td><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]">Aug 10</td><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]">7.5</td><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]"><span className="pill pass">Released</span></td></tr>
-                  <tr><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]">Tanvir H.</td><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]">Aug 9</td><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]">5.5</td><td className="px-2.5 py-2.5 border-b border-[#2A3B54] text-[#DCE3EA]"><span className="pill mid">In Review</span></td></tr>
-                  <tr><td className="px-2.5 py-2.5 text-[#DCE3EA]">Nusrat J.</td><td className="px-2.5 py-2.5 text-[#DCE3EA]">Aug 9</td><td className="px-2.5 py-2.5 text-[#DCE3EA]">6.5</td><td className="px-2.5 py-2.5 text-[#DCE3EA]"><span className="pill pass">Released</span></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ---------- FINAL CTA ---------- */}
-      <section className="py-[110px] text-center">
+      <section className="py-[110px] text-center bg-[var(--ink)] text-[var(--paper)]">
         <div className="max-w-[1120px] mx-auto px-8">
-          <div className="font-mono text-[12px] tracking-[0.08em] uppercase text-[var(--ink-faint)] mb-3">Authentic Assessment</div>
-          <h2 className="font-display font-normal text-[32px] lg:text-[40px] leading-[1.2] text-[var(--ink)] max-w-[18ch] mx-auto">Standardized IELTS Mock Testing.</h2>
-          <p className="mt-3.5 text-[16px] text-[var(--ink-soft)] max-w-[44ch] mx-auto leading-[1.65]">
+          <div className="font-mono text-[12px] tracking-[0.08em] uppercase text-[#8CA0B8] mb-3">Authentic Assessment</div>
+          <h2 className="font-display font-normal text-[32px] lg:text-[40px] leading-[1.2] text-[var(--paper)] max-w-[18ch] mx-auto">Standardized IELTS Mock Testing.</h2>
+          <p className="mt-3.5 text-[16px] text-[#B9C4D2] max-w-[44ch] mx-auto leading-[1.65]">
             Access your student exam portal or center dashboard to begin your evaluation session.
           </p>
           <div className="flex justify-center gap-5 mt-8 flex-wrap">
-            <Link href="/login" className="bg-[var(--ink)] hover:bg-[#25384f] text-[var(--paper)] text-[15px] font-medium px-7 py-3.5 rounded-[3px] transition-colors">
+            <Link href="/login" className="bg-[var(--paper)] hover:bg-[#eaecee] text-[var(--ink)] text-[15px] font-medium px-8 py-3.5 rounded-[3px] transition-colors">
               Sign in to Portal
             </Link>
           </div>
@@ -266,12 +205,12 @@ export default function LandingPage() {
       </section>
 
       {/* ---------- FOOTER ---------- */}
-      <footer className="border-t border-[var(--line-soft)] py-11">
+      <footer className="border-t border-[var(--line-soft)] py-11 bg-[var(--paper)]">
         <div className="max-w-[1120px] mx-auto px-8 flex justify-between items-center flex-wrap gap-4">
           <div className="font-display text-[17px]">IELTSSync BD</div>
           <div className="flex gap-7 text-[13.5px] text-[var(--ink-soft)]">
             <Link href="#skills" className="hover:text-[var(--ink)] transition-colors">Test Modules</Link>
-            <Link href="#centers" className="hover:text-[var(--ink)] transition-colors">Coaching Centers</Link>
+            <Link href="#features" className="hover:text-[var(--ink)] transition-colors">Evaluation &amp; Grading</Link>
             <Link href="/login" className="hover:text-[var(--ink)] transition-colors">Portal Login</Link>
           </div>
           <div className="font-mono text-[12px] text-[var(--ink-faint)]">Computer-Delivered IELTS Testing</div>
