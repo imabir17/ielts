@@ -409,24 +409,34 @@ export function ListeningModule({
                   {qSec.tableGrid.rows.map((row, rIdx) => (
                     <tr key={rIdx} className="hover:bg-slate-50">
                       {row.map((cell, cIdx) => (
-                        <td key={cIdx} className="p-2.5 border border-slate-300">
-                          {cell.isGap ? (
-                            <span className="text-slate-800">
-                              {(cell.text || '___').split('___').map((part, pIdx, arr) => (
-                                <React.Fragment key={pIdx}>
-                                  {part}
-                                  {pIdx < arr.length - 1 && ' .................... '}
-                                </React.Fragment>
-                              ))}
-                            </span>
-                          ) : (
-                            cell.text
+                        <td key={cIdx} className="p-2.5 border border-slate-300 align-middle">
+                          {cell.isGap ? (() => {
+                            const cellQ = qSec.questions?.find(q => q.id === cell.questionId);
+                            const qNum = cellQ?.questionNumber;
+                            return (
+                              <div className="space-y-1.5">
+                                {cell.text && <div className="text-slate-800 font-medium whitespace-pre-line">{cell.text}</div>}
+                                <div className="flex items-center space-x-2 pt-0.5">
+                                  {qNum && (
+                                    <span className="font-bold text-slate-700 font-mono bg-slate-200 px-1.5 py-0.5 rounded-[2px] text-[11px]">
+                                      ({qNum})
+                                    </span>
+                                  )}
+                                  <div className="flex-1 max-w-[220px]">
+                                    {cell.questionId && renderTextInput(cell.questionId)}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })() : (
+                            <span className="text-slate-800 whitespace-pre-line">{cell.text}</span>
                           )}
                         </td>
                       ))}
                     </tr>
                   ))}
                 </tbody>
+
               </table>
             </div>
             

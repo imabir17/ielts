@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { ExamLog, Test, Question } from '@/lib/mock-data';
 import { rawToBandScore, calculateOverallBand, evaluateAnswerCorrectness } from '@/lib/ielts-grading';
+import { extractResolvedQuestions } from '@/lib/test-normalizer';
 import { 
   CheckCircle2, XCircle, AlertCircle, Award, Check, RotateCcw, 
   Send, FileText, Edit3, MessageSquare, Clock, ShieldCheck, Image as ImageIcon 
@@ -40,31 +41,22 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
 
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
-  // Extract all Reading questions flat
+  // Extract all Reading questions flat with guaranteed resolved answer keys
   const readingQuestions = useMemo(() => {
-    if (!test?.reading) return [];
-    return test.reading.flatMap(passage => {
-      if (passage.sections && passage.sections.length > 0) {
-        return passage.sections.flatMap(s => s.questions || []);
-      }
-      return passage.questions || [];
-    });
+    return extractResolvedQuestions(test, 'reading');
   }, [test]);
 
-  // Extract all Listening questions flat
+  // Extract all Listening questions flat with guaranteed resolved answer keys
   const listeningQuestions = useMemo(() => {
-    if (!test?.listening) return [];
-    return test.listening.flatMap(section => {
-      if (section.sections && section.sections.length > 0) {
-        return section.sections.flatMap(s => s.questions || []);
-      }
-      return section.questions || [];
-    });
+    return extractResolvedQuestions(test, 'listening');
   }, [test]);
 
   // Helper to compute question correctness with manual override support
   const getQuestionStatus = (module: 'reading' | 'listening', q: Question) => {
-    const userAnswer = log.answers?.[module]?.[q.id];
+    let userAnswer = log.answers?.[module]?.[q.id];
+    if (userAnswer === undefined && q.questionNumber) {
+      userAnswer = log.answers?.[module]?.[`q-${q.questionNumber}`] || log.answers?.[module]?.[String(q.questionNumber)];
+    }
     const isAutoCorrect = evaluateAnswerCorrectness(userAnswer, q.correctAnswer);
     
     // Check if examiner explicitly marked this question
@@ -73,6 +65,7 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
     const isOverridden = override !== undefined && override !== isAutoCorrect;
 
     return {
+
       userAnswer,
       isAutoCorrect,
       isEffectiveCorrect,

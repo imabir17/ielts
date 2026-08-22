@@ -28,27 +28,30 @@ const LISTENING_QUESTION_TYPE_SPECS: { type: QuestionType; label: string; mechan
   { type: 'short_answer', label: '10. Short-Answer Questions', mechanism: 'Text input below/beside prompt with section word limit validation.', category: 'Completion' },
 ];
 
+import { normalizeSection } from '@/lib/test-normalizer';
+
 function renumberListeningSections(listeningList: ListeningSection[]): ListeningSection[] {
   let globalQNum = 1;
 
   return listeningList.map((lis) => {
     const rawSections = lis.sections || [];
     const renumberedSections = rawSections.map((sec, secIdx) => {
-      const updatedQuestions = sec.questions.map((q) => {
+      const normalizedSec = normalizeSection(sec);
+      const updatedQuestions = normalizedSec.questions.map((q) => {
         const qNum = globalQNum++;
         return { ...q, questionNumber: qNum };
       });
 
       let updatedPins: DiagramPin[] | undefined = undefined;
-      if (sec.diagramPins) {
-        updatedPins = sec.diagramPins.map((pin, pIdx) => ({
+      if (normalizedSec.diagramPins) {
+        updatedPins = normalizedSec.diagramPins.map((pin, pIdx) => ({
           ...pin,
-          pinNumber: globalQNum - sec.questions.length + pIdx,
+          pinNumber: globalQNum - normalizedSec.questions.length + pIdx,
         }));
       }
 
       return {
-        ...sec,
+        ...normalizedSec,
         orderIndex: secIdx,
         diagramPins: updatedPins,
         questions: updatedQuestions,
@@ -64,6 +67,7 @@ function renumberListeningSections(listeningList: ListeningSection[]): Listening
     };
   });
 }
+
 
 export function ListeningBuilder({ listening, onChange, globalAudioUrl, onGlobalAudioUrlChange }: ListeningBuilderProps) {
   const [activePartIdx, setActivePartIdx] = useState<number>(0);

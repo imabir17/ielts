@@ -33,6 +33,8 @@ const QUESTION_TYPE_SPECS: { type: QuestionType; label: string; mechanism: strin
   { type: 'matching_sentence_endings', label: '15. Matching Sentence Endings', mechanism: 'Sentence stems matched to a section-level shared pool of sentence endings.', category: 'Matching' },
 ];
 
+import { normalizeSection } from '@/lib/test-normalizer';
+
 /**
  * Renumber all questions sequentially across all sections in all 3 passages (1 to 40)
  */
@@ -42,22 +44,23 @@ function renumberPassages(passagesList: Passage[]): Passage[] {
   return passagesList.map((p) => {
     const rawSections = p.sections || [];
     const renumberedSections = rawSections.map((sec, secIdx) => {
-      const updatedQuestions = sec.questions.map((q) => {
+      const normalizedSec = normalizeSection(sec);
+      const updatedQuestions = normalizedSec.questions.map((q) => {
         const qNum = globalQNum++;
         return { ...q, questionNumber: qNum };
       });
 
       // Renumber diagram pins if present
       let updatedPins: DiagramPin[] | undefined = undefined;
-      if (sec.diagramPins) {
-        updatedPins = sec.diagramPins.map((pin, pIdx) => ({
+      if (normalizedSec.diagramPins) {
+        updatedPins = normalizedSec.diagramPins.map((pin, pIdx) => ({
           ...pin,
-          pinNumber: globalQNum - sec.questions.length + pIdx,
+          pinNumber: globalQNum - normalizedSec.questions.length + pIdx,
         }));
       }
 
       return {
-        ...sec,
+        ...normalizedSec,
         orderIndex: secIdx,
         diagramPins: updatedPins,
         questions: updatedQuestions,
@@ -74,6 +77,7 @@ function renumberPassages(passagesList: Passage[]): Passage[] {
     };
   });
 }
+
 
 export function ReadingBuilder({ passages, onChange }: ReadingBuilderProps) {
   const [activePassageIdx, setActivePassageIdx] = useState<number>(0);

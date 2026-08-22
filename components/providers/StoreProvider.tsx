@@ -3,7 +3,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Organization, Package, Student, PlatformManager, ExamLog, SpeakingRequest, MOCK_TESTS_CATALOG } from '@/lib/mock-data';
 import { getStoredTests, saveTestToStorage, deleteTestFromStorage } from '@/lib/test-store';
+import { normalizeTest } from '@/lib/test-normalizer';
 import { supabase } from '@/lib/supabase';
+
 
 function safeJsonParse<T>(val: any, fallback: T): T {
   if (!val) return fallback;
@@ -247,7 +249,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (tsts && tsts.length > 0) {
-          setTests(tsts.map((t: any) => ({
+          setTests(tsts.map((t: any) => normalizeTest({
             ...t,
             totalDurationMinutes: t.total_duration_minutes,
             tierAccess: t.tier_access,
@@ -260,6 +262,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             speaking: safeJsonParse(t.speaking, []),
           })));
         }
+
       } catch (err) {
         console.error('StoreProvider: error during Supabase sync:', err);
       } finally {
@@ -558,22 +561,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addTest = async (test: any) => {
-    setTests([test, ...tests]);
-    saveTestToStorage(test);
+    const normalized = normalizeTest(test);
+    setTests([normalized, ...tests]);
+    saveTestToStorage(normalized);
     const dbInsert: any = {
-      id: test.id,
-      title: test.title,
-      category: test.category,
-      total_duration_minutes: test.totalDurationMinutes,
-      status: test.status,
-      tier_access: test.tierAccess,
-      question_count: test.questionCount,
-      created_date: test.createdDate,
-      reading: test.reading,
-      listening: test.listening,
-      listening_audio_url: test.listeningAudioUrl || '',
-      writing: test.writing,
-      speaking: test.speaking
+      id: normalized.id,
+      title: normalized.title,
+      category: normalized.category,
+      total_duration_minutes: normalized.totalDurationMinutes,
+      status: normalized.status,
+      tier_access: normalized.tierAccess,
+      question_count: normalized.questionCount,
+      created_date: normalized.createdDate,
+      reading: normalized.reading,
+      listening: normalized.listening,
+      listening_audio_url: normalized.listeningAudioUrl || '',
+      writing: normalized.writing,
+      speaking: normalized.speaking
     };
     try {
       const { error } = await supabase.from('tests').insert(dbInsert);
@@ -584,24 +588,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateTest = async (id: string, updates: Partial<any>) => {
-    const updatedList = tests.map(t => t.id === id ? { ...t, ...updates } : t);
-    setTests(updatedList);
-    const target = updatedList.find(t => t.id === id);
-    if (target) saveTestToStorage(target);
+    const existing = tests.find(t => t.id === id) || {};
+    const merged = { ...existing, ...updates };
+    const normalized = normalizeTest(merged);
 
-    const dbUpdates: any = {};
-    if (updates.title !== undefined) dbUpdates.title = updates.title;
-    if (updates.category !== undefined) dbUpdates.category = updates.category;
-    if (updates.totalDurationMinutes !== undefined) dbUpdates.total_duration_minutes = updates.totalDurationMinutes;
-    if (updates.status !== undefined) dbUpdates.status = updates.status;
-    if (updates.tierAccess !== undefined) dbUpdates.tier_access = updates.tierAccess;
-    if (updates.questionCount !== undefined) dbUpdates.question_count = updates.questionCount;
-    if (updates.createdDate !== undefined) dbUpdates.created_date = updates.createdDate;
-    if (updates.reading !== undefined) dbUpdates.reading = updates.reading;
-    if (updates.listening !== undefined) dbUpdates.listening = updates.listening;
-    if (updates.listeningAudioUrl !== undefined) dbUpdates.listening_audio_url = updates.listeningAudioUrl;
-    if (updates.writing !== undefined) dbUpdates.writing = updates.writing;
-    if (updates.speaking !== undefined) dbUpdates.speaking = updates.speaking;
+    const updatedList = tests.map(t => t.id === id ? normalized : t);
+    setTests(updatedList);
+    saveTestToStorage(normalized);
+
+    const dbUpdates: any = {
+      title: normalized.title,
+      category: normalized.category,
+      total_duration_minutes: normalized.totalDurationMinutes,
+      status: normalized.status,
+      tier_access: normalized.tierAccess,
+      question_count: normalized.questionCount,
+      created_date: normalized.createdDate,
+      reading: normalized.reading,
+      listening: normalized.listening,
+      listening_audio_url: normalized.listeningAudioUrl || '',
+      writing: normalized.writing,
+      speaking: normalized.speaking
+    };
 
     try {
       const { error } = await supabase.from('tests').update(dbUpdates).eq('id', id);
@@ -610,6 +618,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       console.error('Supabase test update exception:', e);
     }
   };
+
 
   const deleteTest = async (id: string) => {
     setTests(tests.filter(t => t.id !== id));

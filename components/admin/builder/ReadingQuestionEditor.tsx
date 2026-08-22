@@ -687,8 +687,8 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
       case 'table_completion': {
         const table = section.tableGrid || { headers: ['Column 1', 'Column 2'], rows: [] };
         
-        const updateTable = (updates: Partial<typeof table>) => {
-          updateSection({ tableGrid: { ...table, ...updates } });
+        const updateTable = (updates: Partial<typeof table>, extraUpdates: Partial<typeof section> = {}) => {
+          updateSection({ tableGrid: { ...table, ...updates }, ...extraUpdates });
         };
         
         const addRow = () => updateTable({ rows: [...table.rows, table.headers!.map(() => ({ isGap: false, text: '' }))] });
@@ -744,20 +744,32 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
                                 onChange={(e) => {
                                   const rCopy = [...table.rows];
                                   const newQId = `q-${section.id}-${Date.now()}-${rIdx}-${cIdx}`;
+                                  const isChecking = e.target.checked;
+                                  const qId = isChecking ? (cell.questionId || newQId) : undefined;
+                                  
                                   rCopy[rIdx][cIdx] = { 
                                     ...cell, 
-                                    isGap: e.target.checked,
-                                    questionId: e.target.checked ? (cell.questionId || newQId) : undefined 
+                                    isGap: isChecking,
+                                    questionId: qId 
                                   };
-                                  updateTable({ rows: rCopy });
                                   
-                                  if (e.target.checked && !cell.questionId) {
-                                    addQuestion({ id: newQId });
-                                  } else if (!e.target.checked && cell.questionId) {
+                                  if (isChecking && !cell.questionId) {
+                                    const newQ = {
+                                      id: newQId,
+                                      type: 'table_completion' as QuestionType,
+                                      prompt: cell.text || '',
+                                      sectionId: section.id,
+                                      correctAnswer: cell.correctAnswer || '',
+                                      questionNumber: section.questions.length + 1
+                                    };
+                                    updateTable({ rows: rCopy }, { questions: [...section.questions, newQ] });
+                                  } else if (!isChecking && cell.questionId) {
                                     // Remove the orphaned question
-                                    updateSection({ 
+                                    updateTable({ rows: rCopy }, { 
                                       questions: section.questions.filter(q => q.id !== cell.questionId) 
                                     });
+                                  } else {
+                                    updateTable({ rows: rCopy });
                                   }
                                 }}
                               />
@@ -770,28 +782,44 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
                               onChange={(e) => {
                                 const rCopy = [...table.rows];
                                 rCopy[rIdx][cIdx] = { ...cell, text: e.target.value };
-                                updateTable({ rows: rCopy });
+                                const updatedQuestions = cell.questionId 
+                                  ? section.questions.map(q => q.id === cell.questionId ? { ...q, prompt: e.target.value } : q)
+                                  : section.questions;
+                                updateTable({ rows: rCopy }, { questions: updatedQuestions });
                               }}
                               className="w-full p-2 border border-slate-300 rounded text-xs focus:outline-none focus:border-slate-400 mb-1"
                             />
                             {cell.isGap && (
                               <input
                                 type="text"
-                                placeholder="Answer Key..."
+                                placeholder="Answer Key (e.g. 10,000)..."
                                 value={cell.correctAnswer || ''}
                                 onChange={(e) => {
+                                  const val = e.target.value;
                                   const rCopy = [...table.rows];
-                                  rCopy[rIdx][cIdx] = { ...cell, correctAnswer: e.target.value };
-                                  updateTable({ rows: rCopy });
+                                  rCopy[rIdx][cIdx] = { ...cell, correctAnswer: val };
+                                  const updatedQuestions = cell.questionId 
+                                    ? section.questions.map(q => q.id === cell.questionId ? { ...q, correctAnswer: val } : q)
+                                    : section.questions;
+                                  updateTable({ rows: rCopy }, { questions: updatedQuestions });
                                 }}
-                                className="w-full px-2 py-1 border border-emerald-300 bg-emerald-50 rounded text-xs"
+                                className="w-full px-2 py-1 border border-emerald-300 bg-emerald-50 rounded text-xs font-semibold"
                               />
                             )}
                           </div>
                         </td>
                       ))}
                       <td className="px-2 py-2 border border-slate-200 text-center">
-                        <button onClick={() => updateTable({ rows: table.rows.filter((_, idx) => idx !== rIdx) })} className="text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
+                        <button 
+                          onClick={() => {
+                            const removedGaps = (table.rows[rIdx] || []).filter(c => c.isGap && c.questionId).map(c => c.questionId);
+                            const updatedQuestions = section.questions.filter(q => !removedGaps.includes(q.id));
+                            updateTable({ rows: table.rows.filter((_, idx) => idx !== rIdx) }, { questions: updatedQuestions });
+                          }} 
+                          className="text-red-500 p-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -832,19 +860,32 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
                           onChange={(e) => {
                             const newSteps = [...steps];
                             const newQId = `q-${section.id}-${Date.now()}-${sIdx}`;
+                            const isChecking = e.target.checked;
+                            const qId = isChecking ? (step.questionId || newQId) : undefined;
+                            
                             newSteps[sIdx] = { 
                               ...step, 
-                              isGap: e.target.checked,
-                              questionId: e.target.checked ? (step.questionId || newQId) : undefined 
+                              isGap: isChecking,
+                              questionId: qId 
                             };
-                            updateSection({ flowSteps: newSteps });
-                            if (e.target.checked && !step.questionId) {
-                              addQuestion({ id: newQId });
-                            } else if (!e.target.checked && step.questionId) {
-                              // Remove the orphaned question
+                            
+                            if (isChecking && !step.questionId) {
+                              const newQ = {
+                                id: newQId,
+                                type: 'flow_chart_completion' as QuestionType,
+                                prompt: step.text || '',
+                                sectionId: section.id,
+                                correctAnswer: step.correctAnswer || '',
+                                questionNumber: section.questions.length + 1
+                              };
+                              updateSection({ flowSteps: newSteps, questions: [...section.questions, newQ] });
+                            } else if (!isChecking && step.questionId) {
                               updateSection({ 
+                                flowSteps: newSteps,
                                 questions: section.questions.filter(q => q.id !== step.questionId) 
                               });
+                            } else {
+                              updateSection({ flowSteps: newSteps });
                             }
                           }}
                         />
@@ -857,7 +898,10 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
                         onChange={(e) => {
                           const newSteps = [...steps];
                           newSteps[sIdx] = { ...step, text: e.target.value };
-                          updateSection({ flowSteps: newSteps });
+                          const updatedQuestions = step.questionId 
+                            ? section.questions.map(q => q.id === step.questionId ? { ...q, prompt: e.target.value } : q)
+                            : section.questions;
+                          updateSection({ flowSteps: newSteps, questions: updatedQuestions });
                         }}
                         className="w-full p-2 border border-slate-300 rounded text-sm focus:outline-none focus:border-slate-400 mb-1"
                       />
@@ -867,15 +911,33 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
                           placeholder="Correct Answer Key..."
                           value={step.correctAnswer || ''}
                           onChange={(e) => {
+                            const val = e.target.value;
                             const newSteps = [...steps];
-                            newSteps[sIdx] = { ...step, correctAnswer: e.target.value };
-                            updateSection({ flowSteps: newSteps });
+                            newSteps[sIdx] = { ...step, correctAnswer: val };
+                            const updatedQuestions = step.questionId 
+                              ? section.questions.map(q => q.id === step.questionId ? { ...q, correctAnswer: val } : q)
+                              : section.questions;
+                            updateSection({ flowSteps: newSteps, questions: updatedQuestions });
                           }}
                           className="w-full px-2 py-1.5 border border-emerald-300 bg-emerald-50 rounded text-sm font-semibold"
                         />
                       )}
                     </div>
-                    <button onClick={() => updateSection({ flowSteps: steps.filter((_, idx) => idx !== sIdx) })} className="text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
+                    <button 
+                      onClick={() => {
+                        const removedQId = step.questionId;
+                        const updatedQuestions = removedQId 
+                          ? section.questions.filter(q => q.id !== removedQId) 
+                          : section.questions;
+                        updateSection({ 
+                          flowSteps: steps.filter((_, idx) => idx !== sIdx),
+                          questions: updatedQuestions 
+                        });
+                      }} 
+                      className="text-red-500 p-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                   {sIdx < steps.length - 1 && <div className="h-6 w-0.5 bg-slate-300 my-1"></div>}
                 </div>
