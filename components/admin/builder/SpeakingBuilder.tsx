@@ -10,7 +10,8 @@ interface SpeakingBuilderProps {
 }
 
 export function SpeakingBuilder({ speaking, onChange }: SpeakingBuilderProps) {
-  const part1: SpeakingPart = speaking.find((s) => s.partNumber === 1) || {
+  const safeSpeaking = Array.isArray(speaking) ? speaking : [];
+  const part1: SpeakingPart = safeSpeaking.find((s) => s.partNumber === 1) || {
     id: 'spk-1',
     partNumber: 1,
     topic: 'Introduction & Hometown',
@@ -21,7 +22,7 @@ export function SpeakingBuilder({ speaking, onChange }: SpeakingBuilderProps) {
     ],
   };
 
-  const part2: SpeakingPart = speaking.find((s) => s.partNumber === 2) || {
+  const part2: SpeakingPart = safeSpeaking.find((s) => s.partNumber === 2) || {
     id: 'spk-2',
     partNumber: 2,
     topic: 'Cue Card: Describe an Environmental Initiative',
@@ -33,7 +34,7 @@ export function SpeakingBuilder({ speaking, onChange }: SpeakingBuilderProps) {
     speakTime: 120,
   };
 
-  const part3: SpeakingPart = speaking.find((s) => s.partNumber === 3) || {
+  const part3: SpeakingPart = safeSpeaking.find((s) => s.partNumber === 3) || {
     id: 'spk-3',
     partNumber: 3,
     topic: 'Two-Way Discussion: Sustainability & Technology',
@@ -42,6 +43,7 @@ export function SpeakingBuilder({ speaking, onChange }: SpeakingBuilderProps) {
       'Do you believe individual action or government policy is more effective in environmental conservation?',
     ],
   };
+
 
   const updatePart1 = (updatedFields: Partial<SpeakingPart>) => {
     onChange([{ ...part1, ...updatedFields }, part2, part3]);

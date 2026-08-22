@@ -55,10 +55,36 @@ function TestBuilderInner() {
     if (editId && tests.length > 0) {
       const found = tests.find(t => t.id === editId);
       if (found) {
-        setTestState(found);
+        setTestState({
+          ...found,
+          title: found.title || '',
+          category: found.category || 'Academic',
+          tierAccess: found.tierAccess || found.tier_access || 'All Orgs',
+          status: found.status || 'draft',
+          totalDurationMinutes: found.totalDurationMinutes || found.total_duration_minutes || 170,
+          questionCount: found.questionCount || found.question_count || 0,
+          createdDate: found.createdDate || found.created_date || new Date().toISOString().split('T')[0],
+          listeningAudioUrl: found.listeningAudioUrl || found.listening_audio_url || '',
+          reading: Array.isArray(found.reading) && found.reading.length > 0 ? found.reading : [
+            { id: `r1-${Date.now()}`, passageNumber: 1, title: '', content: '', questions: [] },
+            { id: `r2-${Date.now()}`, passageNumber: 2, title: '', content: '', questions: [] },
+            { id: `r3-${Date.now()}`, passageNumber: 3, title: '', content: '', questions: [] }
+          ],
+          listening: Array.isArray(found.listening) ? found.listening : [],
+          writing: Array.isArray(found.writing) && found.writing.length > 0 ? found.writing : [
+            { id: `w1-${Date.now()}`, taskNumber: 1, title: '', prompt: '', minWords: 150, recommendedTime: 20 },
+            { id: `w2-${Date.now()}`, taskNumber: 2, title: '', prompt: '', minWords: 250, recommendedTime: 40 }
+          ],
+          speaking: Array.isArray(found.speaking) && found.speaking.length > 0 ? found.speaking : [
+            { id: `s1-${Date.now()}`, partNumber: 1, topic: 'Interview', prompts: [''] },
+            { id: `s2-${Date.now()}`, partNumber: 2, topic: 'Cue Card', prompts: [''] },
+            { id: `s3-${Date.now()}`, partNumber: 3, topic: 'Discussion', prompts: [''] }
+          ]
+        });
       }
     }
   }, [editId, tests]);
+
 
 
   const [activeModuleTab, setActiveModuleTab] = useState<'reading' | 'listening' | 'writing' | 'speaking'>('reading');

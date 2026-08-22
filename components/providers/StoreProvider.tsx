@@ -2,8 +2,9 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Organization, Package, Student, PlatformManager, ExamLog, SpeakingRequest, MOCK_TESTS_CATALOG } from '@/lib/mock-data';
-import { getStoredTests } from '@/lib/test-store';
+import { getStoredTests, saveTestToStorage, deleteTestFromStorage } from '@/lib/test-store';
 import { supabase } from '@/lib/supabase';
+
 
 
 interface StoreContextType {
@@ -203,12 +204,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           tierAccess: t.tier_access,
           questionCount: t.question_count,
           createdDate: t.created_date,
-          listeningAudioUrl: t.listening_audio_url
+          listeningAudioUrl: t.listening_audio_url || t.listeningAudioUrl || '',
+          reading: typeof t.reading === 'string' ? JSON.parse(t.reading) : (Array.isArray(t.reading) ? t.reading : []),
+          listening: typeof t.listening === 'string' ? JSON.parse(t.listening) : (Array.isArray(t.listening) ? t.listening : []),
+          writing: typeof t.writing === 'string' ? JSON.parse(t.writing) : (Array.isArray(t.writing) ? t.writing : []),
+          speaking: typeof t.speaking === 'string' ? JSON.parse(t.speaking) : (Array.isArray(t.speaking) ? t.speaking : []),
         })));
       } else {
         const stored = getStoredTests();
         setTests(stored && stored.length > 0 ? stored : MOCK_TESTS_CATALOG);
       }
+
 
       const storedUser = localStorage.getItem('mockielts_user');
       if (storedUser) setCurrentUser(JSON.parse(storedUser));
@@ -370,6 +376,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const addTest = async (test: any) => {
     setTests([test, ...tests]);
+    saveTestToStorage(test);
     const dbInsert: any = { ...test };
     if (test.totalDurationMinutes !== undefined) dbInsert.total_duration_minutes = test.totalDurationMinutes;
     if (test.tierAccess !== undefined) dbInsert.tier_access = test.tierAccess;
@@ -377,11 +384,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (test.createdDate !== undefined) dbInsert.created_date = test.createdDate;
     if (test.listeningAudioUrl !== undefined) dbInsert.listening_audio_url = test.listeningAudioUrl;
     ['totalDurationMinutes', 'tierAccess', 'questionCount', 'createdDate', 'listeningAudioUrl'].forEach(k => delete dbInsert[k]);
-    await supabase.from('tests').insert(dbInsert);
+    try {
+      await supabase.from('tests').insert(dbInsert);
+    } catch (e) {
+      console.warn('Supabase test insert failed, persisted locally:', e);
+    }
   };
 
   const updateTest = async (id: string, updates: Partial<any>) => {
-    setTests(tests.map(t => t.id === id ? { ...t, ...updates } : t));
+    const updatedList = tests.map(t => t.id === id ? { ...t, ...updates } : t);
+    setTests(updatedList);
+    const target = updatedList.find(t => t.id === id);
+    if (target) saveTestToStorage(target);
     const dbUpdates: any = { ...updates };
     if (updates.totalDurationMinutes !== undefined) dbUpdates.total_duration_minutes = updates.totalDurationMinutes;
     if (updates.tierAccess !== undefined) dbUpdates.tier_access = updates.tierAccess;
@@ -389,13 +403,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (updates.createdDate !== undefined) dbUpdates.created_date = updates.createdDate;
     if (updates.listeningAudioUrl !== undefined) dbUpdates.listening_audio_url = updates.listeningAudioUrl;
     ['totalDurationMinutes', 'tierAccess', 'questionCount', 'createdDate', 'listeningAudioUrl'].forEach(k => delete dbUpdates[k]);
-    await supabase.from('tests').update(dbUpdates).eq('id', id);
+    try {
+      await supabase.from('tests').update(dbUpdates).eq('id', id);
+    } catch (e) {
+      console.warn('Supabase test update failed, persisted locally:', e);
+    }
   };
 
   const deleteTest = async (id: string) => {
     setTests(tests.filter(t => t.id !== id));
-    await supabase.from('tests').delete().eq('id', id);
+    deleteTestFromStorage(id);
+    try {
+      await supabase.from('tests').delete().eq('id', id);
+    } catch (e) {
+      console.warn('Supabase test delete failed, removed locally:', e);
+    }
   };
+
 
   if (!isInitialized) return null;
 

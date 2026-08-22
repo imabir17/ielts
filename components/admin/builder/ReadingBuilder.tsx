@@ -87,11 +87,13 @@ export function ReadingBuilder({ passages, onChange }: ReadingBuilderProps) {
   };
 
   // Ensure 3 passages exist with structured sections
+  const safePassages = Array.isArray(passages) ? passages : [];
   const currentPassages: Passage[] = [
-    passages[0] || { id: 'pas-1', passageNumber: 1, title: 'Passage 1: Title', content: '', questions: [] },
-    passages[1] || { id: 'pas-2', passageNumber: 2, title: 'Passage 2: Title', content: '', questions: [] },
-    passages[2] || { id: 'pas-3', passageNumber: 3, title: 'Passage 3: Title', content: '', questions: [] },
+    safePassages[0] || { id: 'pas-1', passageNumber: 1, title: 'Passage 1: Title', content: '', questions: [] },
+    safePassages[1] || { id: 'pas-2', passageNumber: 2, title: 'Passage 2: Title', content: '', questions: [] },
+    safePassages[2] || { id: 'pas-3', passageNumber: 3, title: 'Passage 3: Title', content: '', questions: [] },
   ].map((p, idx) => {
+
     let sections = p.sections || [];
     // If no sections exist, create an initial default section
     if (sections.length === 0) {

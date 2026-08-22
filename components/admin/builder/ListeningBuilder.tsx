@@ -74,16 +74,18 @@ export function ListeningBuilder({ listening, onChange, globalAudioUrl, onGlobal
   };
 
   // Ensure 4 listening parts exist
+  const safeListening = Array.isArray(listening) ? listening : [];
   const currentParts: ListeningSection[] = [
-    listening[0] || { id: 'lis-sec-1', title: 'Part 1: Conversation in Social Context', duration: 180, questions: [], sections: [] },
-    listening[1] || { id: 'lis-sec-2', title: 'Part 2: Monologue in Social Context', duration: 210, questions: [], sections: [] },
-    listening[2] || { id: 'lis-sec-3', title: 'Part 3: Conversation in Educational Context', duration: 240, questions: [], sections: [] },
-    listening[3] || { id: 'lis-sec-4', title: 'Part 4: Academic Monologue', duration: 300, questions: [], sections: [] },
+    safeListening[0] || { id: 'lis-sec-1', title: 'Part 1: Conversation in Social Context', duration: 180, questions: [], sections: [] },
+    safeListening[1] || { id: 'lis-sec-2', title: 'Part 2: Monologue in Social Context', duration: 210, questions: [], sections: [] },
+    safeListening[2] || { id: 'lis-sec-3', title: 'Part 3: Conversation in Educational Context', duration: 240, questions: [], sections: [] },
+    safeListening[3] || { id: 'lis-sec-4', title: 'Part 4: Academic Monologue', duration: 300, questions: [], sections: [] },
   ].map((p) => ({
     ...p,
     sections: p.sections || [],
     questions: p.questions || [],
   }));
+
 
   const activePart = currentParts[activePartIdx];
 

@@ -12,7 +12,8 @@ interface WritingBuilderProps {
 
 export function WritingBuilder({ tasks, onChange }: WritingBuilderProps) {
   // Ensure we have Task 1 and Task 2 objects
-  const task1: WritingTask = tasks.find((t) => t.taskNumber === 1) || {
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const task1: WritingTask = safeTasks.find((t) => t.taskNumber === 1) || {
     id: 'wrt-1',
     taskNumber: 1,
     title: 'Task 1: Academic Data Analysis',
@@ -21,7 +22,7 @@ export function WritingBuilder({ tasks, onChange }: WritingBuilderProps) {
     recommendedTime: 20,
   };
 
-  const task2: WritingTask = tasks.find((t) => t.taskNumber === 2) || {
+  const task2: WritingTask = safeTasks.find((t) => t.taskNumber === 2) || {
     id: 'wrt-2',
     taskNumber: 2,
     title: 'Task 2: Essay Prompt',
@@ -29,6 +30,7 @@ export function WritingBuilder({ tasks, onChange }: WritingBuilderProps) {
     minWords: 250,
     recommendedTime: 40,
   };
+
 
   const updateTask1 = (updatedFields: Partial<WritingTask>) => {
     onChange([{ ...task1, ...updatedFields }, task2]);
