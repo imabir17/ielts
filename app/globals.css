@@ -169,7 +169,14 @@ main { flex: 1; padding: 36px 44px 60px; min-width: 0; }
 .sidebar {
   width: 250px; flex-shrink: 0; background: var(--sidebar); color: var(--sidebar-text);
   display: flex; flex-direction: column; padding: 24px 18px;
+  position: sticky; top: 0; height: 100vh; max-height: 100vh;
+  overflow-y: auto; z-index: 40;
 }
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+.sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
 .side-brand { display: flex; align-items: center; gap: 12px; padding: 6px 8px 20px; border-bottom: 1px solid var(--sidebar-line); margin-bottom: 18px; }
 .side-mark {
   width: 34px; height: 34px; border: 1px solid var(--gold); border-radius: 3px;
