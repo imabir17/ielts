@@ -2,7 +2,7 @@ import { Test, Passage, ListeningSection, QuestionSection, Question, TableCell, 
 
 /**
  * Normalizes a Test structure by ensuring that all completion modules (table_completion,
- * flow_chart_completion, diagram_labeling, note_completion, summary_completion, form_completion)
+ * flow_chart_completion, diagram_labeling, multiple_choice_multi, note_completion, summary_completion, form_completion)
  * have their answer keys synchronized directly into `questions` with correct sequential numbering.
  */
 export function normalizeTest(test: Test): Test {
@@ -75,7 +75,7 @@ export function normalizeTest(test: Test): Test {
 
 /**
  * Normalizes an individual QuestionSection, synchronizing tableGrid, flowSteps,
- * and diagramPins answer keys into the section's `questions` array.
+ * diagramPins, and multiple_choice_multi answer keys into the section's `questions` array.
  */
 export function normalizeSection(sec: QuestionSection): QuestionSection {
   const normalizedSec: QuestionSection = {
@@ -210,6 +210,56 @@ export function normalizeSection(sec: QuestionSection): QuestionSection {
     }
   }
 
+  // Case D: Multiple Choice (Multiple Answers)
+  if (normalizedSec.type === 'multiple_choice_multi') {
+    const reqCount = normalizedSec.requiredSelectionCount || normalizedSec.questions?.length || 2;
+    const wordBank = normalizedSec.wordBankOptions || [];
+    const multiCorrect = normalizedSec.multiCorrectAnswers || [];
+
+    // Build the resolved correct answer list (both full text, letters, and 'Letter. Text')
+    const resolvedCorrectList: string[] = [];
+    multiCorrect.forEach((corr) => {
+      if (!corr) return;
+      resolvedCorrectList.push(corr);
+
+      const optIdx = wordBank.findIndex((opt) => opt.trim().toLowerCase() === corr.trim().toLowerCase());
+      if (optIdx >= 0) {
+        const letter = String.fromCharCode(65 + optIdx);
+        resolvedCorrectList.push(letter);
+        resolvedCorrectList.push(`${letter}. ${corr}`);
+      } else if (/^[A-Z]$/i.test(corr.trim())) {
+        const letter = corr.trim().toUpperCase();
+        const idx = letter.charCodeAt(0) - 65;
+        if (wordBank[idx]) {
+          resolvedCorrectList.push(wordBank[idx]);
+          resolvedCorrectList.push(`${letter}. ${wordBank[idx]}`);
+        }
+      }
+    });
+
+    // Ensure questions array matches reqCount
+    let qList: Question[] = normalizedSec.questions || [];
+    if (qList.length < reqCount) {
+      qList = Array.from({ length: reqCount }, (_, i) => ({
+        id: qList[i]?.id || `q-${normalizedSec.id}-multi-${i}`,
+        type: 'multiple_choice_multi',
+        prompt: qList[i]?.prompt || normalizedSec.instructions || normalizedSec.title || `Choose ${reqCount} options`,
+        sectionId: normalizedSec.id,
+        correctAnswer: resolvedCorrectList,
+        questionNumber: qList[i]?.questionNumber || (i + 1),
+      }));
+    } else {
+      qList = qList.map((q) => ({
+        ...q,
+        type: 'multiple_choice_multi',
+        prompt: q.prompt || normalizedSec.instructions || normalizedSec.title || '',
+        correctAnswer: resolvedCorrectList.length > 0 ? resolvedCorrectList : (q.correctAnswer || []),
+      }));
+    }
+
+    normalizedSec.questions = qList;
+  }
+
   return normalizedSec;
 }
 
@@ -245,10 +295,10 @@ export function extractResolvedQuestions(test: any, module: 'reading' | 'listeni
 }
 
 /**
- * Resolves the correctAnswer of a question using fallback lookups in tableGrid, flowSteps, diagramPins.
+ * Resolves the correctAnswer of a question using fallback lookups in tableGrid, flowSteps, diagramPins, multiCorrectAnswers.
  */
 export function resolveQuestionAnswer(q: Question, sec?: QuestionSection): Question {
-  if (q.correctAnswer !== undefined && q.correctAnswer !== null && q.correctAnswer !== '') {
+  if (q.correctAnswer !== undefined && q.correctAnswer !== null && q.correctAnswer !== '' && (!Array.isArray(q.correctAnswer) || q.correctAnswer.length > 0)) {
     return q;
   }
 
@@ -287,6 +337,22 @@ export function resolveQuestionAnswer(q: Question, sec?: QuestionSection): Quest
         }
       }
     }
+  }
+
+  // Fallback 4: Look in multiCorrectAnswers (for multiple_choice_multi)
+  if (sec.type === 'multiple_choice_multi' && sec.multiCorrectAnswers && sec.multiCorrectAnswers.length > 0) {
+    const wordBank = sec.wordBankOptions || [];
+    const resolved: string[] = [];
+    sec.multiCorrectAnswers.forEach((corr) => {
+      resolved.push(corr);
+      const optIdx = wordBank.findIndex((opt) => opt.trim().toLowerCase() === corr.trim().toLowerCase());
+      if (optIdx >= 0) {
+        const letter = String.fromCharCode(65 + optIdx);
+        resolved.push(letter);
+        resolved.push(`${letter}. ${corr}`);
+      }
+    });
+    return { ...q, correctAnswer: resolved };
   }
 
   return q;

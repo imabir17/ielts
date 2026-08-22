@@ -255,7 +255,24 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
                           const updated = e.target.checked
                             ? current.length < requiredCount ? [...current, opt] : current
                             : current.filter(a => a !== opt);
-                          updateSection({ multiCorrectAnswers: updated });
+
+                          const resolvedList: string[] = [];
+                          updated.forEach(c => {
+                            resolvedList.push(c);
+                            const idx = opts.findIndex(o => o.trim().toLowerCase() === c.trim().toLowerCase());
+                            if (idx >= 0) {
+                              const letter = String.fromCharCode(65 + idx);
+                              resolvedList.push(letter);
+                              resolvedList.push(`${letter}. ${c}`);
+                            }
+                          });
+
+                          const updatedQuestions = section.questions.map(q => ({
+                            ...q,
+                            correctAnswer: resolvedList
+                          }));
+
+                          updateSection({ multiCorrectAnswers: updated, questions: updatedQuestions });
                         }}
                         className="w-4 h-4 text-[#005C53] disabled:opacity-40"
                       />
@@ -267,16 +284,49 @@ export function ReadingQuestionEditor({ section, onChange }: ReadingQuestionEdit
                           const newOpts = [...opts];
                           const oldVal = newOpts[oIdx];
                           newOpts[oIdx] = e.target.value;
-                          // Keep multiCorrectAnswers in sync if this option was correct
                           const updatedCorrect = (section.multiCorrectAnswers || []).map(a => a === oldVal ? e.target.value : a);
-                          updateSection({ wordBankOptions: newOpts, multiCorrectAnswers: updatedCorrect });
+
+                          const resolvedList: string[] = [];
+                          updatedCorrect.forEach(c => {
+                            resolvedList.push(c);
+                            const idx = newOpts.findIndex(o => o.trim().toLowerCase() === c.trim().toLowerCase());
+                            if (idx >= 0) {
+                              const letter = String.fromCharCode(65 + idx);
+                              resolvedList.push(letter);
+                              resolvedList.push(`${letter}. ${c}`);
+                            }
+                          });
+
+                          const updatedQuestions = section.questions.map(q => ({
+                            ...q,
+                            correctAnswer: resolvedList
+                          }));
+
+                          updateSection({ wordBankOptions: newOpts, multiCorrectAnswers: updatedCorrect, questions: updatedQuestions });
                         }}
                         className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs"
                       />
                       <button onClick={() => {
                         const newOpts = opts.filter((_, idx) => idx !== oIdx);
                         const updatedCorrect = (section.multiCorrectAnswers || []).filter(a => a !== opt);
-                        updateSection({ wordBankOptions: newOpts, multiCorrectAnswers: updatedCorrect });
+
+                        const resolvedList: string[] = [];
+                        updatedCorrect.forEach(c => {
+                          resolvedList.push(c);
+                          const idx = newOpts.findIndex(o => o.trim().toLowerCase() === c.trim().toLowerCase());
+                          if (idx >= 0) {
+                            const letter = String.fromCharCode(65 + idx);
+                            resolvedList.push(letter);
+                            resolvedList.push(`${letter}. ${c}`);
+                          }
+                        });
+
+                        const updatedQuestions = section.questions.map(q => ({
+                          ...q,
+                          correctAnswer: resolvedList
+                        }));
+
+                        updateSection({ wordBankOptions: newOpts, multiCorrectAnswers: updatedCorrect, questions: updatedQuestions });
                       }} className="text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></button>
                     </div>
                   );
