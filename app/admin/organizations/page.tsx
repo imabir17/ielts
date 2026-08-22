@@ -7,7 +7,8 @@ import { Organization } from '@/lib/mock-data';
 import { Building2, Plus, Search, CheckCircle2, XCircle, ArrowRight, Edit2, Lock, Image as ImageIcon } from 'lucide-react';
 
 export default function OrganizationsDirectoryPage() {
-  const { tenants, updateTenant, addTenant, packages } = useStore();
+  const { tenants, updateTenant, addTenant, packages, isInitialized } = useStore();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -121,55 +122,64 @@ export default function OrganizationsDirectoryPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredOrgs.map((org) => (
-                <tr key={org.id}>
-                  <td className="who">
-                    <div className="flex items-center gap-3">
-                      {org.logoUrl ? (
-                        <img src={org.logoUrl} alt="Logo" className="w-8 h-8 rounded-[3px] border border-[var(--line)] object-cover" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-[3px] bg-[var(--paper-alt)] border border-[var(--line-soft)] flex items-center justify-center text-[var(--ink-soft)]">
-                          <Building2 className="w-4 h-4" />
-                        </div>
-                      )}
-                      <div>
-                        <div className="flex items-center gap-2">
-                          {org.name}
-                          <span className="font-mono text-[10px] bg-[var(--paper-alt)] text-[var(--ink-soft)] px-1.5 py-0.5 rounded-[2px]">{org.code}</span>
-                        </div>
-                        <div className="text-[12px] text-[var(--ink-faint)] mt-0.5 font-normal">{org.location}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="text-[13px]">{org.orgAdminName}</div>
-                    <div className="text-[12px] text-[var(--ink-faint)]">{org.contactEmail}</div>
-                  </td>
-                  <td>
-                    <div className="flex flex-wrap gap-1">
-                      {org.packageIds?.length ? org.packageIds.map(pid => {
-                        const p = packages.find(pkg => pkg.id === pid);
-                        return p ? <span key={p.id} className="pill pass">{p.name}</span> : null;
-                      }) : <span className="text-[12px] text-[var(--ink-faint)] italic">No packages</span>}
-                    </div>
-                  </td>
-                  <td>
-                    <button onClick={() => toggleStatus(org.id)} className={`pill ${org.status === 'active' ? 'pass' : 'mid'} flex items-center gap-1.5 border-none cursor-pointer hover:opacity-80`}>
-                      {org.status === 'active' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                      {org.status === 'active' ? 'Active' : 'Suspended'}
-                    </button>
-                  </td>
-                  <td className="text-right">
-                    <div className="flex items-center justify-end gap-3">
-                      <button onClick={() => handleOpenEdit(org)} className="bg-transparent border-none text-[var(--ink-soft)] hover:text-[var(--ink)] cursor-pointer"><Edit2 className="w-4 h-4" /></button>
-                      <Link href={`/admin/organizations/${org.id}`} className="flex items-center gap-1 text-[13px] font-medium text-[var(--brick)] hover:text-[var(--brick-dark)]">
-                        View <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
+              {filteredOrgs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-10 italic text-[var(--ink-faint)]">
+                    {!isInitialized ? 'Loading organizations...' : 'No organizations found.'}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredOrgs.map((org) => (
+                  <tr key={org.id}>
+                    <td className="who">
+                      <div className="flex items-center gap-3">
+                        {org.logoUrl ? (
+                          <img src={org.logoUrl} alt="Logo" className="w-8 h-8 rounded-[3px] border border-[var(--line)] object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-[3px] bg-[var(--paper-alt)] border border-[var(--line-soft)] flex items-center justify-center text-[var(--ink-soft)]">
+                            <Building2 className="w-4 h-4" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            {org.name}
+                            <span className="font-mono text-[10px] bg-[var(--paper-alt)] text-[var(--ink-soft)] px-1.5 py-0.5 rounded-[2px]">{org.code}</span>
+                          </div>
+                          <div className="text-[12px] text-[var(--ink-faint)] mt-0.5 font-normal">{org.location}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="text-[13px]">{org.orgAdminName}</div>
+                      <div className="text-[12px] text-[var(--ink-faint)]">{org.contactEmail}</div>
+                    </td>
+                    <td>
+                      <div className="flex flex-wrap gap-1">
+                        {org.packageIds?.length ? org.packageIds.map(pid => {
+                          const p = packages.find(pkg => pkg.id === pid);
+                          return p ? <span key={p.id} className="pill pass">{p.name}</span> : null;
+                        }) : <span className="text-[12px] text-[var(--ink-faint)] italic">No packages</span>}
+                      </div>
+                    </td>
+                    <td>
+                      <button onClick={() => toggleStatus(org.id)} className={`pill ${org.status === 'active' ? 'pass' : 'mid'} flex items-center gap-1.5 border-none cursor-pointer hover:opacity-80`}>
+                        {org.status === 'active' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                        {org.status === 'active' ? 'Active' : 'Suspended'}
+                      </button>
+                    </td>
+                    <td className="text-right">
+                      <div className="flex items-center justify-end gap-3">
+                        <button onClick={() => handleOpenEdit(org)} className="bg-transparent border-none text-[var(--ink-soft)] hover:text-[var(--ink)] cursor-pointer"><Edit2 className="w-4 h-4" /></button>
+                        <Link href={`/admin/organizations/${org.id}`} className="flex items-center gap-1 text-[13px] font-medium text-[var(--brick)] hover:text-[var(--brick-dark)]">
+                          View <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
+
           </table>
         </div>
       </div>

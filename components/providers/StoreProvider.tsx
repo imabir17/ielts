@@ -82,6 +82,7 @@ interface StoreContextType {
   currentUser: any | null;
   examLogs: ExamLog[];
   speakingRequests: SpeakingRequest[];
+  isInitialized: boolean;
   setTenants: React.Dispatch<React.SetStateAction<Organization[]>>;
   setPackages: React.Dispatch<React.SetStateAction<Package[]>>;
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
@@ -125,23 +126,32 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Load initial local user if exists
+        // 1. Instant Cache Hydration (0ms load from localStorage)
         try {
-          const storedUser = localStorage.getItem('mockielts_user');
-          if (storedUser) setCurrentUser(JSON.parse(storedUser));
+          const cachedUser = localStorage.getItem('mockielts_user');
+          if (cachedUser) setCurrentUser(JSON.parse(cachedUser));
+
+          const cachedTenants = localStorage.getItem('ielts_cached_tenants');
+          if (cachedTenants) setTenants(JSON.parse(cachedTenants));
+
+          const cachedPackages = localStorage.getItem('ielts_cached_packages');
+          if (cachedPackages) setPackages(JSON.parse(cachedPackages));
+
+          const cachedStudents = localStorage.getItem('ielts_cached_students');
+          if (cachedStudents) setStudents(JSON.parse(cachedStudents));
+
+          const cachedManagers = localStorage.getItem('ielts_cached_managers');
+          if (cachedManagers) setManagers(JSON.parse(cachedManagers));
+
+          const cachedLogs = localStorage.getItem('ielts_cached_exam_logs');
+          if (cachedLogs) setExamLogs(JSON.parse(cachedLogs));
+
+          const storedTests = getStoredTests();
+          if (storedTests && storedTests.length > 0) setTests(storedTests);
         } catch (e) {
-          console.warn('Could not load user from localStorage', e);
+          console.warn('Local cache hydration warning:', e);
         }
 
-        // Load tests from local store first as fallback
-        try {
-          const stored = getStoredTests();
-          if (stored && stored.length > 0) {
-            setTests(stored);
-          }
-        } catch (e) {
-          console.warn('Could not load tests from localStorage', e);
-        }
 
         const [
           { data: orgs },
@@ -162,7 +172,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ]);
 
         if (orgs && orgs.length > 0) {
-          setTenants(orgs.map((o: any) => ({
+          const mappedOrgs = orgs.map((o: any) => ({
             ...o,
             contactEmail: o.contact_email,
             subscriptionTier: o.subscription_tier,
@@ -175,34 +185,41 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             orgAdminName: o.org_admin_name,
             orgAdminEmail: o.org_admin_email,
             packageIds: o.package_ids
-          })));
+          }));
+          setTenants(mappedOrgs);
+          try { localStorage.setItem('ielts_cached_tenants', JSON.stringify(mappedOrgs)); } catch {}
         }
 
         if (pkgs && pkgs.length > 0) {
-          setPackages(pkgs.map((p: any) => ({
+          const mappedPkgs = pkgs.map((p: any) => ({
             ...p,
             idLimit: p.id_limit,
             examLimit: p.exam_limit
-          })));
+          }));
+          setPackages(mappedPkgs);
+          try { localStorage.setItem('ielts_cached_packages', JSON.stringify(mappedPkgs)); } catch {}
         }
 
         if (stds && stds.length > 0) {
-          setStudents(stds.map((s: any) => ({
+          const mappedStds = stds.map((s: any) => ({
             ...s,
             studentId: s.student_id,
             orgId: s.org_id,
             assignedTests: s.assigned_tests || [],
             completedTests: s.completed_tests || 0,
             averageBand: s.average_band || 0
-          })));
+          }));
+          setStudents(mappedStds);
+          try { localStorage.setItem('ielts_cached_students', JSON.stringify(mappedStds)); } catch {}
         }
 
         if (mgrs && mgrs.length > 0) {
           setManagers(mgrs);
+          try { localStorage.setItem('ielts_cached_managers', JSON.stringify(mgrs)); } catch {}
         }
 
         if (logs) {
-          setExamLogs(logs.map((l: any) => ({
+          const mappedLogs = logs.map((l: any) => ({
             ...l,
             studentName: l.student_name,
             studentId: l.student_id,
@@ -214,7 +231,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             modulesTaken: l.modules_taken,
             overallBand: l.overall_band,
             writingFeedback: l.writing_feedback
-          })));
+          }));
+          setExamLogs(mappedLogs);
+          try { localStorage.setItem('ielts_cached_exam_logs', JSON.stringify(mappedLogs)); } catch {}
         }
 
         if (reqs) {
@@ -247,6 +266,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       } finally {
         setIsInitialized(true);
       }
+
     }
 
     fetchData();
@@ -479,8 +499,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreContext.Provider value={{
-      tenants, packages, students, managers, tests, currentUser, examLogs, speakingRequests,
+      tenants, packages, students, managers, tests, currentUser, examLogs, speakingRequests, isInitialized,
       setTenants, setPackages, setStudents, setManagers, setTests, setCurrentUser, setExamLogs, setSpeakingRequests,
+
       addTenant, updateTenant, deleteTenant,
       addPackage, updatePackage, deletePackage,
       addStudent, updateStudent,

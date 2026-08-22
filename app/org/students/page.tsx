@@ -5,7 +5,7 @@ import { useStore } from '@/components/providers/StoreProvider';
 import { UserPlus, Sparkles, Copy, Check, AlertCircle } from 'lucide-react';
 
 export default function StudentsManagementPage() {
-  const { students, addStudent, currentUser, tenants, packages } = useStore();
+  const { students, addStudent, currentUser, tenants, packages, isInitialized } = useStore();
   
   const [nameInput, setNameInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
@@ -14,18 +14,21 @@ export default function StudentsManagementPage() {
   
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const currentTenant = tenants.find(t => t.id === currentUser?.id);
-  const tenantPackages = currentTenant?.packageIds?.map(id => packages.find(p => p.id === id)).filter(Boolean) || [];
+  const currentTenant = tenants.find(t => t.id === currentUser?.id) || (currentUser?.role === 'tenant' ? currentUser : null);
+  const tenantPackages = currentTenant?.packageIds?.map((id: string) => packages.find(p => p.id === id)).filter(Boolean) || [];
 
-  const hasUnlimitedIds = tenantPackages.some(p => p!.idLimit === 'unlimited');
+  const hasUnlimitedIds = tenantPackages.some((p: any) => p?.idLimit === 'unlimited') || currentTenant?.subscriptionTier === 'Enterprise';
   const totalIdLimit = hasUnlimitedIds 
     ? 'unlimited' 
-    : tenantPackages.reduce((sum, p) => sum + (p!.idLimit as number), 0);
+    : (tenantPackages.length > 0 
+        ? tenantPackages.reduce((sum: number, p: any) => sum + (typeof p?.idLimit === 'number' ? p.idLimit : 0), 0)
+        : (currentTenant?.maxSeats || (isInitialized ? 0 : 'unlimited')));
 
   const tenantStudents = students.filter(s => s.orgId === currentUser?.id);
   const currentUsage = tenantStudents.length;
 
-  const isQuotaFull = totalIdLimit !== 'unlimited' && currentUsage >= (totalIdLimit as number);
+  const isQuotaFull = isInitialized && totalIdLimit !== 'unlimited' && totalIdLimit > 0 && currentUsage >= (totalIdLimit as number);
+
 
   const handleGenerateStudent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,8 +146,13 @@ export default function StudentsManagementPage() {
               <table className="audit-table">
                 <tbody>
                   {tenantStudents.length === 0 ? (
-                    <tr><td colSpan={2} className="text-center py-8 italic text-[var(--ink-faint)]">No students generated yet.</td></tr>
+                    <tr>
+                      <td colSpan={2} className="text-center py-8 italic text-[var(--ink-faint)]">
+                        {!isInitialized ? 'Loading student roster...' : 'No students generated yet.'}
+                      </td>
+                    </tr>
                   ) : (
+
                     tenantStudents.map((student, idx) => (
                       <tr key={student.id} style={idx === 0 ? { backgroundColor: 'var(--paper-alt)' } : {}}>
                         <td className="who pl-5">
