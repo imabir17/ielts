@@ -152,7 +152,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           console.warn('Local cache hydration warning:', e);
         }
 
-
         const [
           { data: orgs },
           { data: pkgs },
@@ -266,7 +265,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       } finally {
         setIsInitialized(true);
       }
-
     }
 
     fetchData();
@@ -296,175 +294,292 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Mutations
   const addTenant = async (tenant: Organization) => {
-    setTenants([...tenants, tenant]);
-    const dbInsert: any = { ...tenant };
-    if (tenant.contactEmail) dbInsert.contact_email = tenant.contactEmail;
-    if (tenant.subscriptionTier) dbInsert.subscription_tier = tenant.subscriptionTier;
-    if (tenant.maxSeats) dbInsert.max_seats = tenant.maxSeats;
-    if (tenant.maxExamsPerMonth) dbInsert.max_exams_per_month = tenant.maxExamsPerMonth;
-    if (tenant.examsUsedThisMonth) dbInsert.exams_used_this_month = tenant.examsUsedThisMonth;
-    if (tenant.studentCount) dbInsert.student_count = tenant.studentCount;
-    if (tenant.activeTests) dbInsert.active_tests = tenant.activeTests;
-    if (tenant.createdDate) dbInsert.created_date = tenant.createdDate;
-    if (tenant.orgAdminName) dbInsert.org_admin_name = tenant.orgAdminName;
-    if (tenant.orgAdminEmail) dbInsert.org_admin_email = tenant.orgAdminEmail;
-    if (tenant.packageIds) dbInsert.package_ids = tenant.packageIds;
-    ['contactEmail', 'subscriptionTier', 'maxSeats', 'maxExamsPerMonth', 'examsUsedThisMonth', 'studentCount', 'activeTests', 'createdDate', 'orgAdminName', 'orgAdminEmail', 'packageIds'].forEach(k => delete dbInsert[k]);
-    try { await supabase.from('organizations').insert(dbInsert); } catch (e) { console.warn(e); }
+    const updated = [...tenants, tenant];
+    setTenants(updated);
+    try { localStorage.setItem('ielts_cached_tenants', JSON.stringify(updated)); } catch {}
+    
+    const dbInsert: any = {
+      id: tenant.id,
+      name: tenant.name,
+      code: tenant.code,
+      location: tenant.location,
+      contact_email: tenant.contactEmail,
+      subscription_tier: tenant.subscriptionTier,
+      max_seats: tenant.maxSeats || 250,
+      max_exams_per_month: tenant.maxExamsPerMonth || 500,
+      exams_used_this_month: tenant.examsUsedThisMonth || 0,
+      student_count: tenant.studentCount || 0,
+      active_tests: tenant.activeTests || 1,
+      status: tenant.status || 'active',
+      created_date: tenant.createdDate || new Date().toISOString().split('T')[0],
+      org_admin_name: tenant.orgAdminName,
+      org_admin_email: tenant.orgAdminEmail,
+      password: tenant.password || 'password123',
+      package_ids: tenant.packageIds || []
+    };
+    try { 
+      const { error } = await supabase.from('organizations').insert(dbInsert); 
+      if (error) console.error('Supabase addTenant error:', error);
+    } catch (e) { console.error('Supabase addTenant exception:', e); }
   };
 
   const updateTenant = async (id: string, updates: Partial<Organization>) => {
-    setTenants(tenants.map(t => t.id === id ? { ...t, ...updates } : t));
-    const dbUpdates: any = { ...updates };
-    if (updates.contactEmail) dbUpdates.contact_email = updates.contactEmail;
-    if (updates.subscriptionTier) dbUpdates.subscription_tier = updates.subscriptionTier;
-    if (updates.maxSeats) dbUpdates.max_seats = updates.maxSeats;
-    if (updates.maxExamsPerMonth) dbUpdates.max_exams_per_month = updates.maxExamsPerMonth;
-    if (updates.examsUsedThisMonth) dbUpdates.exams_used_this_month = updates.examsUsedThisMonth;
-    if (updates.studentCount) dbUpdates.student_count = updates.studentCount;
-    if (updates.activeTests) dbUpdates.active_tests = updates.activeTests;
-    if (updates.createdDate) dbUpdates.created_date = updates.createdDate;
-    if (updates.orgAdminName) dbUpdates.org_admin_name = updates.orgAdminName;
-    if (updates.orgAdminEmail) dbUpdates.org_admin_email = updates.orgAdminEmail;
-    if (updates.packageIds) dbUpdates.package_ids = updates.packageIds;
-    ['contactEmail', 'subscriptionTier', 'maxSeats', 'maxExamsPerMonth', 'examsUsedThisMonth', 'studentCount', 'activeTests', 'createdDate', 'orgAdminName', 'orgAdminEmail', 'packageIds'].forEach(k => delete dbUpdates[k]);
-    try { await supabase.from('organizations').update(dbUpdates).eq('id', id); } catch (e) { console.warn(e); }
+    const updated = tenants.map(t => t.id === id ? { ...t, ...updates } : t);
+    setTenants(updated);
+    try { localStorage.setItem('ielts_cached_tenants', JSON.stringify(updated)); } catch {}
+
+    const dbUpdates: any = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.code !== undefined) dbUpdates.code = updates.code;
+    if (updates.location !== undefined) dbUpdates.location = updates.location;
+    if (updates.contactEmail !== undefined) dbUpdates.contact_email = updates.contactEmail;
+    if (updates.subscriptionTier !== undefined) dbUpdates.subscription_tier = updates.subscriptionTier;
+    if (updates.maxSeats !== undefined) dbUpdates.max_seats = updates.maxSeats;
+    if (updates.maxExamsPerMonth !== undefined) dbUpdates.max_exams_per_month = updates.maxExamsPerMonth;
+    if (updates.examsUsedThisMonth !== undefined) dbUpdates.exams_used_this_month = updates.examsUsedThisMonth;
+    if (updates.studentCount !== undefined) dbUpdates.student_count = updates.studentCount;
+    if (updates.activeTests !== undefined) dbUpdates.active_tests = updates.activeTests;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.createdDate !== undefined) dbUpdates.created_date = updates.createdDate;
+    if (updates.orgAdminName !== undefined) dbUpdates.org_admin_name = updates.orgAdminName;
+    if (updates.orgAdminEmail !== undefined) dbUpdates.org_admin_email = updates.orgAdminEmail;
+    if (updates.password !== undefined) dbUpdates.password = updates.password;
+    if (updates.packageIds !== undefined) dbUpdates.package_ids = updates.packageIds;
+
+    try { 
+      const { error } = await supabase.from('organizations').update(dbUpdates).eq('id', id); 
+      if (error) console.error('Supabase updateTenant error:', error);
+    } catch (e) { console.error('Supabase updateTenant exception:', e); }
   };
 
   const deleteTenant = async (id: string) => {
-    setTenants(tenants.filter(t => t.id !== id));
+    const updated = tenants.filter(t => t.id !== id);
+    setTenants(updated);
+    try { localStorage.setItem('ielts_cached_tenants', JSON.stringify(updated)); } catch {}
     try { await supabase.from('organizations').delete().eq('id', id); } catch (e) { console.warn(e); }
   };
 
   const addPackage = async (pkg: Package) => {
-    setPackages([...packages, pkg]);
-    const dbInsert: any = { ...pkg };
-    if (pkg.idLimit !== undefined) dbInsert.id_limit = pkg.idLimit;
-    if (pkg.examLimit !== undefined) dbInsert.exam_limit = pkg.examLimit;
-    ['idLimit', 'examLimit', 'testsIncluded'].forEach(k => delete dbInsert[k]);
-    try { await supabase.from('packages').insert(dbInsert); } catch (e) { console.warn(e); }
+    const updated = [...packages, pkg];
+    setPackages(updated);
+    try { localStorage.setItem('ielts_cached_packages', JSON.stringify(updated)); } catch {}
+
+    const dbInsert: any = {
+      id: pkg.id,
+      name: pkg.name,
+      price: pkg.price,
+      id_limit: pkg.idLimit,
+      exam_limit: pkg.examLimit,
+      description: pkg.description
+    };
+    try { 
+      const { error } = await supabase.from('packages').insert(dbInsert); 
+      if (error) console.error('Supabase addPackage error:', error);
+    } catch (e) { console.error('Supabase addPackage exception:', e); }
   };
 
   const updatePackage = async (id: string, updates: Partial<Package>) => {
-    setPackages(packages.map(p => p.id === id ? { ...p, ...updates } : p));
-    const dbUpdates: any = { ...updates };
+    const updated = packages.map(p => p.id === id ? { ...p, ...updates } : p);
+    setPackages(updated);
+    try { localStorage.setItem('ielts_cached_packages', JSON.stringify(updated)); } catch {}
+
+    const dbUpdates: any = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.price !== undefined) dbUpdates.price = updates.price;
     if (updates.idLimit !== undefined) dbUpdates.id_limit = updates.idLimit;
     if (updates.examLimit !== undefined) dbUpdates.exam_limit = updates.examLimit;
-    ['idLimit', 'examLimit', 'testsIncluded'].forEach(k => delete dbUpdates[k]);
-    try { await supabase.from('packages').update(dbUpdates).eq('id', id); } catch (e) { console.warn(e); }
+    if (updates.description !== undefined) dbUpdates.description = updates.description;
+
+    try { 
+      const { error } = await supabase.from('packages').update(dbUpdates).eq('id', id); 
+      if (error) console.error('Supabase updatePackage error:', error);
+    } catch (e) { console.error('Supabase updatePackage exception:', e); }
   };
 
   const deletePackage = async (id: string) => {
-    setPackages(packages.filter(p => p.id !== id));
+    const updated = packages.filter(p => p.id !== id);
+    setPackages(updated);
+    try { localStorage.setItem('ielts_cached_packages', JSON.stringify(updated)); } catch {}
     try { await supabase.from('packages').delete().eq('id', id); } catch (e) { console.warn(e); }
   };
 
   const addStudent = async (student: Student) => {
-    setStudents([...students, student]);
-    const dbInsert: any = { ...student };
-    if (student.studentId) dbInsert.student_id = student.studentId;
-    if (student.orgId) dbInsert.org_id = student.orgId;
-    if (student.assignedTests) dbInsert.assigned_tests = student.assignedTests;
-    if (student.completedTests !== undefined) dbInsert.completed_tests = student.completedTests;
-    if (student.averageBand !== undefined) dbInsert.average_band = student.averageBand;
-    ['studentId', 'orgId', 'assignedTests', 'completedTests', 'averageBand'].forEach(k => delete dbInsert[k]);
-    try { await supabase.from('students').insert(dbInsert); } catch (e) { console.warn(e); }
+    const updated = [...students, student];
+    setStudents(updated);
+    try { localStorage.setItem('ielts_cached_students', JSON.stringify(updated)); } catch {}
+
+    const dbInsert: any = {
+      id: student.id,
+      name: student.name,
+      student_id: student.studentId,
+      email: student.email,
+      password: student.password || 'student123',
+      org_id: student.orgId || '',
+      assigned_tests: student.assignedTests || [],
+      completed_tests: student.completedTests || 0,
+      average_band: student.averageBand || 0
+    };
+    try { 
+      const { error } = await supabase.from('students').insert(dbInsert); 
+      if (error) console.error('Supabase addStudent error:', error);
+    } catch (e) { console.error('Supabase addStudent exception:', e); }
   };
 
   const updateStudent = async (id: string, updates: Partial<Student>) => {
-    setStudents(students.map(s => s.id === id ? { ...s, ...updates } : s));
-    const dbUpdates: any = { ...updates };
-    if (updates.studentId) dbUpdates.student_id = updates.studentId;
-    if (updates.orgId) dbUpdates.org_id = updates.orgId;
-    if (updates.assignedTests) dbUpdates.assigned_tests = updates.assignedTests;
+    const updated = students.map(s => s.id === id ? { ...s, ...updates } : s);
+    setStudents(updated);
+    try { localStorage.setItem('ielts_cached_students', JSON.stringify(updated)); } catch {}
+
+    const dbUpdates: any = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.studentId !== undefined) dbUpdates.student_id = updates.studentId;
+    if (updates.email !== undefined) dbUpdates.email = updates.email;
+    if (updates.password !== undefined) dbUpdates.password = updates.password;
+    if (updates.orgId !== undefined) dbUpdates.org_id = updates.orgId;
+    if (updates.assignedTests !== undefined) dbUpdates.assigned_tests = updates.assignedTests;
     if (updates.completedTests !== undefined) dbUpdates.completed_tests = updates.completedTests;
     if (updates.averageBand !== undefined) dbUpdates.average_band = updates.averageBand;
-    ['studentId', 'orgId', 'assignedTests', 'completedTests', 'averageBand'].forEach(k => delete dbUpdates[k]);
-    try { await supabase.from('students').update(dbUpdates).eq('id', id); } catch (e) { console.warn(e); }
+
+    try { 
+      const { error } = await supabase.from('students').update(dbUpdates).eq('id', id); 
+      if (error) console.error('Supabase updateStudent error:', error);
+    } catch (e) { console.error('Supabase updateStudent exception:', e); }
   };
 
   const addManager = async (manager: PlatformManager) => {
-    setManagers([...managers, manager]);
-    try { await supabase.from('managers').insert(manager); } catch (e) { console.warn(e); }
+    const updated = [...managers, manager];
+    setManagers(updated);
+    try { localStorage.setItem('ielts_cached_managers', JSON.stringify(updated)); } catch {}
+    try { 
+      const { error } = await supabase.from('managers').insert(manager); 
+      if (error) console.error('Supabase addManager error:', error);
+    } catch (e) { console.error('Supabase addManager exception:', e); }
   };
 
   const deleteManager = async (id: string) => {
-    setManagers(managers.filter(m => m.id !== id));
+    const updated = managers.filter(m => m.id !== id);
+    setManagers(updated);
+    try { localStorage.setItem('ielts_cached_managers', JSON.stringify(updated)); } catch {}
     try { await supabase.from('managers').delete().eq('id', id); } catch (e) { console.warn(e); }
   };
 
   const addExamLog = async (log: ExamLog) => {
-    setExamLogs([...examLogs, log]);
-    const dbInsert: any = { ...log };
-    if (log.studentName) dbInsert.student_name = log.studentName;
-    if (log.studentId) dbInsert.student_id = log.studentId;
-    if (log.orgName) dbInsert.org_name = log.orgName;
-    if (log.orgId) dbInsert.org_id = log.orgId;
-    if (log.testTitle) dbInsert.test_title = log.testTitle;
-    if (log.testId) dbInsert.test_id = log.testId;
-    if (log.completedAt) dbInsert.completed_at = log.completedAt;
-    if (log.modulesTaken) dbInsert.modules_taken = log.modulesTaken;
-    if (log.overallBand !== undefined) dbInsert.overall_band = log.overallBand;
-    if (log.writingFeedback) dbInsert.writing_feedback = log.writingFeedback;
-    ['studentName', 'studentId', 'orgName', 'orgId', 'testTitle', 'testId', 'completedAt', 'modulesTaken', 'overallBand', 'writingFeedback'].forEach(k => delete dbInsert[k]);
-    try { await supabase.from('exam_logs').insert(dbInsert); } catch (e) { console.warn(e); }
+    const updated = [...examLogs, log];
+    setExamLogs(updated);
+    try { localStorage.setItem('ielts_cached_exam_logs', JSON.stringify(updated)); } catch {}
+
+    const dbInsert: any = {
+      id: log.id,
+      student_name: log.studentName,
+      student_id: log.studentId,
+      org_name: log.orgName,
+      org_id: log.orgId,
+      test_title: log.testTitle,
+      test_id: log.testId,
+      completed_at: log.completedAt,
+      status: log.status,
+      modules_taken: log.modulesTaken,
+      answers: log.answers,
+      scores: log.scores,
+      overall_band: log.overallBand,
+      writing_feedback: log.writingFeedback
+    };
+    try { 
+      const { error } = await supabase.from('exam_logs').insert(dbInsert); 
+      if (error) console.error('Supabase addExamLog error:', error);
+    } catch (e) { console.error('Supabase addExamLog exception:', e); }
   };
 
   const updateExamLog = async (id: string, updates: Partial<ExamLog>) => {
-    setExamLogs(examLogs.map(l => l.id === id ? { ...l, ...updates } : l));
-    const dbUpdates: any = { ...updates };
-    if (updates.studentName) dbUpdates.student_name = updates.studentName;
-    if (updates.studentId) dbUpdates.student_id = updates.studentId;
-    if (updates.orgName) dbUpdates.org_name = updates.orgName;
-    if (updates.orgId) dbUpdates.org_id = updates.orgId;
-    if (updates.testTitle) dbUpdates.test_title = updates.testTitle;
-    if (updates.testId) dbUpdates.test_id = updates.testId;
-    if (updates.completedAt) dbUpdates.completed_at = updates.completedAt;
-    if (updates.modulesTaken) dbUpdates.modules_taken = updates.modulesTaken;
+    const updated = examLogs.map(l => l.id === id ? { ...l, ...updates } : l);
+    setExamLogs(updated);
+    try { localStorage.setItem('ielts_cached_exam_logs', JSON.stringify(updated)); } catch {}
+
+    const dbUpdates: any = {};
+    if (updates.studentName !== undefined) dbUpdates.student_name = updates.studentName;
+    if (updates.studentId !== undefined) dbUpdates.student_id = updates.studentId;
+    if (updates.orgName !== undefined) dbUpdates.org_name = updates.orgName;
+    if (updates.orgId !== undefined) dbUpdates.org_id = updates.orgId;
+    if (updates.testTitle !== undefined) dbUpdates.test_title = updates.testTitle;
+    if (updates.testId !== undefined) dbUpdates.test_id = updates.testId;
+    if (updates.completedAt !== undefined) dbUpdates.completed_at = updates.completedAt;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.modulesTaken !== undefined) dbUpdates.modules_taken = updates.modulesTaken;
+    if (updates.answers !== undefined) dbUpdates.answers = updates.answers;
+    if (updates.scores !== undefined) dbUpdates.scores = updates.scores;
     if (updates.overallBand !== undefined) dbUpdates.overall_band = updates.overallBand;
-    if (updates.writingFeedback) dbUpdates.writing_feedback = updates.writingFeedback;
-    ['studentName', 'studentId', 'orgName', 'orgId', 'testTitle', 'testId', 'completedAt', 'modulesTaken', 'overallBand', 'writingFeedback'].forEach(k => delete dbUpdates[k]);
-    try { await supabase.from('exam_logs').update(dbUpdates).eq('id', id); } catch (e) { console.warn(e); }
+    if (updates.writingFeedback !== undefined) dbUpdates.writing_feedback = updates.writingFeedback;
+
+    try { 
+      const { error } = await supabase.from('exam_logs').update(dbUpdates).eq('id', id); 
+      if (error) console.error('Supabase updateExamLog error:', error);
+    } catch (e) { console.error('Supabase updateExamLog exception:', e); }
   };
 
   const addSpeakingRequest = async (req: SpeakingRequest) => {
-    setSpeakingRequests([...speakingRequests, req]);
-    const dbInsert: any = { ...req };
-    if (req.studentId) dbInsert.student_id = req.studentId;
-    if (req.orgId) dbInsert.org_id = req.orgId;
-    if (req.testId) dbInsert.test_id = req.testId;
-    if (req.scheduledDate) dbInsert.scheduled_date = req.scheduledDate;
-    if (req.requestedAt) dbInsert.requested_at = req.requestedAt;
-    ['studentId', 'orgId', 'testId', 'scheduledDate', 'requestedAt', 'feedback', 'bandScore'].forEach(k => delete dbInsert[k]);
-    try { await supabase.from('speaking_requests').insert(dbInsert); } catch (e) { console.warn(e); }
+    const updated = [...speakingRequests, req];
+    setSpeakingRequests(updated);
+
+    const dbInsert: any = {
+      id: req.id,
+      student_id: req.studentId,
+      org_id: req.orgId,
+      test_id: req.testId,
+      status: req.status,
+      scheduled_date: req.scheduledDate,
+      type: req.type,
+      link: req.link,
+      requested_at: req.requestedAt
+    };
+    try { 
+      const { error } = await supabase.from('speaking_requests').insert(dbInsert); 
+      if (error) console.error('Supabase addSpeakingRequest error:', error);
+    } catch (e) { console.error('Supabase addSpeakingRequest exception:', e); }
   };
 
   const updateSpeakingRequest = async (id: string, updates: Partial<SpeakingRequest>) => {
-    setSpeakingRequests(speakingRequests.map(r => r.id === id ? { ...r, ...updates } : r));
-    const dbUpdates: any = { ...updates };
-    if (updates.studentId) dbUpdates.student_id = updates.studentId;
-    if (updates.orgId) dbUpdates.org_id = updates.orgId;
-    if (updates.testId) dbUpdates.test_id = updates.testId;
-    if (updates.scheduledDate) dbUpdates.scheduled_date = updates.scheduledDate;
-    if (updates.requestedAt) dbUpdates.requested_at = updates.requestedAt;
-    ['studentId', 'orgId', 'testId', 'scheduledDate', 'requestedAt', 'feedback', 'bandScore'].forEach(k => delete dbUpdates[k]);
-    try { await supabase.from('speaking_requests').update(dbUpdates).eq('id', id); } catch (e) { console.warn(e); }
+    const updated = speakingRequests.map(r => r.id === id ? { ...r, ...updates } : r);
+    setSpeakingRequests(updated);
+
+    const dbUpdates: any = {};
+    if (updates.studentId !== undefined) dbUpdates.student_id = updates.studentId;
+    if (updates.orgId !== undefined) dbUpdates.org_id = updates.orgId;
+    if (updates.testId !== undefined) dbUpdates.test_id = updates.testId;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.scheduledDate !== undefined) dbUpdates.scheduled_date = updates.scheduledDate;
+    if (updates.type !== undefined) dbUpdates.type = updates.type;
+    if (updates.link !== undefined) dbUpdates.link = updates.link;
+    if (updates.requestedAt !== undefined) dbUpdates.requested_at = updates.requestedAt;
+
+    try { 
+      const { error } = await supabase.from('speaking_requests').update(dbUpdates).eq('id', id); 
+      if (error) console.error('Supabase updateSpeakingRequest error:', error);
+    } catch (e) { console.error('Supabase updateSpeakingRequest exception:', e); }
   };
 
   const addTest = async (test: any) => {
     setTests([test, ...tests]);
     saveTestToStorage(test);
-    const dbInsert: any = { ...test };
-    if (test.totalDurationMinutes !== undefined) dbInsert.total_duration_minutes = test.totalDurationMinutes;
-    if (test.tierAccess !== undefined) dbInsert.tier_access = test.tierAccess;
-    if (test.questionCount !== undefined) dbInsert.question_count = test.questionCount;
-    if (test.createdDate !== undefined) dbInsert.created_date = test.createdDate;
-    if (test.listeningAudioUrl !== undefined) dbInsert.listening_audio_url = test.listeningAudioUrl;
-    ['totalDurationMinutes', 'tierAccess', 'questionCount', 'createdDate', 'listeningAudioUrl'].forEach(k => delete dbInsert[k]);
+    const dbInsert: any = {
+      id: test.id,
+      title: test.title,
+      category: test.category,
+      total_duration_minutes: test.totalDurationMinutes,
+      status: test.status,
+      tier_access: test.tierAccess,
+      question_count: test.questionCount,
+      created_date: test.createdDate,
+      reading: test.reading,
+      listening: test.listening,
+      listening_audio_url: test.listeningAudioUrl || '',
+      writing: test.writing,
+      speaking: test.speaking
+    };
     try {
-      await supabase.from('tests').insert(dbInsert);
+      const { error } = await supabase.from('tests').insert(dbInsert);
+      if (error) console.error('Supabase test insert error:', error);
     } catch (e) {
-      console.warn('Supabase test insert failed, persisted locally:', e);
+      console.error('Supabase test insert exception:', e);
     }
   };
 
@@ -473,17 +588,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setTests(updatedList);
     const target = updatedList.find(t => t.id === id);
     if (target) saveTestToStorage(target);
-    const dbUpdates: any = { ...updates };
+
+    const dbUpdates: any = {};
+    if (updates.title !== undefined) dbUpdates.title = updates.title;
+    if (updates.category !== undefined) dbUpdates.category = updates.category;
     if (updates.totalDurationMinutes !== undefined) dbUpdates.total_duration_minutes = updates.totalDurationMinutes;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.tierAccess !== undefined) dbUpdates.tier_access = updates.tierAccess;
     if (updates.questionCount !== undefined) dbUpdates.question_count = updates.questionCount;
     if (updates.createdDate !== undefined) dbUpdates.created_date = updates.createdDate;
+    if (updates.reading !== undefined) dbUpdates.reading = updates.reading;
+    if (updates.listening !== undefined) dbUpdates.listening = updates.listening;
     if (updates.listeningAudioUrl !== undefined) dbUpdates.listening_audio_url = updates.listeningAudioUrl;
-    ['totalDurationMinutes', 'tierAccess', 'questionCount', 'createdDate', 'listeningAudioUrl'].forEach(k => delete dbUpdates[k]);
+    if (updates.writing !== undefined) dbUpdates.writing = updates.writing;
+    if (updates.speaking !== undefined) dbUpdates.speaking = updates.speaking;
+
     try {
-      await supabase.from('tests').update(dbUpdates).eq('id', id);
+      const { error } = await supabase.from('tests').update(dbUpdates).eq('id', id);
+      if (error) console.error('Supabase test update error:', error);
     } catch (e) {
-      console.warn('Supabase test update failed, persisted locally:', e);
+      console.error('Supabase test update exception:', e);
     }
   };
 
@@ -491,9 +615,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setTests(tests.filter(t => t.id !== id));
     deleteTestFromStorage(id);
     try {
-      await supabase.from('tests').delete().eq('id', id);
+      const { error } = await supabase.from('tests').delete().eq('id', id);
+      if (error) console.error('Supabase test delete error:', error);
     } catch (e) {
-      console.warn('Supabase test delete failed, removed locally:', e);
+      console.error('Supabase test delete exception:', e);
     }
   };
 
