@@ -92,15 +92,19 @@ export default function StudentTestsPage() {
 
               const isFullyCompleted = log.modulesTaken?.length === 4;
 
+              const isGradedAndPublished = log.isPublished || log.status === 'Graded';
+
               return (
-                <div key={log.id} className="panel p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4" style={{borderLeftColor: isFullyCompleted ? 'var(--forest)' : '#d97706'}}>
+                <div key={log.id} className="panel p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4" style={{borderLeftColor: isGradedAndPublished ? 'var(--forest)' : '#d97706'}}>
                   <div>
                     <h3 className="font-display text-[20px] text-[var(--ink)] m-0">{t.title}</h3>
                     <div className="flex items-center gap-3 mt-2">
                       <span className={`px-2 py-0.5 rounded-[3px] text-[10px] font-bold uppercase tracking-wider ${
-                        isFullyCompleted ? 'bg-[var(--forest)]/10 text-[var(--forest)]' : 'bg-amber-100 text-amber-700'
+                        isGradedAndPublished 
+                          ? 'bg-[var(--forest)]/10 text-[var(--forest)]' 
+                          : 'bg-amber-100 text-amber-900 border border-amber-300'
                       }`}>
-                        {isFullyCompleted ? 'Completed' : 'In Progress'}
+                        {isGradedAndPublished ? 'Official Result Released' : 'Pending Examiner Review'}
                       </span>
                       <span className="text-[12px] text-[var(--ink-soft)] font-medium">
                         {log.modulesTaken?.length || 0} / 4 Modules Taken
@@ -109,21 +113,22 @@ export default function StudentTestsPage() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    {log.overallBand !== undefined && (
+                    {isGradedAndPublished && log.overallBand !== undefined && (
                       <div className="text-center mr-4">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-soft)]">Overall Band</div>
-                        <div className="font-display text-[24px] text-[var(--forest)] leading-none">{log.overallBand}</div>
+                        <div className="font-display text-[24px] text-[var(--forest)] leading-none">{log.overallBand.toFixed(1)}</div>
                       </div>
                     )}
                     <Link
                       href={`/student/tests/${t.id}`}
                       className="btn bg-white border border-[var(--line)] text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--ink)]"
                     >
-                      {isFullyCompleted ? 'View Results' : 'Continue Test'}
+                      {isGradedAndPublished ? 'View Official Results' : 'Check Evaluation Status'}
                     </Link>
                   </div>
                 </div>
               );
+
             })}
           </div>
         )}

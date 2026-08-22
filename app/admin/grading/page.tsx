@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 import { useStore } from '@/components/providers/StoreProvider';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { getTestById } from '@/lib/test-store';
+import { calculateOverallBand } from '@/lib/ielts-grading';
 import { CheckCircle2, FileText, ChevronRight, MessageSquare } from 'lucide-react';
+
 
 export default function SuperadminGradingPage() {
   const { examLogs, updateExamLog, currentUser } = useStore();
@@ -25,33 +27,33 @@ export default function SuperadminGradingPage() {
     e.preventDefault();
     if (!selectedLog) return;
     
-    // We assume reading/listening scores might already exist from auto-grading
-    // For this mockup, we just calculate an average overall band or set it directly
-    const rScore = selectedLog.scores?.reading || 0;
-    const lScore = selectedLog.scores?.listening || 0;
     const wScore = parseFloat(bandScore);
-    
-    let parts = 1;
-    let total = wScore;
-    if (rScore > 0) { parts++; total += rScore; }
-    if (lScore > 0) { parts++; total += lScore; }
-    
-    const overall = (total / parts).toFixed(1);
+    const newScores = {
+      ...selectedLog.scores,
+      writing: wScore
+    };
+
+    const overall = calculateOverallBand({
+      reading: newScores.reading,
+      listening: newScores.listening,
+      writing: wScore,
+      speaking: newScores.speaking
+    });
 
     updateExamLog(selectedLog.id, {
       status: 'Graded',
+      isPublished: true,
+      gradedAt: new Date().toISOString(),
       writingFeedback: feedback,
-      scores: {
-        ...selectedLog.scores,
-        writing: wScore
-      },
-      overallBand: parseFloat(overall)
+      scores: newScores,
+      overallBand: overall
     });
 
     setSelectedLogId(null);
     setBandScore('');
     setFeedback('');
   };
+
 
   return (
     <>

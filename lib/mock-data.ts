@@ -39,8 +39,19 @@ export interface ExamLog {
   testTitle: string;
   testId: string;
   completedAt: string;
-  status: 'Completed' | 'In Progress' | 'Disconnected' | 'Graded';
+  status: 'Completed' | 'In Progress' | 'Disconnected' | 'Graded' | 'Pending Review' | 'Submitted';
+  isPublished?: boolean;
+  gradedAt?: string;
+  gradedBy?: string;
   modulesTaken: string[];
+  manualOverrides?: {
+    reading?: Record<string, boolean>; // questionId -> boolean (true for marked correct, false for marked incorrect)
+    listening?: Record<string, boolean>; // questionId -> boolean
+  };
+  rawScores?: {
+    reading?: number;
+    listening?: number;
+  };
   answers: {
     reading?: Record<string, any>;
     listening?: Record<string, any>;
@@ -51,11 +62,18 @@ export interface ExamLog {
     reading?: number;
     listening?: number;
     writing?: number;
+    writingTask1?: number;
+    writingTask2?: number;
     speaking?: number;
   };
   overallBand?: number;
   writingFeedback?: string;
+  task1Feedback?: string;
+  task2Feedback?: string;
+  speakingFeedback?: string;
+  generalFeedback?: string;
 }
+
 
 export interface SpeakingRequest {
   id: string;

@@ -13,6 +13,8 @@ import { AccessibilityBar } from '@/components/exam/AccessibilityBar';
 import { FloatingNotepad } from '@/components/exam/FloatingNotepad';
 import { BookOpen, Headphones, Edit3, Mic, LogOut, CheckCircle2, ChevronRight, AlertCircle, Clock, StickyNote } from 'lucide-react';
 import { useStore } from '@/components/providers/StoreProvider';
+import { rawToBandScore } from '@/lib/ielts-grading';
+
 
 import { ExamLog, SpeakingRequest, MOCK_IELTS_TEST } from '@/lib/mock-data';
 
@@ -173,9 +175,19 @@ export default function ExamPage() {
   const finishExam = () => {
     const studentInfo = students.find(s => s.id === currentUser?.id);
     
-    const computedScores: Record<string, number> = existingLog ? { ...existingLog.scores } : {};
-    if (selectedModules.includes('reading')) computedScores.reading = calculateModuleScore('reading');
-    if (selectedModules.includes('listening')) computedScores.listening = calculateModuleScore('listening');
+    const rawScores: Record<string, number> = existingLog?.rawScores ? { ...existingLog.rawScores } : {};
+    const computedScores: Record<string, number> = existingLog?.scores ? { ...existingLog.scores } : {};
+
+    if (selectedModules.includes('reading')) {
+      const rawR = calculateModuleScore('reading');
+      rawScores.reading = rawR;
+      computedScores.reading = rawToBandScore(rawR, 'reading', activeTest?.category || 'Academic');
+    }
+    if (selectedModules.includes('listening')) {
+      const rawL = calculateModuleScore('listening');
+      rawScores.listening = rawL;
+      computedScores.listening = rawToBandScore(rawL, 'listening', activeTest?.category || 'Academic');
+    }
 
     const mergedModulesTaken = Array.from(new Set([...(existingLog?.modulesTaken || []), ...selectedModules]));
     
@@ -183,22 +195,26 @@ export default function ExamPage() {
       updateExamLog(existingLog.id, {
         modulesTaken: mergedModulesTaken,
         answers: answers,
+        rawScores: rawScores,
         scores: computedScores,
-        status: mergedModulesTaken.includes('writing') ? 'Completed' : 'Graded'
+        status: 'Pending Review',
+        isPublished: false,
       });
     } else {
       const newLog: ExamLog = {
         id: `log-${Date.now()}`,
         studentId: currentUser?.id || 'std-1',
         studentName: currentUser?.name || 'Candidate',
-        orgId: studentInfo?.orgId || '',
-        orgName: 'Unknown',
+        orgId: studentInfo?.orgId || 'org-1',
+        orgName: 'Apex IELTS Academy',
         testId: activeTest.id,
         testTitle: activeTest.title,
         completedAt: new Date().toISOString(),
-        status: selectedModules.includes('writing') ? 'Completed' : 'Graded',
+        status: 'Pending Review',
+        isPublished: false,
         modulesTaken: selectedModules,
         answers: answers,
+        rawScores: rawScores,
         scores: computedScores
       };
       addExamLog(newLog);
@@ -210,6 +226,7 @@ export default function ExamPage() {
 
     setExamState('completed');
   };
+
 
   const getModuleTimer = (mod: ModuleType) => {
     if (mod === 'reading') return 60 * 60; // 60 mins
@@ -334,16 +351,27 @@ export default function ExamPage() {
   if (examState === 'completed') {
     return (
       <div className="min-h-screen bg-[var(--paper)] flex flex-col items-center justify-center font-sans p-6">
-        <div className="panel p-10 max-w-lg w-full text-center space-y-6">
-          <div className="w-20 h-20 bg-[var(--forest)]/10 text-[var(--forest)] rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-10 h-10" />
+        <div className="panel p-8 max-w-lg w-full text-center space-y-6">
+          <div className="w-16 h-16 bg-[var(--forest)]/10 text-[var(--forest)] rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-8 h-8" />
           </div>
-          <h2 className="font-display text-[32px] text-[var(--ink)] m-0">Exam Submitted</h2>
-          <p className="text-[15px] text-[var(--ink-soft)] leading-relaxed">
-            Your answers have been saved successfully. 
-            {selectedModules.includes('reading') || selectedModules.includes('listening') ? ' Reading and Listening scores are available immediately.' : ''}
-            {selectedModules.includes('writing') ? ' Awaiting score for writing. It may take around 1 hour.' : ''}
-          </p>
+          <h2 className="font-display text-[26px] text-[var(--ink)] m-0">Exam Submitted for Evaluation</h2>
+          
+          <div className="bg-amber-50 border border-amber-200 rounded-[3px] p-4 text-xs text-amber-950 text-left space-y-2.5">
+            <div className="font-bold text-[13px] flex items-center gap-1.5 text-amber-900">
+              <Clock className="w-4 h-4 text-amber-700" />
+              <span>Pending Teacher & Examiner Review</span>
+            </div>
+            <p className="text-amber-800 leading-relaxed">
+              Your test has been forwarded to your coaching center examiners for grading and quality moderation.
+            </p>
+            <ul className="list-disc pl-4 space-y-1 text-[11px] text-amber-800 font-medium">
+              <li>Writing tasks are evaluated with individual criteria feedback.</li>
+              <li>Reading and Listening answers are verified by center instructors.</li>
+              <li>Official results and band scores will be published on your dashboard once approved.</li>
+            </ul>
+          </div>
+
           <button onClick={() => router.push('/student/tests')} className="btn btn-fill px-8 py-3 w-full justify-center">
             Return to Dashboard
           </button>
@@ -351,6 +379,7 @@ export default function ExamPage() {
       </div>
     );
   }
+
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[var(--paper-alt)] font-sans relative">

@@ -41,7 +41,9 @@ export default function OrgResultsPage() {
                 <th>R / L / W Scores</th>
                 <th>Status</th>
                 <th>Date</th>
+                <th className="text-right">Action</th>
               </tr>
+
             </thead>
             <tbody>
               {orgLogs.length === 0 ? (
@@ -82,22 +84,38 @@ export default function OrgResultsPage() {
                         </div>
                       </td>
                       <td>
-                        <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${
-                          log.status === 'Completed' ? 'bg-[var(--forest)]/10 text-[var(--forest)] border border-[var(--forest)]/20' :
-                          log.status === 'Graded' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
-                          'bg-[var(--line-soft)] text-[var(--ink-soft)]'
+                        <span className={`px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wider ${
+                          log.isPublished || log.status === 'Graded'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                            : 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
                         }`}>
-                          {log.status}
+                          {log.isPublished || log.status === 'Graded' ? '✓ Released' : '⏳ Needs Evaluation'}
                         </span>
                       </td>
-                      <td className="text-[12px] text-[var(--ink-soft)]">
+                      <td className="text-[12px] text-[var(--ink-soft)] font-mono">
                         {new Date(log.completedAt).toLocaleDateString()}
+                      </td>
+                      <td className="text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/org/results/${log.id}`);
+                          }}
+                          className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
+                            log.isPublished || log.status === 'Graded'
+                              ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300'
+                              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                          }`}
+                        >
+                          {log.isPublished || log.status === 'Graded' ? 'View / Edit' : 'Evaluate & Grade'}
+                        </button>
                       </td>
                     </tr>
                   );
                 })
               )}
             </tbody>
+
           </table>
         </div>
       </div>

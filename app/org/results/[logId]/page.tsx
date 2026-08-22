@@ -76,7 +76,14 @@ export default function OrgDetailedResultsPage() {
         </div>
       </div>
 
-      <DetailedResultsView log={log} test={test} isOrg={true} onUpdateWriting={handleUpdateWriting} />
+      <DetailedResultsView 
+        log={log} 
+        test={test} 
+        isOrg={true} 
+        onSaveEvaluation={(payload) => updateExamLog(log.id, payload)}
+        onUpdateWriting={handleUpdateWriting} 
+      />
     </>
   );
 }
+

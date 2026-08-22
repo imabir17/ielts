@@ -99,10 +99,18 @@ export default function TestDetailsPage() {
                   <div className="font-medium text-[var(--ink)] text-[15px] capitalize">{mod.label}</div>
                   <div className="text-[12px] text-[var(--ink-soft)] mt-1">{mod.time}</div>
                   
-                  {isTaken && score !== undefined && (
-                    <div className="mt-3 pt-3 border-t border-[var(--forest)]/20 flex justify-between items-center">
-                      <span className="text-[10px] font-bold uppercase text-[var(--forest)]">Score</span>
-                      <span className="font-display text-[16px] text-[var(--forest)]">{score}</span>
+                  {isTaken && (
+                    <div className="mt-3 pt-3 border-t border-[var(--line-soft)] flex justify-between items-center">
+                      <span className="text-[10px] font-bold uppercase text-[var(--ink-soft)]">Status</span>
+                      <span className={`text-[12px] font-bold ${
+                        (log?.isPublished || log?.status === 'Graded') && score !== undefined
+                          ? 'text-[var(--forest)] font-display text-[16px]'
+                          : 'text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded text-[11px]'
+                      }`}>
+                        {(log?.isPublished || log?.status === 'Graded') && score !== undefined
+                          ? `Band ${score}`
+                          : 'Under Review'}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -113,7 +121,11 @@ export default function TestDetailsPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[var(--line-soft)]">
             <div className="flex items-center gap-2 text-[13px] text-[var(--ink-soft)] bg-[var(--paper-card)] p-3 rounded-[3px] flex-1">
               <ShieldAlert className="w-5 h-5 text-[var(--gold)] shrink-0" />
-              <span>You can take any remaining modules now, or retake completed modules to overwrite your previous attempt.</span>
+              <span>
+                {log?.isPublished || log?.status === 'Graded'
+                  ? 'Your test evaluation is complete and official verified results are published.'
+                  : 'Your submission is with the test center examiners. Official band scores will be published after review.'}
+              </span>
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -122,9 +134,10 @@ export default function TestDetailsPage() {
                   href={`/student/results/${log.id}`}
                   className="btn bg-white border border-[var(--line)] text-[var(--ink-soft)] hover:text-[var(--ink)] hover:border-[var(--ink)] w-full sm:w-auto justify-center"
                 >
-                  View Detailed Results
+                  {log.isPublished || log.status === 'Graded' ? 'View Official Results' : 'Check Evaluation Status'}
                 </Link>
               )}
+
               <Link
                 href={`/student/exam/${activeTest.id}`}
                 className="btn btn-fill w-full sm:w-auto justify-center"
