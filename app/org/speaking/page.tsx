@@ -20,9 +20,13 @@ export default function SpeakingRequestsPage() {
   const [feedback, setFeedback] = useState('');
   const [bandScore, setBandScore] = useState('');
 
-  // Filter requests for this org
-  const orgRequests = speakingRequests.filter(r => !currentUser || r.orgId === currentUser.id || currentUser.role === 'tenant' || currentUser.role === 'superadmin');
+  const isTeacher = currentUser?.role === 'teacher';
+  const targetOrgId = isTeacher ? currentUser?.orgId : currentUser?.id;
 
+  // Filter requests for this org
+  const orgRequests = speakingRequests.filter(r => 
+    !targetOrgId || r.orgId === targetOrgId || currentUser?.role === 'superadmin' || isTeacher || currentUser?.role === 'tenant'
+  );
 
   const handleSchedule = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +59,11 @@ export default function SpeakingRequestsPage() {
       bandScore: bScore
     });
 
-    // Try to find an examLog to update overallBand
+    const currentEvaluator = currentUser?.name
+      ? `${currentUser.name} (${currentUser.role === 'teacher' ? 'Teacher' : 'Center Admin'})`
+      : 'Examiner';
+
+    // Try to find an examLog to update overallBand and evaluator nametag
     const relatedLog = examLogs.find(l => l.studentId === reqToComplete.studentId && l.testId === reqToComplete.testId);
     if (relatedLog) {
       const newScores = { ...relatedLog.scores, speaking: bScore };
@@ -75,7 +83,10 @@ export default function SpeakingRequestsPage() {
 
       updateExamLog(relatedLog.id, {
         scores: newScores,
-        overallBand: newOverallBand
+        overallBand: newOverallBand,
+        speakingFeedback: feedback,
+        evaluatedBy: currentEvaluator,
+        evaluatedAt: new Date().toISOString()
       });
     }
 
@@ -83,6 +94,7 @@ export default function SpeakingRequestsPage() {
     setFeedback('');
     setBandScore('');
   };
+
 
   return (
     <>
