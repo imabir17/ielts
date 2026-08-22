@@ -3,11 +3,12 @@
 import React, { useState, useMemo } from 'react';
 import { ExamLog, Test, Question } from '@/lib/mock-data';
 import { rawToBandScore, calculateOverallBand, evaluateAnswerCorrectness } from '@/lib/ielts-grading';
-import { extractResolvedQuestions } from '@/lib/test-normalizer';
+import { extractResolvedQuestions, formatCorrectAnswerDisplay } from '@/lib/test-normalizer';
 import { 
   CheckCircle2, XCircle, AlertCircle, Award, Check, RotateCcw, 
   Send, FileText, Edit3, MessageSquare, Clock, ShieldCheck, Image as ImageIcon 
 } from 'lucide-react';
+
 
 interface DetailedResultsViewProps {
   log: ExamLog;
@@ -387,8 +388,9 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
                         </span>
                       </td>
                       <td className="font-mono text-xs font-medium text-[var(--forest)]">
-                        {Array.isArray(q.correctAnswer) ? q.correctAnswer.join(' OR ') : q.correctAnswer || '-'}
+                        {formatCorrectAnswerDisplay(q.correctAnswer)}
                       </td>
+
                       <td className="text-center">
                         <div className="inline-flex items-center space-x-1">
                           {isEffectiveCorrect ? (
@@ -493,8 +495,9 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
                         </span>
                       </td>
                       <td className="font-mono text-xs font-medium text-[var(--forest)]">
-                        {Array.isArray(q.correctAnswer) ? q.correctAnswer.join(' OR ') : q.correctAnswer || '-'}
+                        {formatCorrectAnswerDisplay(q.correctAnswer)}
                       </td>
+
                       <td className="text-center">
                         <div className="inline-flex items-center space-x-1">
                           {isEffectiveCorrect ? (

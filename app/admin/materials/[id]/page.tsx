@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/components/providers/StoreProvider';
 import { Test, Passage, ListeningSection, WritingTask, SpeakingPart, Question } from '@/lib/mock-data';
+import { formatCorrectAnswerDisplay } from '@/lib/test-normalizer';
 import { 
+
   ArrowLeft, BookOpen, CheckCircle2, Eye, Key, AlertTriangle, 
   Layers, Edit, Edit3, Trash2, X, Loader2 
 } from 'lucide-react';
@@ -136,8 +138,8 @@ export default function TestInspectorPage({ params }: { params: Promise<{ id: st
                     {pas.questions?.map((q: Question) => (
                       <div key={q.id} className="bg-white p-2 rounded-lg border border-slate-200 text-center">
                         <div className="text-[10px] font-mono text-slate-400">Q{q.questionNumber}</div>
-                        <div className="text-xs font-bold text-[#005C53] truncate">
-                          {Array.isArray(q.correctAnswer) ? q.correctAnswer.join('/') : q.correctAnswer || '-'}
+                        <div className="text-xs font-bold text-[#005C53] truncate" title={formatCorrectAnswerDisplay(q.correctAnswer)}>
+                          {formatCorrectAnswerDisplay(q.correctAnswer)}
                         </div>
                       </div>
                     ))}
@@ -163,11 +165,12 @@ export default function TestInspectorPage({ params }: { params: Promise<{ id: st
                     {sec.questions?.map((q: Question) => (
                       <div key={q.id} className="bg-white p-2 rounded-lg border border-slate-200 text-center">
                         <div className="text-[10px] font-mono text-slate-400">Q{q.questionNumber}</div>
-                        <div className="text-xs font-bold text-[#005C53] truncate">
-                          {Array.isArray(q.correctAnswer) ? q.correctAnswer.join('/') : q.correctAnswer || '-'}
+                        <div className="text-xs font-bold text-[#005C53] truncate" title={formatCorrectAnswerDisplay(q.correctAnswer)}>
+                          {formatCorrectAnswerDisplay(q.correctAnswer)}
                         </div>
                       </div>
                     ))}
+
                   </div>
                 </div>
               </div>

@@ -357,3 +357,44 @@ export function resolveQuestionAnswer(q: Question, sec?: QuestionSection): Quest
 
   return q;
 }
+
+/**
+ * Formats correct answers cleanly and readably for examiner tables and candidate results.
+ * E.g. converts multi-choice array permutations into "A. current teaching methods | C. cooling systems"
+ */
+export function formatCorrectAnswerDisplay(correctAns: any): string {
+  if (correctAns === undefined || correctAns === null || correctAns === '') return '-';
+  if (!Array.isArray(correctAns)) return String(correctAns);
+  if (correctAns.length === 0) return '-';
+
+  // 1. If array contains formatted "Letter. Description" strings (e.g. "A. current teaching methods")
+  const letterDotItems = correctAns.filter((item) => typeof item === 'string' && /^[A-Z]\.\s+/i.test(item.trim()));
+  if (letterDotItems.length > 0) {
+    const unique = Array.from(new Set(letterDotItems.map((i) => i.trim())));
+    return unique.join('  |  ');
+  }
+
+  // 2. If array contains individual letters and full texts
+  const letters = correctAns.filter((item) => typeof item === 'string' && /^[A-Z]$/i.test(item.trim()));
+  const fullTexts = correctAns.filter(
+    (item) => typeof item === 'string' && !/^[A-Z]$/i.test(item.trim()) && !/^[A-Z]\.\s+/i.test(item.trim())
+  );
+
+  if (letters.length > 0 && fullTexts.length > 0) {
+    const uniqueLetters = Array.from(new Set(letters.map((l) => l.toUpperCase())));
+    const uniqueTexts = Array.from(new Set(fullTexts));
+    if (uniqueLetters.length === uniqueTexts.length) {
+      const paired = uniqueLetters.map((l, i) => `${l}. ${uniqueTexts[i]}`);
+      return paired.join('  |  ');
+    }
+    return `${uniqueLetters.join(', ')} (${uniqueTexts.join(', ')})`;
+  }
+
+  // 3. Simple list of alternatives (e.g. ['10,000', '10000'] or ['forest', 'forests'])
+  const unique = Array.from(new Set(correctAns.map((item) => String(item).trim()))).filter(Boolean);
+  if (unique.length === 0) return '-';
+  if (unique.length === 1) return unique[0];
+
+  return unique.join(' / ');
+}
+
