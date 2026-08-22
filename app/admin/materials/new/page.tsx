@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 import { parseAndNormalizeTestJson, IngestionResult } from '@/lib/test-ingestion-engine';
 import { saveTestToStorage } from '@/lib/test-store';
 import { ImageUploader } from '@/components/admin/builder/ImageUploader';
+import { uploadAudioFile } from '@/lib/storage';
 import { ArrowLeft, Upload, CheckCircle2, AlertCircle, FileCode, Music, Image, Sparkles, Send, Eye } from 'lucide-react';
+
 
 const SAMPLE_FULL_JSON_TEMPLATE = `{
   "title": "IELTS Academic Official Test 08",
@@ -74,23 +76,20 @@ export default function TestIngestionPage() {
     }
   };
 
-  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setAudioFileName(file.name);
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const base64 = ev.target?.result as string;
-        if (base64) {
-          setAudioDataUrl(base64);
-          if (ingestionResult?.test) {
-            ingestionResult.test.listeningAudioUrl = base64;
-          }
+      const url = await uploadAudioFile(file);
+      if (url) {
+        setAudioDataUrl(url);
+        if (ingestionResult?.test) {
+          ingestionResult.test.listeningAudioUrl = url;
         }
-      };
-      reader.readAsDataURL(file);
+      }
     }
   };
+
 
 
   return (

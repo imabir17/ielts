@@ -2,8 +2,10 @@
 
 import React, { useState, useRef } from 'react';
 import { ListeningSection, QuestionSection, DiagramPin, QuestionType } from '@/lib/mock-data';
-import { Headphones, Music, CheckCircle2, AlertCircle, Play, Pause, Volume2, Plus, Trash2, ChevronDown, ChevronUp, ListPlus, ArrowUp, ArrowDown } from 'lucide-react';
+import { Headphones, Music, CheckCircle2, AlertCircle, Play, Pause, Volume2, Plus, Trash2, ChevronDown, ChevronUp, ListPlus, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
 import { ListeningQuestionEditor } from './ListeningQuestionEditor';
+import { uploadAudioFile } from '@/lib/storage';
+
 
 interface ListeningBuilderProps {
   listening: ListeningSection[];
@@ -95,19 +97,25 @@ export function ListeningBuilder({ listening, onChange, globalAudioUrl, onGlobal
     onChange(renumbered);
   };
 
-  const handleGlobalAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+
+  const handleGlobalAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const base64Url = ev.target?.result as string;
-        if (base64Url) {
-          onGlobalAudioUrlChange(base64Url);
+      setIsUploadingAudio(true);
+      try {
+        const url = await uploadAudioFile(file);
+        if (url) {
+          onGlobalAudioUrlChange(url);
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Audio upload failed:', err);
+      } finally {
+        setIsUploadingAudio(false);
+      }
     }
   };
+
 
 
   const togglePlayAudio = () => {
@@ -187,12 +195,21 @@ export function ListeningBuilder({ listening, onChange, globalAudioUrl, onGlobal
 
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-center space-y-2">
               <Music className="w-8 h-8 text-[#005C53] mx-auto" />
-              <div className="text-xs font-bold text-slate-700">Upload Master Audio MP3</div>
-              <label className="inline-block px-4 py-2 bg-[#005C53] text-white text-xs font-bold rounded-xl cursor-pointer hover:bg-[#003831] shadow-sm">
-                <span>Choose Audio File</span>
-                <input type="file" accept="audio/*" onChange={handleGlobalAudioUpload} className="hidden" />
+              <div className="text-xs font-bold text-slate-700">Upload Master Audio MP3 / WAV</div>
+              <p className="text-[11px] text-slate-500">Uploads to Supabase storage or attaches persistent audio</p>
+              <label className={`inline-flex items-center space-x-1.5 px-4 py-2 bg-[#005C53] text-white text-xs font-bold rounded-xl cursor-pointer hover:bg-[#003831] shadow-sm ${isUploadingAudio ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                {isUploadingAudio ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Uploading audio...</span>
+                  </>
+                ) : (
+                  <span>Choose Audio File</span>
+                )}
+                <input type="file" accept="audio/*" onChange={handleGlobalAudioUpload} disabled={isUploadingAudio} className="hidden" />
               </label>
             </div>
+
           </div>
           
           <div className="flex items-center justify-center">
