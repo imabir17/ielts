@@ -6,8 +6,10 @@ import { rawToBandScore, calculateOverallBand, evaluateAnswerCorrectness } from 
 import { extractResolvedQuestions, formatCorrectAnswerDisplay } from '@/lib/test-normalizer';
 import { 
   CheckCircle2, XCircle, AlertCircle, Award, Check, RotateCcw, 
-  Send, FileText, Edit3, MessageSquare, Clock, ShieldCheck, Image as ImageIcon 
+  Send, FileText, Edit3, MessageSquare, Clock, ShieldCheck, Image as ImageIcon,
+  Loader2, AlertTriangle 
 } from 'lucide-react';
+
 
 
 interface DetailedResultsViewProps {
@@ -27,6 +29,10 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
     reading: log.manualOverrides?.reading || {},
     listening: log.manualOverrides?.listening || {}
   }));
+
+  // Modal confirmation state
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Writing evaluation state
   const [task1Score, setTask1Score] = useState<string>(log.scores?.writingTask1?.toString() || '');
@@ -66,7 +72,6 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
     const isOverridden = override !== undefined && override !== isAutoCorrect;
 
     return {
-
       userAnswer,
       isAutoCorrect,
       isEffectiveCorrect,
@@ -83,9 +88,12 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
       const { isEffectiveCorrect } = getQuestionStatus('reading', q);
       if (isEffectiveCorrect) correctCount++;
     });
-    const band = rawToBandScore(correctCount, 'reading', test.category || 'Academic');
-    return { raw: correctCount, band };
-  }, [log, readingQuestions, manualOverrides.reading, test.category]);
+    return {
+      raw: correctCount,
+      band: rawToBandScore(correctCount, 'reading')
+    };
+
+  }, [readingQuestions, log.answers, manualOverrides]);
 
   // Live recalculate Listening raw score and band score
   const liveListening = useMemo(() => {
@@ -95,24 +103,29 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
       const { isEffectiveCorrect } = getQuestionStatus('listening', q);
       if (isEffectiveCorrect) correctCount++;
     });
-    const band = rawToBandScore(correctCount, 'listening', test.category || 'Academic');
-    return { raw: correctCount, band };
-  }, [log, listeningQuestions, manualOverrides.listening, test.category]);
+    return {
+      raw: correctCount,
+      band: rawToBandScore(correctCount, 'listening')
+    };
+  }, [listeningQuestions, log.answers, manualOverrides]);
 
-  // Combined Writing band score (Task 1 is 1/3, Task 2 is 2/3)
+  // Compute calculated writing band from task 1 and task 2 weights (Task 2 is weighted 2x of Task 1 in IELTS)
   const calculatedWritingBand = useMemo(() => {
     const t1 = parseFloat(task1Score);
     const t2 = parseFloat(task2Score);
-    if (!isNaN(t1) && !isNaN(t2)) {
-      const weighted = (t1 * 1/3) + (t2 * 2/3);
-      // Round to nearest 0.5
-      return Math.round(weighted * 2) / 2;
-    }
-    const direct = parseFloat(writingScore);
-    return !isNaN(direct) ? direct : undefined;
-  }, [task1Score, task2Score, writingScore]);
+    const manual = parseFloat(writingScore);
 
-  // Live Overall Band calculation
+    if (!isNaN(t1) && !isNaN(t2)) {
+      const weightedAvg = (t1 + t2 * 2) / 3;
+      return Math.round(weightedAvg * 2) / 2;
+    }
+    if (!isNaN(manual)) {
+      return manual;
+    }
+    return log.scores?.writing;
+  }, [task1Score, task2Score, writingScore, log.scores]);
+
+  // Live recalculate Overall Band Score
   const liveOverallBand = useMemo(() => {
     return calculateOverallBand({
       reading: liveReading.band,
@@ -122,7 +135,7 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
     });
   }, [liveReading.band, liveListening.band, calculatedWritingBand, speakingScore]);
 
-  // Handle toggling manual override for Reading/Listening
+  // Handle toggling manual override for Reading/Listening and auto-sync
   const handleToggleOverride = (module: 'reading' | 'listening', qId: string, markCorrect: boolean) => {
     setManualOverrides(prev => {
       const modOverrides = { ...prev[module] };
@@ -135,10 +148,23 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
         modOverrides[qId] = markCorrect;
       }
 
-      return {
+      const updated = {
         ...prev,
         [module]: modOverrides
       };
+
+      // Auto-save override to store immediately
+      if (onSaveEvaluation) {
+        onSaveEvaluation({ 
+          manualOverrides: updated,
+          rawScores: {
+            reading: module === 'reading' ? (markCorrect ? liveReading.raw + 1 : Math.max(0, liveReading.raw - 1)) : liveReading.raw,
+            listening: module === 'listening' ? (markCorrect ? liveListening.raw + 1 : Math.max(0, liveListening.raw - 1)) : liveListening.raw
+          }
+        });
+      }
+
+      return updated;
     });
   };
 
@@ -146,12 +172,17 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
     setManualOverrides(prev => {
       const modOverrides = { ...prev[module] };
       delete modOverrides[qId];
-      return { ...prev, [module]: modOverrides };
+      const updated = { ...prev, [module]: modOverrides };
+      if (onSaveEvaluation) {
+        onSaveEvaluation({ manualOverrides: updated });
+      }
+      return updated;
     });
   };
 
   // Examiner action: Save Moderation / Release Results
-  const handleSaveModeration = (publishToStudent: boolean = false) => {
+  const handleSaveModeration = async (publishToStudent: boolean = false) => {
+    setIsSaving(true);
     const updatedScores = {
       reading: liveReading.band,
       listening: liveListening.band,
@@ -179,19 +210,20 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
       task1Feedback,
       task2Feedback,
       speakingFeedback,
-      status: publishToStudent ? 'Graded' : 'Completed',
-      isPublished: publishToStudent,
+      status: publishToStudent ? 'Graded' : (log.status === 'Graded' ? 'Graded' : 'Completed'),
+      isPublished: publishToStudent ? true : log.isPublished,
       gradedAt: new Date().toISOString()
     };
 
     if (onSaveEvaluation) {
-      onSaveEvaluation(updatePayload);
+      await onSaveEvaluation(updatePayload);
     } else if (onUpdateWriting && calculatedWritingBand !== undefined) {
       onUpdateWriting(calculatedWritingBand, combinedWritingFeedback);
     }
 
-    setSaveSuccess(publishToStudent ? 'Official Results Released to Candidate!' : 'Evaluations and Overrides Saved Successfully!');
-    setTimeout(() => setSaveSuccess(null), 4000);
+    setIsSaving(false);
+    setSaveSuccess(publishToStudent ? 'Official Results Successfully Released to Student Portal!' : 'Evaluation Draft & Overrides Saved Successfully!');
+    setTimeout(() => setSaveSuccess(null), 5000);
   };
 
   const isPublished = log.isPublished || log.status === 'Graded';
@@ -247,14 +279,17 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
 
             <div className="flex items-center space-x-3 shrink-0">
               <button
+                disabled={isSaving}
                 onClick={() => handleSaveModeration(false)}
-                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-[3px] border border-slate-600 transition-colors shadow-sm"
+                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white font-bold text-xs rounded-[3px] border border-slate-600 transition-colors shadow-sm flex items-center gap-1.5"
               >
-                Save Evaluation Draft
+                {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Save Evaluation Draft</span>
               </button>
               <button
-                onClick={() => handleSaveModeration(true)}
-                className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-[3px] transition-colors shadow-lg flex items-center space-x-1.5"
+                disabled={isSaving}
+                onClick={() => setShowPublishModal(true)}
+                className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-extrabold text-xs rounded-[3px] transition-colors shadow-lg flex items-center space-x-1.5 cursor-pointer"
               >
                 <Send className="w-4 h-4" />
                 <span>{isPublished ? 'Update & Re-Publish Results' : 'Approve & Release Official Results'}</span>
@@ -270,6 +305,7 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
           )}
         </div>
       )}
+
 
       {/* SCORES SUMMARY PANEL */}
       <div className="panel p-6">
@@ -734,14 +770,17 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
 
           <div className="flex items-center space-x-3 w-full sm:w-auto">
             <button
+              disabled={isSaving}
               onClick={() => handleSaveModeration(false)}
-              className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded border border-slate-600 transition-colors"
+              className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white font-bold text-xs rounded border border-slate-600 transition-colors flex items-center justify-center gap-1.5"
             >
-              Save Evaluation Draft
+              {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>Save Evaluation Draft</span>
             </button>
             <button
-              onClick={() => handleSaveModeration(true)}
-              className="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded transition-colors shadow-lg flex items-center justify-center space-x-1.5"
+              disabled={isSaving}
+              onClick={() => setShowPublishModal(true)}
+              className="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-extrabold text-xs rounded transition-colors shadow-lg flex items-center justify-center space-x-1.5 cursor-pointer"
             >
               <Send className="w-4 h-4" />
               <span>{isPublished ? 'Update & Re-Publish Results' : 'Approve & Release Official Results'}</span>
@@ -750,6 +789,83 @@ export function DetailedResultsView({ log, test, isOrg, onSaveEvaluation, onUpda
         </div>
       )}
 
+      {/* CONFIRMATION ALERT MODAL WHEN PUBLISHING OFFICIAL RESULTS */}
+      {showPublishModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scale-up">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                <Send className="w-6 h-6" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <h3 className="text-lg font-bold text-slate-900">
+                  {isPublished ? 'Update & Re-Publish Results?' : 'Release Official Examination Results?'}
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  You are about to release the verified official exam results to <strong>{log.studentName}</strong> ({log.studentId}).
+                </p>
+              </div>
+            </div>
+
+            {/* Score Summary Card inside Modal */}
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono border-b border-slate-200 pb-2">
+                <span className="text-slate-500">Test Title</span>
+                <span className="font-bold text-slate-900 truncate max-w-[260px]">{log.testTitle}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-center pt-1">
+                <div className="bg-white p-2 rounded-lg border border-slate-200">
+                  <div className="text-[10px] uppercase text-slate-500 font-bold">Reading</div>
+                  <div className="text-sm font-bold text-slate-900">{liveReading.band !== undefined ? liveReading.band.toFixed(1) : '-'}</div>
+                </div>
+                <div className="bg-white p-2 rounded-lg border border-slate-200">
+                  <div className="text-[10px] uppercase text-slate-500 font-bold">Listening</div>
+                  <div className="text-sm font-bold text-slate-900">{liveListening.band !== undefined ? liveListening.band.toFixed(1) : '-'}</div>
+                </div>
+                <div className="bg-white p-2 rounded-lg border border-slate-200">
+                  <div className="text-[10px] uppercase text-slate-500 font-bold">Writing</div>
+                  <div className="text-sm font-bold text-slate-900">{calculatedWritingBand !== undefined ? calculatedWritingBand.toFixed(1) : 'Pending'}</div>
+                </div>
+                <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-300">
+                  <div className="text-[10px] uppercase text-emerald-800 font-bold">Overall</div>
+                  <div className="text-sm font-extrabold text-emerald-900">{liveOverallBand > 0 ? liveOverallBand.toFixed(1) : '-'}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+              <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+              <span>
+                The student will immediately gain access to their official verified band score, examiner feedback, and question breakdown on their Student Portal.
+              </span>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowPublishModal(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+              >
+                Cancel / Keep Draft
+              </button>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={async () => {
+                  setShowPublishModal(false);
+                  await handleSaveModeration(true);
+                }}
+                className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                <span>Confirm & Release Results</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+

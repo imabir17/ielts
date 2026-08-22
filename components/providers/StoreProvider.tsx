@@ -220,22 +220,37 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (logs) {
-          const mappedLogs = logs.map((l: any) => ({
-            ...l,
-            studentName: l.student_name,
-            studentId: l.student_id,
-            orgName: l.org_name,
-            orgId: l.org_id,
-            testTitle: l.test_title,
-            testId: l.test_id,
-            completedAt: l.completed_at,
-            modulesTaken: l.modules_taken,
-            overallBand: l.overall_band,
-            writingFeedback: l.writing_feedback
-          }));
+          const mappedLogs = logs.map((l: any) => {
+            const parsedScores: any = safeJsonParse(l.scores, {});
+            const isPub = l.status === 'Graded' || !!parsedScores?.isPublished;
+
+            return {
+              ...l,
+              studentName: l.student_name,
+              studentId: l.student_id,
+              orgName: l.org_name,
+              orgId: l.org_id,
+              testTitle: l.test_title,
+              testId: l.test_id,
+              completedAt: l.completed_at,
+              modulesTaken: safeJsonParse(l.modules_taken, []),
+              answers: safeJsonParse(l.answers, {}),
+              scores: parsedScores,
+              overallBand: l.overall_band !== null && l.overall_band !== undefined ? Number(l.overall_band) : undefined,
+              writingFeedback: l.writing_feedback,
+              status: l.status,
+              isPublished: isPub,
+              manualOverrides: parsedScores?.manualOverrides || l.manual_overrides || {},
+              rawScores: parsedScores?.rawScores || {},
+              task1Feedback: parsedScores?.task1Feedback || '',
+              task2Feedback: parsedScores?.task2Feedback || '',
+              speakingFeedback: parsedScores?.speakingFeedback || '',
+            };
+          });
           setExamLogs(mappedLogs);
           try { localStorage.setItem('ielts_cached_exam_logs', JSON.stringify(mappedLogs)); } catch {}
         }
+
 
         if (reqs) {
           setSpeakingRequests(reqs.map((r: any) => ({
@@ -494,7 +509,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateExamLog = async (id: string, updates: Partial<ExamLog>) => {
-    const updated = examLogs.map(l => l.id === id ? { ...l, ...updates } : l);
+    const existing = examLogs.find(l => l.id === id);
+    const isNowPublished = updates.isPublished !== undefined 
+      ? updates.isPublished 
+      : (updates.status === 'Graded' ? true : existing?.isPublished);
+
+    const merged: ExamLog = { 
+      ...(existing as ExamLog), 
+      ...updates,
+      isPublished: isNowPublished,
+    };
+    const updated = examLogs.map(l => l.id === id ? merged : l);
     setExamLogs(updated);
     try { localStorage.setItem('ielts_cached_exam_logs', JSON.stringify(updated)); } catch {}
 
@@ -509,15 +534,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.modulesTaken !== undefined) dbUpdates.modules_taken = updates.modulesTaken;
     if (updates.answers !== undefined) dbUpdates.answers = updates.answers;
-    if (updates.scores !== undefined) dbUpdates.scores = updates.scores;
     if (updates.overallBand !== undefined) dbUpdates.overall_band = updates.overallBand;
     if (updates.writingFeedback !== undefined) dbUpdates.writing_feedback = updates.writingFeedback;
+
+    // Bundle scores + overrides + feedback into the scores json object for DB persistence
+    const existingScores = typeof existing?.scores === 'object' && existing?.scores !== null ? existing.scores : {};
+    const newScores = typeof updates.scores === 'object' && updates.scores !== null ? updates.scores : {};
+    const combinedScores = {
+      ...existingScores,
+      ...newScores,
+      manualOverrides: updates.manualOverrides !== undefined ? updates.manualOverrides : existing?.manualOverrides,
+      rawScores: updates.rawScores !== undefined ? updates.rawScores : existing?.rawScores,
+      task1Feedback: updates.task1Feedback !== undefined ? updates.task1Feedback : existing?.task1Feedback,
+      task2Feedback: updates.task2Feedback !== undefined ? updates.task2Feedback : existing?.task2Feedback,
+      speakingFeedback: updates.speakingFeedback !== undefined ? updates.speakingFeedback : existing?.speakingFeedback,
+      isPublished: isNowPublished,
+    };
+    dbUpdates.scores = combinedScores;
 
     try { 
       const { error } = await supabase.from('exam_logs').update(dbUpdates).eq('id', id); 
       if (error) console.error('Supabase updateExamLog error:', error);
     } catch (e) { console.error('Supabase updateExamLog exception:', e); }
   };
+
 
   const addSpeakingRequest = async (req: SpeakingRequest) => {
     const updated = [...speakingRequests, req];
