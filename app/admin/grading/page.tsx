@@ -14,9 +14,8 @@ export default function SuperadminGradingPage() {
   const [bandScore, setBandScore] = useState<string>('');
   const [feedback, setFeedback] = useState<string>('');
 
-  if (!currentUser) return null;
-
   // Filter logs to find those that took Writing and are not yet graded
+
   const ungradedLogs = examLogs.filter(log => log.modulesTaken?.includes('writing') && log.status !== 'Graded');
   
   const selectedLog = examLogs.find(l => l.id === selectedLogId);

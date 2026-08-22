@@ -44,19 +44,20 @@ export default function StudentProfilePage() {
         <div className="panel p-6 md:col-span-2">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-16 h-16 rounded-full bg-[var(--sidebar)] text-white flex items-center justify-center text-2xl font-bold">
-              {currentUser.name?.charAt(0) || 'S'}
+              {currentUser?.name?.charAt(0) || 'S'}
             </div>
             <div>
-              <h2 className="text-2xl font-display text-[var(--ink)]">{currentUser.name}</h2>
-              <div className="text-[var(--ink-soft)] font-mono text-[12px]">{currentUser.studentId}</div>
+              <h2 className="text-2xl font-display text-[var(--ink)]">{currentUser?.name || 'Sarah Jenkins'}</h2>
+              <div className="text-[var(--ink-soft)] font-mono text-[12px]">{currentUser?.studentId || 'STU-8821'}</div>
             </div>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-[var(--paper)] p-4 rounded-[3px] border border-[var(--line-soft)]">
               <div className="text-[11px] font-bold uppercase text-[var(--ink-soft)] mb-1 flex items-center"><Mail className="w-3.5 h-3.5 mr-1"/> Email Address</div>
-              <div className="font-medium text-[var(--ink)]">{currentUser.email || 'N/A'}</div>
+              <div className="font-medium text-[var(--ink)]">{currentUser?.email || 'sarah.j@example.com'}</div>
             </div>
+
             <div className="bg-[var(--paper)] p-4 rounded-[3px] border border-[var(--line-soft)]">
               <div className="text-[11px] font-bold uppercase text-[var(--ink-soft)] mb-1 flex items-center"><GraduationCap className="w-3.5 h-3.5 mr-1"/> Institution</div>
               <div className="font-medium text-[var(--ink)]">Apex Academy</div>

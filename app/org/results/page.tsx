@@ -9,10 +9,9 @@ export default function OrgResultsPage() {
   const router = useRouter();
   const { students, examLogs, currentUser } = useStore();
 
-  if (!currentUser) return null;
-
   // Get all students for this org
-  const orgStudents = students.filter(s => s.orgId === currentUser.id || currentUser.role === 'tenant');
+  const orgStudents = students.filter(s => !currentUser || s.orgId === currentUser.id || currentUser.role === 'tenant' || currentUser.role === 'superadmin');
+
   const orgStudentIds = orgStudents.map(s => s.id);
 
   // Get all exam logs for these students

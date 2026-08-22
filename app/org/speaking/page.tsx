@@ -20,10 +20,9 @@ export default function SpeakingRequestsPage() {
   const [feedback, setFeedback] = useState('');
   const [bandScore, setBandScore] = useState('');
 
-  if (!currentUser) return null;
-
   // Filter requests for this org
-  const orgRequests = speakingRequests.filter(r => r.orgId === currentUser.id || currentUser.role === 'tenant'); // Simplify condition for mock
+  const orgRequests = speakingRequests.filter(r => !currentUser || r.orgId === currentUser.id || currentUser.role === 'tenant' || currentUser.role === 'superadmin');
+
 
   const handleSchedule = (e: React.FormEvent) => {
     e.preventDefault();

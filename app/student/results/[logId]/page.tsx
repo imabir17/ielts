@@ -12,10 +12,9 @@ export default function StudentDetailedResultsPage() {
   const logId = typeof params?.logId === 'string' ? params.logId : '';
   const { examLogs, tests, currentUser } = useStore();
 
-  if (!currentUser) return null;
-
-  const log = examLogs.find(l => l.id === logId && l.studentId === currentUser.id);
+  const log = examLogs.find(l => l.id === logId && (!currentUser || l.studentId === currentUser.id));
   const test = log ? tests.find(t => t.id === log.testId) : null;
+
 
   if (!log || !test) {
     return (

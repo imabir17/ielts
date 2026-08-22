@@ -5,7 +5,73 @@ import { Organization, Package, Student, PlatformManager, ExamLog, SpeakingReque
 import { getStoredTests, saveTestToStorage, deleteTestFromStorage } from '@/lib/test-store';
 import { supabase } from '@/lib/supabase';
 
+function safeJsonParse<T>(val: any, fallback: T): T {
+  if (!val) return fallback;
+  if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
+    return val as T;
+  }
+  if (typeof val === 'string') {
+    try {
+      return JSON.parse(val) as T;
+    } catch (e) {
+      console.warn('safeJsonParse failed, using fallback:', e);
+      return fallback;
+    }
+  }
+  return fallback;
+}
 
+const DEFAULT_TENANTS: Organization[] = [
+  {
+    id: 'org-1',
+    name: 'Apex IELTS Academy',
+    code: 'APEX-DHK',
+    location: 'Dhanmondi, Dhaka',
+    contactEmail: 'contact@apex-dkl.com',
+    subscriptionTier: 'Enterprise',
+    maxSeats: 250,
+    maxExamsPerMonth: 500,
+    examsUsedThisMonth: 0,
+    studentCount: 1,
+    activeTests: 1,
+    status: 'active',
+    createdDate: '2025-11-10',
+    orgAdminName: 'Rashid Khan',
+    orgAdminEmail: 'rashid@apex.com',
+    password: 'password123',
+    packageIds: ['pkg-3']
+  }
+];
+
+const DEFAULT_PACKAGES: Package[] = [
+  { id: 'pkg-1', name: 'Starter Plan', price: 49, testsIncluded: 10, idLimit: 50, examLimit: 100, description: 'Up to 50 students.' },
+  { id: 'pkg-2', name: 'Growth Plan', price: 99, testsIncluded: 25, idLimit: 150, examLimit: 300, description: 'Up to 150 students.' },
+  { id: 'pkg-3', name: 'Enterprise Plan', price: 199, testsIncluded: 100, idLimit: -1, examLimit: -1, description: 'Unlimited students and exams.' }
+];
+
+const DEFAULT_STUDENTS: Student[] = [
+  {
+    id: 'std-1',
+    name: 'Sarah Jenkins',
+    studentId: 'STU-8821',
+    email: 'sarah.j@example.com',
+    orgId: 'org-1',
+    assignedTests: ['test-ielts-01'],
+    completedTests: 0,
+    averageBand: 7.5,
+    password: 'student123'
+  }
+];
+
+const DEFAULT_MANAGERS: PlatformManager[] = [
+  {
+    id: 'superadmin',
+    name: 'Super Admin HQ',
+    email: 'admin@mockielts.com',
+    password: 'admin123',
+    role: 'superadmin'
+  }
+];
 
 interface StoreContextType {
   tenants: Organization[];
@@ -46,265 +112,245 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [tenants, setTenants] = useState<Organization[]>([]);
-  const [packages, setPackages] = useState<Package[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [managers, setManagers] = useState<PlatformManager[]>([]);
+  const [tenants, setTenants] = useState<Organization[]>(DEFAULT_TENANTS);
+  const [packages, setPackages] = useState<Package[]>(DEFAULT_PACKAGES);
+  const [students, setStudents] = useState<Student[]>(DEFAULT_STUDENTS);
+  const [managers, setManagers] = useState<PlatformManager[]>(DEFAULT_MANAGERS);
   const [examLogs, setExamLogs] = useState<ExamLog[]>([]);
   const [speakingRequests, setSpeakingRequests] = useState<SpeakingRequest[]>([]);
-  const [tests, setTests] = useState<any[]>([]);
+  const [tests, setTests] = useState<any[]>(MOCK_TESTS_CATALOG);
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
-      const [
-        { data: orgs },
-        { data: pkgs },
-        { data: stds },
-        { data: mgrs },
-        { data: logs },
-        { data: reqs },
-        { data: tsts }
-      ] = await Promise.all([
-        supabase.from('organizations').select('*'),
-        supabase.from('packages').select('*'),
-        supabase.from('students').select('*'),
-        supabase.from('managers').select('*'),
-        supabase.from('exam_logs').select('*'),
-        supabase.from('speaking_requests').select('*'),
-        supabase.from('tests').select('*')
-      ]);
+      try {
+        // Load initial local user if exists
+        try {
+          const storedUser = localStorage.getItem('mockielts_user');
+          if (storedUser) setCurrentUser(JSON.parse(storedUser));
+        } catch (e) {
+          console.warn('Could not load user from localStorage', e);
+        }
 
-      if (orgs && orgs.length > 0) {
-        // map snake_case to camelCase
-        setTenants(orgs.map((o: any) => ({
-          ...o,
-          contactEmail: o.contact_email,
-          subscriptionTier: o.subscription_tier,
-          maxSeats: o.max_seats,
-          maxExamsPerMonth: o.max_exams_per_month,
-          examsUsedThisMonth: o.exams_used_this_month,
-          studentCount: o.student_count,
-          activeTests: o.active_tests,
-          createdDate: o.created_date,
-          orgAdminName: o.org_admin_name,
-          orgAdminEmail: o.org_admin_email,
-          packageIds: o.package_ids
-        })));
-      } else {
-        setTenants([
-          {
-            id: 'org-1',
-            name: 'Apex IELTS Academy',
-            code: 'APEX-DHK',
-            location: 'Dhanmondi, Dhaka',
-            contactEmail: 'contact@apex-dkl.com',
-            subscriptionTier: 'Enterprise',
-            maxSeats: 250,
-            maxExamsPerMonth: 500,
-            examsUsedThisMonth: 0,
-            studentCount: 1,
-            activeTests: 1,
-            status: 'active',
-            createdDate: '2025-11-10',
-            orgAdminName: 'Rashid Khan',
-            orgAdminEmail: 'rashid@apex.com',
-            password: 'password123',
-            packageIds: ['pkg-3']
+        // Load tests from local store first as fallback
+        try {
+          const stored = getStoredTests();
+          if (stored && stored.length > 0) {
+            setTests(stored);
           }
+        } catch (e) {
+          console.warn('Could not load tests from localStorage', e);
+        }
+
+        const [
+          { data: orgs },
+          { data: pkgs },
+          { data: stds },
+          { data: mgrs },
+          { data: logs },
+          { data: reqs },
+          { data: tsts }
+        ] = await Promise.all([
+          supabase.from('organizations').select('*'),
+          supabase.from('packages').select('*'),
+          supabase.from('students').select('*'),
+          supabase.from('managers').select('*'),
+          supabase.from('exam_logs').select('*'),
+          supabase.from('speaking_requests').select('*'),
+          supabase.from('tests').select('*')
         ]);
+
+        if (orgs && orgs.length > 0) {
+          setTenants(orgs.map((o: any) => ({
+            ...o,
+            contactEmail: o.contact_email,
+            subscriptionTier: o.subscription_tier,
+            maxSeats: o.max_seats,
+            maxExamsPerMonth: o.max_exams_per_month,
+            examsUsedThisMonth: o.exams_used_this_month,
+            studentCount: o.student_count,
+            activeTests: o.active_tests,
+            createdDate: o.created_date,
+            orgAdminName: o.org_admin_name,
+            orgAdminEmail: o.org_admin_email,
+            packageIds: o.package_ids
+          })));
+        }
+
+        if (pkgs && pkgs.length > 0) {
+          setPackages(pkgs.map((p: any) => ({
+            ...p,
+            idLimit: p.id_limit,
+            examLimit: p.exam_limit
+          })));
+        }
+
+        if (stds && stds.length > 0) {
+          setStudents(stds.map((s: any) => ({
+            ...s,
+            studentId: s.student_id,
+            orgId: s.org_id,
+            assignedTests: s.assigned_tests || [],
+            completedTests: s.completed_tests || 0,
+            averageBand: s.average_band || 0
+          })));
+        }
+
+        if (mgrs && mgrs.length > 0) {
+          setManagers(mgrs);
+        }
+
+        if (logs) {
+          setExamLogs(logs.map((l: any) => ({
+            ...l,
+            studentName: l.student_name,
+            studentId: l.student_id,
+            orgName: l.org_name,
+            orgId: l.org_id,
+            testTitle: l.test_title,
+            testId: l.test_id,
+            completedAt: l.completed_at,
+            modulesTaken: l.modules_taken,
+            overallBand: l.overall_band,
+            writingFeedback: l.writing_feedback
+          })));
+        }
+
+        if (reqs) {
+          setSpeakingRequests(reqs.map((r: any) => ({
+            ...r,
+            studentId: r.student_id,
+            orgId: r.org_id,
+            testId: r.test_id,
+            scheduledDate: r.scheduled_date,
+            requestedAt: r.requested_at
+          })));
+        }
+
+        if (tsts && tsts.length > 0) {
+          setTests(tsts.map((t: any) => ({
+            ...t,
+            totalDurationMinutes: t.total_duration_minutes,
+            tierAccess: t.tier_access,
+            questionCount: t.question_count,
+            createdDate: t.created_date,
+            listeningAudioUrl: t.listening_audio_url || t.listeningAudioUrl || '',
+            reading: safeJsonParse(t.reading, []),
+            listening: safeJsonParse(t.listening, []),
+            writing: safeJsonParse(t.writing, []),
+            speaking: safeJsonParse(t.speaking, []),
+          })));
+        }
+      } catch (err) {
+        console.error('StoreProvider: error during Supabase sync:', err);
+      } finally {
+        setIsInitialized(true);
       }
-      
-      if (pkgs && pkgs.length > 0) {
-        setPackages(pkgs.map((p: any) => ({
-          ...p,
-          idLimit: p.id_limit,
-          examLimit: p.exam_limit
-        })));
-      } else {
-        setPackages([
-          { id: 'pkg-1', name: 'Starter Plan', price: 49, testsIncluded: 10, idLimit: 50, examLimit: 100, description: 'Up to 50 students.' },
-          { id: 'pkg-2', name: 'Growth Plan', price: 99, testsIncluded: 25, idLimit: 150, examLimit: 300, description: 'Up to 150 students.' },
-          { id: 'pkg-3', name: 'Enterprise Plan', price: 199, testsIncluded: 100, idLimit: -1, examLimit: -1, description: 'Unlimited students and exams.' }
-        ]);
-      }
-
-
-      if (stds && stds.length > 0) {
-        setStudents(stds.map((s: any) => ({
-          ...s,
-          studentId: s.student_id,
-          orgId: s.org_id,
-          assignedTests: s.assigned_tests || [],
-          completedTests: s.completed_tests || 0,
-          averageBand: s.average_band || 0
-        })));
-      } else {
-        setStudents([
-          {
-            id: 'std-1',
-            name: 'Sarah Jenkins',
-            studentId: 'STU-8821',
-            email: 'sarah.j@example.com',
-            orgId: 'org-1',
-            assignedTests: ['test-ielts-01'],
-            completedTests: 0,
-            averageBand: 7.5,
-            password: 'student123'
-          }
-        ]);
-      }
-
-      if (mgrs && mgrs.length > 0) {
-        setManagers(mgrs);
-      } else {
-        setManagers([
-          {
-            id: 'superadmin',
-            name: 'Super Admin HQ',
-            email: 'admin@mockielts.com',
-            password: 'admin123',
-            role: 'superadmin'
-          }
-        ]);
-      }
-
-      if (logs) {
-        setExamLogs(logs.map((l: any) => ({
-          ...l,
-          studentName: l.student_name,
-          studentId: l.student_id,
-          orgName: l.org_name,
-          orgId: l.org_id,
-          testTitle: l.test_title,
-          testId: l.test_id,
-          completedAt: l.completed_at,
-          modulesTaken: l.modules_taken,
-          overallBand: l.overall_band,
-          writingFeedback: l.writing_feedback
-        })));
-      }
-
-      if (reqs) {
-        setSpeakingRequests(reqs.map((r: any) => ({
-          ...r,
-          studentId: r.student_id,
-          orgId: r.org_id,
-          testId: r.test_id,
-          scheduledDate: r.scheduled_date,
-          requestedAt: r.requested_at
-        })));
-      }
-
-      if (tsts && tsts.length > 0) {
-        setTests(tsts.map((t: any) => ({
-          ...t,
-          totalDurationMinutes: t.total_duration_minutes,
-          tierAccess: t.tier_access,
-          questionCount: t.question_count,
-          createdDate: t.created_date,
-          listeningAudioUrl: t.listening_audio_url || t.listeningAudioUrl || '',
-          reading: typeof t.reading === 'string' ? JSON.parse(t.reading) : (Array.isArray(t.reading) ? t.reading : []),
-          listening: typeof t.listening === 'string' ? JSON.parse(t.listening) : (Array.isArray(t.listening) ? t.listening : []),
-          writing: typeof t.writing === 'string' ? JSON.parse(t.writing) : (Array.isArray(t.writing) ? t.writing : []),
-          speaking: typeof t.speaking === 'string' ? JSON.parse(t.speaking) : (Array.isArray(t.speaking) ? t.speaking : []),
-        })));
-      } else {
-        const stored = getStoredTests();
-        setTests(stored && stored.length > 0 ? stored : MOCK_TESTS_CATALOG);
-      }
-
-
-      const storedUser = localStorage.getItem('mockielts_user');
-      if (storedUser) setCurrentUser(JSON.parse(storedUser));
-
-      setIsInitialized(true);
     }
 
     fetchData();
   }, []);
 
+  // Safe localStorage synchronization
+  useEffect(() => {
+    if (isInitialized && tests.length > 0) {
+      try {
+        localStorage.setItem('ielts_custom_tests_catalog_v1', JSON.stringify(tests));
+      } catch (e) {
+        console.warn('LocalStorage quota exceeded or error when persisting tests:', e);
+      }
+    }
+  }, [tests, isInitialized]);
 
-  useEffect(() => { if (isInitialized && tests.length > 0) localStorage.setItem('ielts_custom_tests_catalog_v1', JSON.stringify(tests)); }, [tests, isInitialized]);
   useEffect(() => {
     if (isInitialized) {
-      if (currentUser) localStorage.setItem('mockielts_user', JSON.stringify(currentUser));
-      else localStorage.removeItem('mockielts_user');
+      try {
+        if (currentUser) localStorage.setItem('mockielts_user', JSON.stringify(currentUser));
+        else localStorage.removeItem('mockielts_user');
+      } catch (e) {
+        console.warn('LocalStorage error when persisting user:', e);
+      }
     }
   }, [currentUser, isInitialized]);
 
-  // MUTATIONS (Optimistic UI + Supabase sync)
-  
+  // Mutations
   const addTenant = async (tenant: Organization) => {
-    setTenants([tenant, ...tenants]);
-    await supabase.from('organizations').insert({
-      id: tenant.id, name: tenant.name, code: tenant.code, location: tenant.location,
-      contact_email: tenant.contactEmail, subscription_tier: tenant.subscriptionTier,
-      max_seats: tenant.maxSeats, max_exams_per_month: tenant.maxExamsPerMonth,
-      exams_used_this_month: tenant.examsUsedThisMonth, student_count: tenant.studentCount,
-      active_tests: tenant.activeTests, status: tenant.status, created_date: tenant.createdDate,
-      org_admin_name: tenant.orgAdminName, org_admin_email: tenant.orgAdminEmail, package_ids: tenant.packageIds,
-      password: tenant.password
-    });
+    setTenants([...tenants, tenant]);
+    const dbInsert: any = { ...tenant };
+    if (tenant.contactEmail) dbInsert.contact_email = tenant.contactEmail;
+    if (tenant.subscriptionTier) dbInsert.subscription_tier = tenant.subscriptionTier;
+    if (tenant.maxSeats) dbInsert.max_seats = tenant.maxSeats;
+    if (tenant.maxExamsPerMonth) dbInsert.max_exams_per_month = tenant.maxExamsPerMonth;
+    if (tenant.examsUsedThisMonth) dbInsert.exams_used_this_month = tenant.examsUsedThisMonth;
+    if (tenant.studentCount) dbInsert.student_count = tenant.studentCount;
+    if (tenant.activeTests) dbInsert.active_tests = tenant.activeTests;
+    if (tenant.createdDate) dbInsert.created_date = tenant.createdDate;
+    if (tenant.orgAdminName) dbInsert.org_admin_name = tenant.orgAdminName;
+    if (tenant.orgAdminEmail) dbInsert.org_admin_email = tenant.orgAdminEmail;
+    if (tenant.packageIds) dbInsert.package_ids = tenant.packageIds;
+    ['contactEmail', 'subscriptionTier', 'maxSeats', 'maxExamsPerMonth', 'examsUsedThisMonth', 'studentCount', 'activeTests', 'createdDate', 'orgAdminName', 'orgAdminEmail', 'packageIds'].forEach(k => delete dbInsert[k]);
+    try { await supabase.from('organizations').insert(dbInsert); } catch (e) { console.warn(e); }
   };
-  
+
   const updateTenant = async (id: string, updates: Partial<Organization>) => {
     setTenants(tenants.map(t => t.id === id ? { ...t, ...updates } : t));
     const dbUpdates: any = { ...updates };
     if (updates.contactEmail) dbUpdates.contact_email = updates.contactEmail;
     if (updates.subscriptionTier) dbUpdates.subscription_tier = updates.subscriptionTier;
-    if (updates.maxSeats !== undefined) dbUpdates.max_seats = updates.maxSeats;
-    if (updates.maxExamsPerMonth !== undefined) dbUpdates.max_exams_per_month = updates.maxExamsPerMonth;
-    if (updates.examsUsedThisMonth !== undefined) dbUpdates.exams_used_this_month = updates.examsUsedThisMonth;
-    if (updates.studentCount !== undefined) dbUpdates.student_count = updates.studentCount;
-    if (updates.activeTests !== undefined) dbUpdates.active_tests = updates.activeTests;
+    if (updates.maxSeats) dbUpdates.max_seats = updates.maxSeats;
+    if (updates.maxExamsPerMonth) dbUpdates.max_exams_per_month = updates.maxExamsPerMonth;
+    if (updates.examsUsedThisMonth) dbUpdates.exams_used_this_month = updates.examsUsedThisMonth;
+    if (updates.studentCount) dbUpdates.student_count = updates.studentCount;
+    if (updates.activeTests) dbUpdates.active_tests = updates.activeTests;
     if (updates.createdDate) dbUpdates.created_date = updates.createdDate;
     if (updates.orgAdminName) dbUpdates.org_admin_name = updates.orgAdminName;
     if (updates.orgAdminEmail) dbUpdates.org_admin_email = updates.orgAdminEmail;
     if (updates.packageIds) dbUpdates.package_ids = updates.packageIds;
-    
-    // remove camelCase keys
     ['contactEmail', 'subscriptionTier', 'maxSeats', 'maxExamsPerMonth', 'examsUsedThisMonth', 'studentCount', 'activeTests', 'createdDate', 'orgAdminName', 'orgAdminEmail', 'packageIds'].forEach(k => delete dbUpdates[k]);
-    
-    await supabase.from('organizations').update(dbUpdates).eq('id', id);
+    try { await supabase.from('organizations').update(dbUpdates).eq('id', id); } catch (e) { console.warn(e); }
   };
-  
+
   const deleteTenant = async (id: string) => {
     setTenants(tenants.filter(t => t.id !== id));
-    await supabase.from('organizations').delete().eq('id', id);
+    try { await supabase.from('organizations').delete().eq('id', id); } catch (e) { console.warn(e); }
   };
 
   const addPackage = async (pkg: Package) => {
-    setPackages([pkg, ...packages]);
-    await supabase.from('packages').insert({
-      id: pkg.id, name: pkg.name, price: pkg.price, id_limit: pkg.idLimit, exam_limit: pkg.examLimit, description: pkg.description
-    });
+    setPackages([...packages, pkg]);
+    const dbInsert: any = { ...pkg };
+    if (pkg.idLimit !== undefined) dbInsert.id_limit = pkg.idLimit;
+    if (pkg.examLimit !== undefined) dbInsert.exam_limit = pkg.examLimit;
+    ['idLimit', 'examLimit', 'testsIncluded'].forEach(k => delete dbInsert[k]);
+    try { await supabase.from('packages').insert(dbInsert); } catch (e) { console.warn(e); }
   };
-  
+
   const updatePackage = async (id: string, updates: Partial<Package>) => {
     setPackages(packages.map(p => p.id === id ? { ...p, ...updates } : p));
     const dbUpdates: any = { ...updates };
     if (updates.idLimit !== undefined) dbUpdates.id_limit = updates.idLimit;
     if (updates.examLimit !== undefined) dbUpdates.exam_limit = updates.examLimit;
-    delete dbUpdates.idLimit; delete dbUpdates.examLimit;
-    await supabase.from('packages').update(dbUpdates).eq('id', id);
+    ['idLimit', 'examLimit', 'testsIncluded'].forEach(k => delete dbUpdates[k]);
+    try { await supabase.from('packages').update(dbUpdates).eq('id', id); } catch (e) { console.warn(e); }
   };
-  
+
   const deletePackage = async (id: string) => {
     setPackages(packages.filter(p => p.id !== id));
-    await supabase.from('packages').delete().eq('id', id);
+    try { await supabase.from('packages').delete().eq('id', id); } catch (e) { console.warn(e); }
   };
 
   const addStudent = async (student: Student) => {
-    setStudents([student, ...students]);
-    await supabase.from('students').insert({
-      id: student.id, name: student.name, student_id: student.studentId, email: student.email,
-      password: student.password,
-      org_id: student.orgId, assigned_tests: student.assignedTests, completed_tests: student.completedTests, average_band: student.averageBand
-    });
+    setStudents([...students, student]);
+    const dbInsert: any = { ...student };
+    if (student.studentId) dbInsert.student_id = student.studentId;
+    if (student.orgId) dbInsert.org_id = student.orgId;
+    if (student.assignedTests) dbInsert.assigned_tests = student.assignedTests;
+    if (student.completedTests !== undefined) dbInsert.completed_tests = student.completedTests;
+    if (student.averageBand !== undefined) dbInsert.average_band = student.averageBand;
+    ['studentId', 'orgId', 'assignedTests', 'completedTests', 'averageBand'].forEach(k => delete dbInsert[k]);
+    try { await supabase.from('students').insert(dbInsert); } catch (e) { console.warn(e); }
   };
-  
+
   const updateStudent = async (id: string, updates: Partial<Student>) => {
     setStudents(students.map(s => s.id === id ? { ...s, ...updates } : s));
     const dbUpdates: any = { ...updates };
@@ -314,29 +360,36 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (updates.completedTests !== undefined) dbUpdates.completed_tests = updates.completedTests;
     if (updates.averageBand !== undefined) dbUpdates.average_band = updates.averageBand;
     ['studentId', 'orgId', 'assignedTests', 'completedTests', 'averageBand'].forEach(k => delete dbUpdates[k]);
-    await supabase.from('students').update(dbUpdates).eq('id', id);
+    try { await supabase.from('students').update(dbUpdates).eq('id', id); } catch (e) { console.warn(e); }
   };
 
   const addManager = async (manager: PlatformManager) => {
     setManagers([...managers, manager]);
-    await supabase.from('managers').insert(manager);
+    try { await supabase.from('managers').insert(manager); } catch (e) { console.warn(e); }
   };
-  
+
   const deleteManager = async (id: string) => {
     setManagers(managers.filter(m => m.id !== id));
-    await supabase.from('managers').delete().eq('id', id);
+    try { await supabase.from('managers').delete().eq('id', id); } catch (e) { console.warn(e); }
   };
 
   const addExamLog = async (log: ExamLog) => {
     setExamLogs([...examLogs, log]);
-    await supabase.from('exam_logs').insert({
-      id: log.id, student_name: log.studentName, student_id: log.studentId,
-      org_name: log.orgName, org_id: log.orgId, test_title: log.testTitle, test_id: log.testId,
-      completed_at: log.completedAt, status: log.status, modules_taken: log.modulesTaken,
-      answers: log.answers, scores: log.scores, overall_band: log.overallBand, writing_feedback: log.writingFeedback
-    });
+    const dbInsert: any = { ...log };
+    if (log.studentName) dbInsert.student_name = log.studentName;
+    if (log.studentId) dbInsert.student_id = log.studentId;
+    if (log.orgName) dbInsert.org_name = log.orgName;
+    if (log.orgId) dbInsert.org_id = log.orgId;
+    if (log.testTitle) dbInsert.test_title = log.testTitle;
+    if (log.testId) dbInsert.test_id = log.testId;
+    if (log.completedAt) dbInsert.completed_at = log.completedAt;
+    if (log.modulesTaken) dbInsert.modules_taken = log.modulesTaken;
+    if (log.overallBand !== undefined) dbInsert.overall_band = log.overallBand;
+    if (log.writingFeedback) dbInsert.writing_feedback = log.writingFeedback;
+    ['studentName', 'studentId', 'orgName', 'orgId', 'testTitle', 'testId', 'completedAt', 'modulesTaken', 'overallBand', 'writingFeedback'].forEach(k => delete dbInsert[k]);
+    try { await supabase.from('exam_logs').insert(dbInsert); } catch (e) { console.warn(e); }
   };
-  
+
   const updateExamLog = async (id: string, updates: Partial<ExamLog>) => {
     setExamLogs(examLogs.map(l => l.id === id ? { ...l, ...updates } : l));
     const dbUpdates: any = { ...updates };
@@ -351,17 +404,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (updates.overallBand !== undefined) dbUpdates.overall_band = updates.overallBand;
     if (updates.writingFeedback) dbUpdates.writing_feedback = updates.writingFeedback;
     ['studentName', 'studentId', 'orgName', 'orgId', 'testTitle', 'testId', 'completedAt', 'modulesTaken', 'overallBand', 'writingFeedback'].forEach(k => delete dbUpdates[k]);
-    await supabase.from('exam_logs').update(dbUpdates).eq('id', id);
+    try { await supabase.from('exam_logs').update(dbUpdates).eq('id', id); } catch (e) { console.warn(e); }
   };
 
   const addSpeakingRequest = async (req: SpeakingRequest) => {
     setSpeakingRequests([...speakingRequests, req]);
-    await supabase.from('speaking_requests').insert({
-      id: req.id, student_id: req.studentId, org_id: req.orgId, test_id: req.testId,
-      status: req.status, scheduled_date: req.scheduledDate, type: req.type, link: req.link, requested_at: req.requestedAt
-    });
+    const dbInsert: any = { ...req };
+    if (req.studentId) dbInsert.student_id = req.studentId;
+    if (req.orgId) dbInsert.org_id = req.orgId;
+    if (req.testId) dbInsert.test_id = req.testId;
+    if (req.scheduledDate) dbInsert.scheduled_date = req.scheduledDate;
+    if (req.requestedAt) dbInsert.requested_at = req.requestedAt;
+    ['studentId', 'orgId', 'testId', 'scheduledDate', 'requestedAt', 'feedback', 'bandScore'].forEach(k => delete dbInsert[k]);
+    try { await supabase.from('speaking_requests').insert(dbInsert); } catch (e) { console.warn(e); }
   };
-  
+
   const updateSpeakingRequest = async (id: string, updates: Partial<SpeakingRequest>) => {
     setSpeakingRequests(speakingRequests.map(r => r.id === id ? { ...r, ...updates } : r));
     const dbUpdates: any = { ...updates };
@@ -371,7 +428,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (updates.scheduledDate) dbUpdates.scheduled_date = updates.scheduledDate;
     if (updates.requestedAt) dbUpdates.requested_at = updates.requestedAt;
     ['studentId', 'orgId', 'testId', 'scheduledDate', 'requestedAt', 'feedback', 'bandScore'].forEach(k => delete dbUpdates[k]);
-    await supabase.from('speaking_requests').update(dbUpdates).eq('id', id);
+    try { await supabase.from('speaking_requests').update(dbUpdates).eq('id', id); } catch (e) { console.warn(e); }
   };
 
   const addTest = async (test: any) => {
@@ -419,9 +476,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       console.warn('Supabase test delete failed, removed locally:', e);
     }
   };
-
-
-  if (!isInitialized) return null;
 
   return (
     <StoreContext.Provider value={{

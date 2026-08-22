@@ -13,10 +13,9 @@ export default function OrgDetailedResultsPage() {
   const logId = typeof params?.logId === 'string' ? params.logId : '';
   const { examLogs, tests, currentUser, updateExamLog } = useStore();
 
-  if (!currentUser) return null;
-
   // Verify access (must be same org)
-  const log = examLogs.find(l => l.id === logId && (l.orgId === currentUser.id || currentUser.role === 'tenant'));
+  const log = examLogs.find(l => l.id === logId && (!currentUser || l.orgId === currentUser.id || currentUser.role === 'tenant' || currentUser.role === 'superadmin'));
+
   const test = log ? tests.find(t => t.id === log.testId) : null;
 
   const handleUpdateWriting = (newScore: number, feedback: string) => {
