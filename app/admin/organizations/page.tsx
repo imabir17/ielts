@@ -250,8 +250,11 @@ export default function OrganizationsDirectoryPage() {
                       <input type="checkbox" checked={selectedPackages.includes(pkg.id)} onChange={() => togglePackage(pkg.id)} className="w-4 h-4" />
                       <div>
                         <div className="text-[14px] font-medium text-[var(--ink)]">{pkg.name}</div>
-                        <div className="text-[12px] text-[var(--ink-faint)]">৳{pkg.price} • {pkg.testsIncluded} tests</div>
+                        <div className="text-[12px] text-[var(--ink-faint)]">
+                          ৳{pkg.price} • {pkg.examLimit === 'unlimited' || pkg.examLimit === -1 ? 'Unlimited' : pkg.examLimit} exams • {pkg.idLimit === 'unlimited' || pkg.idLimit === -1 ? 'Unlimited' : pkg.idLimit} IDs
+                        </div>
                       </div>
+
                     </label>
                   ))}
                 </div>

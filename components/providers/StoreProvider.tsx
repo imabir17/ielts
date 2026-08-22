@@ -194,12 +194,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (pkgs && pkgs.length > 0) {
           const mappedPkgs = pkgs.map((p: any) => ({
             ...p,
-            idLimit: p.id_limit,
-            examLimit: p.exam_limit
+            idLimit: (p.id_limit === -1 || p.id_limit === null || p.id_limit >= 99999 || p.id_limit === 'unlimited') ? 'unlimited' : Number(p.id_limit),
+            examLimit: (p.exam_limit === -1 || p.exam_limit === null || p.exam_limit >= 99999 || p.exam_limit === 'unlimited') ? 'unlimited' : Number(p.exam_limit)
           }));
           setPackages(mappedPkgs);
           try { localStorage.setItem('ielts_cached_packages', JSON.stringify(mappedPkgs)); } catch {}
         }
+
 
         if (stds && stds.length > 0) {
           const mappedStds = stds.map((s: any) => ({
@@ -329,8 +330,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       location: tenant.location,
       contact_email: tenant.contactEmail,
       subscription_tier: tenant.subscriptionTier,
-      max_seats: tenant.maxSeats || 250,
-      max_exams_per_month: tenant.maxExamsPerMonth || 500,
+      max_seats: (tenant.maxSeats as any) === 'unlimited' ? -1 : (Number(tenant.maxSeats) || 250),
+      max_exams_per_month: (tenant.maxExamsPerMonth as any) === 'unlimited' ? -1 : (Number(tenant.maxExamsPerMonth) || 500),
       exams_used_this_month: tenant.examsUsedThisMonth || 0,
       student_count: tenant.studentCount || 0,
       active_tests: tenant.activeTests || 1,
@@ -358,8 +359,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (updates.location !== undefined) dbUpdates.location = updates.location;
     if (updates.contactEmail !== undefined) dbUpdates.contact_email = updates.contactEmail;
     if (updates.subscriptionTier !== undefined) dbUpdates.subscription_tier = updates.subscriptionTier;
-    if (updates.maxSeats !== undefined) dbUpdates.max_seats = updates.maxSeats;
-    if (updates.maxExamsPerMonth !== undefined) dbUpdates.max_exams_per_month = updates.maxExamsPerMonth;
+    if (updates.maxSeats !== undefined) {
+      dbUpdates.max_seats = (updates.maxSeats as any) === 'unlimited' ? -1 : (Number(updates.maxSeats) || 0);
+    }
+    if (updates.maxExamsPerMonth !== undefined) {
+      dbUpdates.max_exams_per_month = (updates.maxExamsPerMonth as any) === 'unlimited' ? -1 : (Number(updates.maxExamsPerMonth) || 0);
+    }
+
     if (updates.examsUsedThisMonth !== undefined) dbUpdates.exams_used_this_month = updates.examsUsedThisMonth;
     if (updates.studentCount !== undefined) dbUpdates.student_count = updates.studentCount;
     if (updates.activeTests !== undefined) dbUpdates.active_tests = updates.activeTests;
@@ -392,9 +398,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       id: pkg.id,
       name: pkg.name,
       price: pkg.price,
-      id_limit: pkg.idLimit,
-      exam_limit: pkg.examLimit,
-      description: pkg.description
+      id_limit: pkg.idLimit === 'unlimited' ? -1 : (Number(pkg.idLimit) || 0),
+      exam_limit: pkg.examLimit === 'unlimited' ? -1 : (Number(pkg.examLimit) || 0),
+      description: pkg.description || ''
     };
     try { 
       const { error } = await supabase.from('packages').insert(dbInsert); 
@@ -410,8 +416,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const dbUpdates: any = {};
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.price !== undefined) dbUpdates.price = updates.price;
-    if (updates.idLimit !== undefined) dbUpdates.id_limit = updates.idLimit;
-    if (updates.examLimit !== undefined) dbUpdates.exam_limit = updates.examLimit;
+    if (updates.idLimit !== undefined) {
+      dbUpdates.id_limit = updates.idLimit === 'unlimited' ? -1 : (Number(updates.idLimit) || 0);
+    }
+    if (updates.examLimit !== undefined) {
+      dbUpdates.exam_limit = updates.examLimit === 'unlimited' ? -1 : (Number(updates.examLimit) || 0);
+    }
     if (updates.description !== undefined) dbUpdates.description = updates.description;
 
     try { 
@@ -419,6 +429,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (error) console.error('Supabase updatePackage error:', error);
     } catch (e) { console.error('Supabase updatePackage exception:', e); }
   };
+
 
   const deletePackage = async (id: string) => {
     const updated = packages.filter(p => p.id !== id);

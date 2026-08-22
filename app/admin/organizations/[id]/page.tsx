@@ -3,12 +3,14 @@
 import React, { use } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/components/providers/StoreProvider';
+import { getOrgQuota } from '@/lib/quota-manager';
 import { Building2, Users, ArrowLeft, ShieldCheck, Mail, MapPin, Key, BookCheck } from 'lucide-react';
 
 export default function OrganizationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { tenants, examLogs } = useStore();
+  const { tenants, examLogs, packages, students } = useStore();
   const org = tenants.find((o) => o.id === id) || tenants[0];
+  const quota = getOrgQuota(org, packages, students, examLogs);
   const orgLogs = examLogs.filter((l) => l.orgId === org?.id);
 
   if (!org) return <div className="p-8 text-center text-slate-500">Loading organization details...</div>;
@@ -39,33 +41,23 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                 <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
                   {org.code}
                 </span>
-              </div>
-              <div className="flex items-center space-x-3 text-xs text-slate-500 mt-1">
-                <span className="flex items-center space-x-1">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{org.location}</span>
+                <span className="text-xs font-extrabold uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+                  {quota.tierName} Plan
                 </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 flex items-center space-x-3">
+                <span className="flex items-center"><MapPin className="w-3.5 h-3.5 mr-1 text-slate-400" /> {org.location}</span>
                 <span>•</span>
-                <span className="flex items-center space-x-1">
-                  <Mail className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{org.contactEmail}</span>
-                </span>
-              </div>
+                <span className="flex items-center"><Mail className="w-3.5 h-3.5 mr-1 text-slate-400" /> {org.contactEmail}</span>
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-bold ${
-                org.status === 'active' ? 'bg-emerald-100 text-[#005C53]' : 'bg-red-100 text-red-700'
-              }`}
-            >
-              Status: {org.status.toUpperCase()}
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full flex items-center space-x-1">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Active Center</span>
             </span>
-            <button className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 flex items-center space-x-2">
-              <Key className="w-3.5 h-3.5 text-amber-400" />
-              <span>Reset Admin Credentials</span>
-            </button>
           </div>
         </div>
 
@@ -74,20 +66,20 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
             <div className="text-xs font-semibold text-slate-500">Student Seat Capacity</div>
             <div className="text-2xl font-extrabold text-slate-900 mt-1">
-              {org.studentCount} / {org.maxSeats}
+              {quota.usedIds} / {quota.totalIdLimit === 'unlimited' ? '∞' : quota.totalIdLimit}
             </div>
             <div className="text-[11px] text-emerald-700 mt-1">
-              {org.maxSeats - org.studentCount} available seats remaining
+              {quota.remainingIds === 'unlimited' ? 'Unlimited Seats' : `${quota.remainingIds} available seats remaining`}
             </div>
           </div>
 
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
             <div className="text-xs font-semibold text-slate-500">Exams Quota This Month</div>
             <div className="text-2xl font-extrabold text-[#005C53] mt-1">
-              {org.examsUsedThisMonth} / {org.maxExamsPerMonth}
+              {quota.usedExams} / {quota.totalExamLimit === 'unlimited' ? '∞' : quota.totalExamLimit}
             </div>
             <div className="text-[11px] text-slate-500 mt-1">
-              {Math.round((org.examsUsedThisMonth / org.maxExamsPerMonth) * 100)}% quota consumed
+              {quota.remainingExams === 'unlimited' ? 'Unlimited Exams' : `${quota.remainingExams} exams remaining`}
             </div>
           </div>
 
